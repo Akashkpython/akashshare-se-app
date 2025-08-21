@@ -1,0 +1,56 @@
+const express = require("express");
+const mongoose = require("mongoose");
+const multer = require("multer");
+const shortid = require("shortid");
+const cors = require("cors");
+const path = require("path");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// MongoDB connect
+mongoose.connect("mongodb://127.0.0.1:27017/akashshare", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+}).then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.log(err));
+
+// Schema
+const FileSchema = new mongoose.Schema({
+    filename: String,
+    path: String,
+    code: String,
+    createdAt: { type: Date, default: Date.now, expires: 300 } // 5 min auto delete
+});
+
+const File = mongoose.model("File", FileSchema);
+
+// Multer setup
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, "uploads/"),
+    filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
+});
+
+const upload = multer({ storage });
+
+// Upload route
+app.post("/upload", upload.single("file"), async (req, res) => {
+    const code = shortid.generate().slice(0, 4); // 4-digit
+    const file = new File({
+        filename: req.file.filename,
+        path: req.file.path,
+        code
+    });
+    await file.save();
+    res.json({ code, filename: req.file.filename });
+});
+
+// Download route
+app.get("/download/:code", async (req, res) => {
+    const file = await File.findOne({ code: req.params.code });
+    if (!file) return res.status(404).send("File not found");
+    res.download(file.path, file.filename);
+});
+
+app.listen(5000, () => console.log("🚀 Server running on port 5000"));
