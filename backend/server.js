@@ -18,7 +18,10 @@ const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingVars.length > 0) {
   console.error('❌ Missing required environment variables:', missingVars.join(', '));
   console.error('Please check your .env file and ensure all required variables are set.');
-  process.exit(1);
+  // Don't exit in production, let Render handle it
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 }
 
 const app = express();
@@ -534,15 +537,38 @@ app.use((err, req, res, _next) => {
 });
 
 // MongoDB Connect - this should be at the end to ensure all routes are defined
-mongoose.connect(process.env.MONGO_URI, {
+// Add more robust connection options for Render deployment
+const mongoOptions = {
   // Additional options for MongoDB Atlas
   serverSelectionTimeoutMS: 30000, // Increase server selection timeout
   socketTimeoutMS: 45000, // Increase socket timeout
   bufferCommands: false, // Disable command buffering
   // Retry connection options
   retryWrites: true,
-  retryReads: true
-})
+  retryReads: true,
+  // Add these options to handle potential connection issues on Render
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4 // Use IPv4, skip trying IPv6
+};
+
+// Handle potential MongoDB connection issues more gracefully
+mongoose.connection.on('error', err => {
+  console.error('❌ MongoDB Connection Error:', err);
+  console.error('📋 Please ensure MongoDB Atlas is accessible and your connection string is correct');
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ MongoDB Disconnected');
+});
+
+// Try to reconnect if disconnected
+mongoose.connection.on('reconnect', () => {
+  console.log('✅ MongoDB Reconnected');
+});
+
+mongoose.connect(process.env.MONGO_URI, mongoOptions)
 .then(() => {
   console.log("✅ MongoDB Connected successfully");
   
@@ -575,7 +601,10 @@ mongoose.connect(process.env.MONGO_URI, {
     } else if (err.code === 'EACCES') {
       console.error(`   Permission denied. You may need to run this with elevated privileges or use a port number above 1024.`);
     }
-    process.exit(1);
+    // Don't exit in production, let Render handle it
+    if (process.env.NODE_ENV !== 'production') {
+      process.exit(1);
+    }
   });
 })
 .catch(err => {
@@ -586,7 +615,10 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error("   1. Correct connection string");
   console.error("   2. Network access configured in MongoDB Atlas");
   console.error("   3. Proper IP whitelist settings");
-  process.exit(1);
+  // Don't exit in production, let Render handle it
+  if (process.env.NODE_ENV !== 'production') {
+    process.exit(1);
+  }
 });
 
 // File Schema
