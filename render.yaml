@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: akash-share-backend
+    runtime: node
+    plan: free
+    buildCommand: "npm install && cd backend && npm install"
+    startCommand: "cd backend && npm run start-render"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
