@@ -5,6 +5,9 @@
   "main": "electron/main.js",
   "homepage": ".",
   "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
@@ -20,6 +23,10 @@
     "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md}",
     "serve-updates": "npx http-server dist/ -p 3000",
     "postinstall": "cd backend && npm install"
+  },
+  "resolutions": {
+    "@mongodb-js/saslprep": "^1.1.0",
+    "mongoose": "^7.5.0"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.0",

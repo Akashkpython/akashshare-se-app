@@ -12,5 +12,20 @@ console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
 console.log(`🔧 Host: ${process.env.HOST}`);
 console.log(`🔧 Port: ${process.env.PORT}`);
 
+// Handle MongoDB dependency issues
+try {
+  // Try to require the saslprep module directly
+  require('@mongodb-js/saslprep');
+  console.log('✅ MongoDB saslprep module loaded successfully');
+} catch (err) {
+  console.warn('⚠️ MongoDB saslprep module not found, continuing without it');
+  console.warn('Error:', err.message);
+}
+
 // Import and start the server
-require('./server.js');
+try {
+  require('./server.js');
+} catch (err) {
+  console.error('❌ Failed to start server:', err);
+  process.exit(1);
+}
