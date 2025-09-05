@@ -142,7 +142,7 @@ export const waitForLoadingToFinish = async () => {
       () => document.querySelector('[data-testid="loading-spinner"]'),
       { timeout: 3000 }
     );
-  } catch (error) {
+  } catch {
     // Loading might not be present, which is fine
   }
 };

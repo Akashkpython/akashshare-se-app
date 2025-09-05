@@ -65,6 +65,41 @@ try {
     console.log('📁 Created build/backend/uploads directory');
   }
   
+  // Copy all backend source files except node_modules and uploads
+  const backendSourceDir = path.join(__dirname, '..', 'backend');
+  const copyRecursiveSync = (src, dest) => {
+    const exists = fs.existsSync(src);
+    const stats = exists && fs.statSync(src);
+    const isDirectory = exists && stats.isDirectory();
+    
+    if (isDirectory) {
+      // Skip node_modules and uploads directories
+      if (path.basename(src) === 'node_modules' || path.basename(src) === 'uploads') {
+        return;
+      }
+      
+      fs.mkdirSync(dest, { recursive: true });
+      fs.readdirSync(src).forEach(childItemName => {
+        copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
+      });
+    } else {
+      // Skip .env file as we already copied it above
+      if (path.basename(src) !== '.env') {
+        fs.copyFileSync(src, dest);
+      }
+    }
+  };
+  
+  // Copy all backend files except node_modules and uploads
+  fs.readdirSync(backendSourceDir).forEach(item => {
+    if (item !== 'node_modules' && item !== 'uploads') {
+      const srcPath = path.join(backendSourceDir, item);
+      const destPath = path.join(buildBackendDir, item);
+      copyRecursiveSync(srcPath, destPath);
+      console.log(`✅ Copied ${item} to build/backend/`);
+    }
+  });
+  
   console.log('🎉 Required files copied successfully!');
   console.log('📝 Note: Using electron/main.js directly (no build/electron.js needed)');
   console.log('📝 Note: All dependencies from package.json will be included in the final package automatically');

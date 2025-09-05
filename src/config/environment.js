@@ -106,13 +106,8 @@ export const environment = {
     // In Electron or production, use localhost:5002
     if (environment.isProduction || window.location.protocol === 'file:') {
       // For Electron apps, we need to ensure we're using the correct localhost address
-      const host = window.location.hostname || 'localhost';
-      const port = window.location.port || '5002';
-      // If we're in Electron, use localhost:5002 explicitly
-      if (window.location.protocol === 'file:') {
-        return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
-      }
-      return `ws://${host}:${port}/chat?username=${encodeURIComponent(username)}&room=${room}`;
+      // Always use localhost:5002 for Electron apps
+      return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
     }
     
     // Fallback to localhost

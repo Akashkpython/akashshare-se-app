@@ -9,24 +9,13 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
   const [audioElement, setAudioElement] = useState(null);
 
   useEffect(() => {
-    // Reset preview when file changes
-    setPreviewData(null);
-    setPreviewType(null);
-    setAudioPlaying(false);
-    
-    // Cleanup audio element if it exists
-    if (audioElement) {
-      audioElement.pause();
-      setAudioElement(null);
-    }
-    
     return () => {
       if (audioElement) {
         audioElement.pause();
         setAudioElement(null);
       }
     };
-  }, [file]);
+  }, [audioElement, file]);
 
   const getFileIcon = (fileType) => {
     if (fileType.startsWith('image/')) return <Image className="w-6 h-6 text-blue-400" />;
@@ -98,7 +87,7 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
     if (loading) {
       return (
         <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <div className="w-8 h-8 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
       );
     }
@@ -111,7 +100,7 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
               <img 
                 src={previewData} 
                 alt="Preview" 
-                className="max-h-48 max-w-full object-contain rounded-lg"
+                className="object-contain max-w-full rounded-lg max-h-48"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   setPreviewData(null);
@@ -121,7 +110,7 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
           );
         case 'text':
           return (
-            <div className="bg-gray-800 p-3 rounded max-h-32 overflow-y-auto text-sm">
+            <div className="p-3 overflow-y-auto text-sm bg-gray-800 rounded max-h-32">
               <pre className="text-gray-200 whitespace-pre-wrap">{previewData}</pre>
             </div>
           );
@@ -131,7 +120,7 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
               <video 
                 src={previewData} 
                 controls 
-                className="max-h-48 max-w-full rounded-lg"
+                className="max-w-full rounded-lg max-h-48"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   setPreviewData(null);
@@ -141,10 +130,10 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
           );
         case 'audio':
           return (
-            <div className="flex flex-col items-center space-y-2 p-4">
+            <div className="flex flex-col items-center p-4 space-y-2">
               <button 
                 onClick={toggleAudioPlayback}
-                className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors"
+                className="flex items-center justify-center w-12 h-12 transition-colors bg-blue-600 rounded-full hover:bg-blue-700"
               >
                 {audioPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
               </button>
@@ -157,7 +146,7 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
           );
         case 'pdf':
           return (
-            <div className="flex flex-col items-center space-y-2 p-4">
+            <div className="flex flex-col items-center p-4 space-y-2">
               <iframe 
                 src={previewData} 
                 className="w-full h-48 rounded-lg"
@@ -178,27 +167,27 @@ const FilePreview = ({ file, onDownload, onPreview }) => {
   };
 
   return (
-    <div className="border border-gray-700 rounded-lg overflow-hidden">
+    <div className="overflow-hidden border border-gray-700 rounded-lg">
       <div className="flex items-center justify-between p-3 bg-gray-800">
         <div className="flex items-center space-x-2">
           {getFileIcon(file.type)}
           <div>
-            <p className="text-white font-medium truncate max-w-xs">{file.name}</p>
-            <p className="text-gray-400 text-sm">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+            <p className="max-w-xs font-medium text-white truncate">{file.name}</p>
+            <p className="text-sm text-gray-400">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
           </div>
         </div>
         <div className="flex space-x-2">
           {getPreviewType(file.type) !== 'none' && (
             <button
               onClick={handlePreview}
-              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition-colors"
+              className="px-3 py-1 text-sm text-white transition-colors bg-blue-600 rounded hover:bg-blue-700"
             >
               Preview
             </button>
           )}
           <button
             onClick={() => onDownload && onDownload(file)}
-            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm transition-colors"
+            className="px-3 py-1 text-sm text-white transition-colors bg-green-600 rounded hover:bg-green-700"
           >
             Download
           </button>

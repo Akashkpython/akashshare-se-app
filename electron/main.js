@@ -161,8 +161,8 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     backgroundColor: '#0f0f0f',
-    // Remove custom title bar - use default OS title bar
-    frame: true, // Use default OS window frame
+    // Remove title bar completely
+    frame: false, // Remove window frame
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -231,12 +231,36 @@ function createWindow() {
 // Function to ensure backend dependencies are installed
 async function ensureBackendDependencies() {
   try {
-    const backendDir = path.join(__dirname, '../backend');
+    // Determine the correct path for the backend based on whether we're in a packaged app or development
+    let backendDir;
+    
+    if (app.isPackaged) {
+      // In packaged app, backend is in resources/backend
+      backendDir = path.join(process.resourcesPath, 'backend');
+      log.info(`📦 Running in packaged mode. Backend dir: ${backendDir}`);
+    } else {
+      // In development, backend is in the backend directory relative to project root
+      backendDir = path.join(__dirname, '../backend');
+      log.info(`💻 Running in development mode. Backend dir: ${backendDir}`);
+    }
+    
     const nodeModulesPath = path.join(backendDir, 'node_modules');
     
     log.info(`🔧 Checking backend dependencies in: ${backendDir}`);
     
-    // Check if node_modules exists
+    // In a packaged app, dependencies should already be installed
+    if (app.isPackaged) {
+      if (fs.existsSync(nodeModulesPath)) {
+        log.info('✅ Backend dependencies already installed in packaged app');
+        return true;
+      } else {
+        log.warn('⚠️ Backend dependencies not found in packaged app. This might cause issues.');
+        // In packaged apps, we can't install dependencies, so we'll continue anyway
+        return true;
+      }
+    }
+    
+    // Check if node_modules exists (development mode)
     if (!fs.existsSync(nodeModulesPath)) {
       log.warn('⚠️ Backend dependencies not found, attempting to install...');
       
@@ -275,9 +299,22 @@ async function ensureBackendDependencies() {
 // Function to ensure backend environment variables are set
 async function ensureBackendEnv() {
   try {
-    const backendDir = path.join(__dirname, '../backend');
+    // Determine the correct path for the backend based on whether we're in a packaged app or development
+    let backendDir, envExamplePath;
+    
+    if (app.isPackaged) {
+      // In packaged app, backend is in resources/backend
+      backendDir = path.join(process.resourcesPath, 'backend');
+      envExamplePath = path.join(process.resourcesPath, 'backend', '.env.example');
+      log.info(`📦 Running in packaged mode. Backend dir: ${backendDir}`);
+    } else {
+      // In development, backend is in the backend directory relative to project root
+      backendDir = path.join(__dirname, '../backend');
+      envExamplePath = path.join(__dirname, '../.env.example');
+      log.info(`💻 Running in development mode. Backend dir: ${backendDir}`);
+    }
+    
     const envPath = path.join(backendDir, '.env');
-    const envExamplePath = path.join(__dirname, '../.env.example');
     
     log.info(`🔧 Checking backend environment configuration...`);
     
@@ -285,7 +322,7 @@ async function ensureBackendEnv() {
     if (!fs.existsSync(envPath)) {
       log.warn('⚠️ Backend .env file not found, checking for .env.example...');
       
-      // Check if .env.example exists in root
+      // Check if .env.example exists
       if (fs.existsSync(envExamplePath)) {
         log.info('✅ Found .env.example, copying to backend directory...');
         fs.copyFileSync(envExamplePath, envPath);
@@ -337,12 +374,24 @@ async function createBackendProcess() {
     return null;
   }
   
-  // Path to the backend server script
-  const backendPath = path.join(__dirname, '../backend/server.js');
+  // Determine the correct path for the backend based on whether we're in a packaged app or development
+  let backendPath, backendDir;
+  
+  if (app.isPackaged) {
+    // In packaged app, backend is in resources/backend
+    backendDir = path.join(process.resourcesPath, 'backend');
+    backendPath = path.join(backendDir, 'server.js');
+    log.info(`📦 Running in packaged mode. Backend dir: ${backendDir}`);
+  } else {
+    // In development, backend is in the backend directory relative to project root
+    backendDir = path.join(__dirname, '../backend');
+    backendPath = path.join(backendDir, 'server.js');
+    log.info(`💻 Running in development mode. Backend dir: ${backendDir}`);
+  }
   
   // Log the paths for debugging
   log.info(`📁 Backend path: ${backendPath}`);
-  log.info(`📁 Backend directory: ${path.join(__dirname, '../backend')}`);
+  log.info(`📁 Backend directory: ${backendDir}`);
   log.info(`📁 Current working directory: ${process.cwd()}`);
   
   // Check if backend file exists
@@ -352,7 +401,6 @@ async function createBackendProcess() {
   }
   
   // Check if backend directory exists
-  const backendDir = path.join(__dirname, '../backend');
   if (!fs.existsSync(backendDir)) {
     log.error(`❌ Backend directory not found: ${backendDir}`);
     return null;

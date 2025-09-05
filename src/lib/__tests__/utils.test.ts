@@ -217,7 +217,7 @@ describe('sanitizeFileName', () => {
   });
 
   it('respects length limit', () => {
-    const longName = 'a'.repeat(150) + '.txt';
+    const longName = `${'a'.repeat(150)  }.txt`;
     const result = sanitizeFileName(longName);
     expect(result.length).toBeLessThanOrEqual(100);
   });
