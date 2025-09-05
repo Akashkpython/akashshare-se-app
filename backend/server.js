@@ -625,22 +625,25 @@ connectWithRetry().then(success => {
   if (success) {
     // Start server only after MongoDB connection is established
     // Use Render's PORT if available, otherwise default to 5002
+    // IMPORTANT: Bind to 0.0.0.0 (all interfaces) for Render deployment
     const PORT = process.env.PORT || process.env.BACKEND_PORT || 5002;
     const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces for Render
     
     console.log(`Attempting to start server on ${HOST}:${PORT}`);
     
     server.listen(PORT, HOST, () => {
-      console.log(`🚀 Server running on ${HOST}:${PORT}`);
+      // Log the actual address the server is listening on
+      const address = server.address();
+      console.log(`🚀 Server running on ${address.address}:${address.port}`);
       console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
       console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
       console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
-      console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
-      console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
+      console.log(`🌐 API endpoints available at: http://${address.address}:${address.port}`);
+      console.log(`💬 WebSocket chat available at: ws://${address.address}:${address.port}/chat`);
       
       // In production, serve the React app
       if (process.env.NODE_ENV === 'production') {
-        console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
+        console.log(`🖥️  Frontend available at: http://${address.address}:${address.port}`);
       }
     });
     
