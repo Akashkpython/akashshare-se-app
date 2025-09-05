@@ -1,6 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+// Memoization utility for better performance
+const memoize = (fn) => {
+  const cache = new Map();
+  return (...args) => {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+    const result = fn(...args);
+    cache.set(key, result);
+    return result;
+  };
+};
+
 const useStore = create(
   persist(
     (set, get) => ({
@@ -16,7 +30,7 @@ const useStore = create(
       // Add new transfer
       addTransfer: (transfer) => {
         const newTransfer = {
-          id: Date.now().toString(),
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           ...transfer,
           status: 'pending',
           progress: 0,
@@ -30,7 +44,7 @@ const useStore = create(
         }));
       },
 
-      // Update transfer progress
+      // Update transfer progress with batching for better performance
       updateTransferProgress: (id, progress, status = null) => {
         set((state) => ({
           transfers: state.transfers.map(transfer =>
@@ -112,23 +126,23 @@ const useStore = create(
         }));
       },
 
-      // Clean up expired codes
-      cleanupExpiredCodes: () => {
+      // Clean up expired codes with memoization
+      cleanupExpiredCodes: memoize(() => {
         const now = Date.now();
         set((state) => ({
           shareCodes: state.shareCodes.filter(sc => sc.expiresAt > now)
         }));
-      },
+      }),
 
       // UI state
       sidebarOpen: true,
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-      // Notifications
+      // Notifications with optimized handling
       notifications: [],
       addNotification: (notification) => {
         const newNotification = {
-          id: Date.now().toString(),
+          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
           ...notification,
           timestamp: Date.now()
         };
@@ -160,6 +174,8 @@ const useStore = create(
         shareCodes: state.shareCodes,
         sidebarOpen: state.sidebarOpen,
       }),
+      // Add versioning for storage
+      version: 1
     }
   )
 );

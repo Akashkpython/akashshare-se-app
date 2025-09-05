@@ -1,28 +1,53 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Download, 
-  Code, 
+  File, 
+  Image, 
+  Video, 
+  Music, 
+  Archive,
+  Code,
+  Share2,
   CheckCircle,
   AlertCircle,
-  Copy,
-  Check,
-  Clock,
-  Shield
+  Wifi,
+  Search
 } from 'lucide-react';
 import useStore from '../store/useStore';
-import { copyToClipboard, validateShareCode, sanitizeShareCode } from '../lib/utils';
+import { formatFileSize } from '../lib/utils';
 import api from '../lib/api';
-import FilePreview from '../components/FilePreview';
+import environment from '../config/environment';
 
 const ReceiveFiles = () => {
   const { addTransfer, updateTransferProgress, completeTransfer, addNotification } = useStore();
   const [code, setCode] = useState('');
-  const [isValidating, setIsValidating] = useState(false);
+  const [fileInfo, setFileInfo] = useState(null);
   const [downloading, setDownloading] = useState(false);
-  const [foundFiles, setFoundFiles] = useState(null);
-  const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [backendStatus, setBackendStatus] = useState('checking');
+  const [isValidating, setIsValidating] = useState(false);
+
+  const checkBackendStatus = useCallback(async () => {
+    setBackendStatus('checking');
+    try {
+      console.log('🔍 Checking backend status at:', `${environment.baseApiUrl}/health`);
+      await api.healthCheck();
+      setBackendStatus('online');
+      console.log('✅ Backend is online');
+    } catch (error) {
+      console.error('Backend health check failed:', error);
+      console.log('❌ Backend is offline');
+      setBackendStatus('offline');
+      
+      // Add a more descriptive error notification
+      addNotification({
+        type: 'error',
+        title: 'Backend Server Offline',
+        message: 'The backend server is not running. Please start the backend server on port 5002.'
+      });
+    }
+  }, [addNotification]);
 
   useEffect(() => {
     // Simulate data loading with a more realistic delay
@@ -30,186 +55,184 @@ const ReceiveFiles = () => {
       setIsLoading(false);
     }, 600);
     
+    // Check backend status
+    checkBackendStatus();
+    
     return () => clearTimeout(timer);
-  }, []);
+  }, [checkBackendStatus]);
+
+  // Debounced validation function
+  const debouncedValidateCode = useCallback(
+    (codeValue) => {
+      const validate = async () => {
+        if (codeValue.length === 4) {
+          setIsValidating(true);
+          try {
+            // Validate code by attempting to get file info
+            const response = await fetch(`${environment.baseApiUrl}/download/${codeValue}`, {
+              method: 'HEAD' // Use HEAD request for faster validation
+            });
+            
+            if (response.ok) {
+              // If HEAD request is successful, get file info
+              const contentDisposition = response.headers.get('content-disposition');
+              const contentLength = response.headers.get('content-length');
+              const contentType = response.headers.get('content-type');
+              
+              // Extract filename from content-disposition header
+              let filename = 'unknown-file';
+              if (contentDisposition) {
+                const filenameMatch = contentDisposition.match(/filename="(.+?)"/);
+                if (filenameMatch) {
+                  filename = filenameMatch[1];
+                }
+              }
+              
+              setFileInfo({
+                name: filename,
+                size: contentLength ? parseInt(contentLength) : 0,
+                type: contentType || 'application/octet-stream'
+              });
+            } else {
+              setFileInfo(null);
+            }
+          } catch (error) {
+            console.error('Validation error:', error);
+            setFileInfo(null);
+          } finally {
+            setIsValidating(false);
+          }
+        } else {
+          setFileInfo(null);
+        }
+      };
+      
+      const timeoutId = setTimeout(validate, 500);
+      return () => clearTimeout(timeoutId);
+    },
+    []
+  );
 
   const handleCodeChange = (e) => {
-    const sanitizedCode = sanitizeShareCode(e.target.value);
-    setCode(sanitizedCode);
+    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setCode(value);
     
-    // Auto-validate when code is complete (4 digits)
-    if (sanitizedCode.length === 4) {
-      validateCode(sanitizedCode);
+    if (value.length === 4) {
+      debouncedValidateCode(value);
     } else {
-      setFoundFiles(null);
+      setFileInfo(null);
     }
   };
 
-  const validateCode = async (shareCode) => {
-    if (!validateShareCode(shareCode)) {
+  const handleDownload = async () => {
+    if (!code || code.length !== 4) {
       addNotification({
-        type: 'error',
+        type: 'warning',
         title: 'Invalid Code',
         message: 'Please enter a valid 4-digit code'
       });
       return;
     }
 
-    setIsValidating(true);
-    
-    try {
-      // Try to download the file to validate the code
-      const response = await api.downloadFile(shareCode);
-      
-      // If successful, create file info from response headers
-      const contentDisposition = response.headers.get('content-disposition');
-      const fileName = contentDisposition 
-        ? contentDisposition.split('filename=')[1]?.replace(/"/g, '') || 'unknown'
-        : 'unknown';
-      
-      const fileSize = response.headers.get('content-length') || 0;
-      const contentType = response.headers.get('content-type') || 'application/octet-stream';
-      
-      const fileInfo = {
-        id: 1,
-        name: fileName,
-        size: parseInt(fileSize),
-        type: contentType,
-        uploadedAt: new Date(),
-        code: shareCode
-      };
-      
-      setFoundFiles([fileInfo]);
-      setIsValidating(false);
-      
-      addNotification({
-        type: 'success',
-        title: 'Code Valid!',
-        message: 'File found and ready for download'
-      });
-    } catch (error) {
-      setIsValidating(false);
-      setFoundFiles(null);
-      
+    if (backendStatus !== 'online') {
       addNotification({
         type: 'error',
-        title: 'Invalid Code',
-        message: error.message || 'Code not found or expired'
+        title: 'Backend Offline',
+        message: 'Cannot download files. Please ensure the backend server is running on port 5002.'
       });
+      return;
     }
-  };
 
-  const handlePreview = async (file) => {
-    try {
-      // For various file types, we can try to get a preview
-      if (file.type.startsWith('image/') || file.type.startsWith('text/') || file.type.startsWith('video/') || file.type.startsWith('audio/') || file.type.includes('pdf')) {
-        const response = await api.downloadFile(file.code);
-        const blob = await response.blob();
-        URL.createObjectURL(blob);
-        // The FilePreview component handles its own preview state
-        // We don't need to store it in the parent component
-      }
-    } catch (error) {
-      console.error('Preview error:', error);
+    if (!fileInfo) {
       addNotification({
-        type: 'error',
-        title: 'Preview Failed',
-        message: 'Could not generate preview for this file'
+        type: 'warning',
+        title: 'No File Found',
+        message: 'Please validate the code first'
       });
+      return;
     }
-  };
 
-  const handleDownload = async (file) => {
     setDownloading(true);
-    
-    const transferId = Date.now().toString();
-    
-    addTransfer({
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      direction: 'download'
-    });
 
     try {
+      const transferId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+      
+      addTransfer({
+        fileName: fileInfo.name,
+        fileSize: fileInfo.size,
+        fileType: fileInfo.type,
+        direction: 'download'
+      });
+
       // Simulate download progress
       for (let progress = 0; progress <= 90; progress += 10) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 30)); // Faster simulation
         updateTransferProgress(transferId, progress, 'downloading');
       }
 
-      // Make actual download request
-      const response = await api.downloadFile(file.code);
+      // Make actual API call
+      const response = await api.downloadFile(code);
       
-      // Create blob and download
+      updateTransferProgress(transferId, 100, 'downloading');
+      
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = file.name;
+      a.download = fileInfo.name;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      updateTransferProgress(transferId, 100, 'downloading');
       completeTransfer(transferId, 'completed');
-      setDownloading(false);
       
+      setDownloading(false);
       addNotification({
         type: 'success',
         title: 'Download Complete!',
-        message: `${file.name} has been downloaded successfully`
+        message: `${fileInfo.name} has been downloaded`
       });
     } catch (error) {
-      updateTransferProgress(transferId, 0, 'failed');
-      completeTransfer(transferId, 'failed');
       setDownloading(false);
+      
+      // Provide more specific error messages
+      let errorMessage = error.message || 'Failed to download file. Please check if the backend is running.';
+      
+      if (error.message && error.message.includes('Cannot connect to server')) {
+        errorMessage = 'Cannot connect to the backend server. Please ensure the backend is running on port 5002.';
+      } else if (error.message && error.message.includes('fetch')) {
+        errorMessage = 'Network error occurred. Please check your connection and ensure the backend server is running.';
+      } else if (error.message && error.message.includes('404')) {
+        errorMessage = 'File not found. The code may be invalid or the file may have expired.';
+      }
       
       addNotification({
         type: 'error',
         title: 'Download Failed',
-        message: error.message || 'Failed to download file'
+        message: errorMessage
       });
     }
   };
 
-  const handleDownloadAll = async () => {
-    if (!foundFiles) return;
-    
-    setDownloading(true);
-    
-    for (const file of foundFiles) {
-      await handleDownload(file);
-    }
-    
-    setDownloading(false);
-  };
-
-  const handleCopyCode = async () => {
-    if (code) {
-      const success = await copyToClipboard(code);
-      if (success) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        addNotification({
-          type: 'success',
-          title: 'Code Copied!',
-          message: 'Share code copied to clipboard'
-        });
-      }
-    }
+  const getFileIconComponent = (fileType) => {
+    if (fileType.startsWith('image/')) return <Image className="w-6 h-6 text-white" />;
+    if (fileType.startsWith('video/')) return <Video className="w-6 h-6 text-white" />;
+    if (fileType.startsWith('audio/')) return <Music className="w-6 h-6 text-white" />;
+    if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('tar')) return <Archive className="w-6 h-6 text-white" />;
+    if (fileType.includes('javascript') || fileType.includes('json') || fileType.includes('xml')) return <Code className="w-6 h-6 text-white" />;
+    return <File className="w-6 h-6 text-white" />;
   };
 
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
-        <div className="mb-8 text-center">
-          <div className="w-1/4 h-10 mx-auto mb-4 bg-foreground/10 rounded-xl animate-pulse"></div>
-          <div className="w-1/3 h-6 mx-auto rounded-lg bg-foreground/10 animate-pulse"></div>
+        <div className="text-center mb-8">
+          <div className="h-10 bg-foreground/10 rounded-xl animate-pulse mx-auto mb-4 w-1/4"></div>
+          <div className="h-6 bg-foreground/10 rounded-lg animate-pulse mx-auto w-1/3"></div>
         </div>
         
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="h-96 bg-foreground/10 rounded-2xl animate-pulse"></div>
           <div className="h-96 bg-foreground/10 rounded-2xl animate-pulse"></div>
         </div>
@@ -223,236 +246,157 @@ const ReceiveFiles = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center"
+        className="text-center mb-8"
       >
-        <h1 className="mb-2 text-3xl font-bold gradient-text">Receive Files</h1>
+        <h1 className="text-3xl font-bold gradient-text mb-2">Receive Files</h1>
         <p className="text-foreground/70">Enter a share code to download files</p>
+        
+        {/* Backend Status Indicator */}
+        <div className="mt-4 flex items-center justify-center">
+          {backendStatus === 'checking' ? (
+            <div className="flex items-center text-foreground/70">
+              <div className="w-4 h-4 border-2 border-akash-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+              <span>Checking backend status...</span>
+            </div>
+          ) : backendStatus === 'online' ? (
+            <div className="flex items-center text-green-400">
+              <Wifi className="w-4 h-4 mr-2" />
+              <span>Backend server is online</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-red-400">
+              <AlertCircle className="w-4 h-4 mr-2" />
+              <span>Backend server is offline. Please start the backend server on port 5002.</span>
+            </div>
+          )}
+        </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Code Input Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Enter Code */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-6"
+          className="bg-card p-6 rounded-lg border border-border"
         >
-          {/* Code Input */}
-          <div className="p-6 glass-card" style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '1rem',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-          }}>
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Enter Share Code</h3>
-            
-            <div className="space-y-4">
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <Search className="w-5 h-5 mr-2 text-akash-400" />
+            Enter Share Code
+          </h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Share Code</label>
               <div className="relative">
-                <div className="flex items-center space-x-3">
-                  <Code className="w-6 h-6 text-white" />
-                  <input
-                    type="text"
-                    value={code}
-                    onChange={handleCodeChange}
-                    placeholder="Enter 4-digit code"
-                    maxLength={4}
-                    className="flex-1 font-mono text-2xl tracking-wider text-center input-field"
-                  />
-                  {code && (
-                    <motion.button
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={handleCopyCode}
-                      className="p-2 transition-colors rounded-xl hover:bg-white/10"
-                    >
-                      {copied ? (
-                        <Check className="w-5 h-5 text-white" />
-                      ) : (
-                        <Copy className="w-5 h-5 text-white" />
-                      )}
-                    </motion.button>
-                  )}
-                </div>
-                
+                <input
+                  type="text"
+                  value={code}
+                  onChange={handleCodeChange}
+                  placeholder="Enter 4-digit code"
+                  className="w-full p-4 text-2xl text-center bg-background border border-foreground/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-akash-400"
+                  maxLength={4}
+                />
                 {isValidating && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-4 text-center"
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-6 h-6 mx-auto border-2 border-white rounded-full border-t-transparent"
-                    />
-                    <p className="mt-2 text-sm text-foreground/60">Validating code...</p>
-                  </motion.div>
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-akash-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
                 )}
               </div>
-
-              <div className="text-center">
-                <p className="text-sm text-foreground/60">
-                  Enter the 4-digit code shared with you
-                </p>
-              </div>
+              <p className="text-sm text-foreground/50 mt-2">Ask the sender for the 4-digit share code</p>
             </div>
-          </div>
-
-          {/* Instructions */}
-          <div className="p-6 glass-card" style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '1rem',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-          }}>
-            <h3 className="mb-4 text-lg font-semibold text-foreground">How to receive files</h3>
-            <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full bg-white/20">
-                  <span className="text-sm font-bold text-white">1</span>
+            
+            {fileInfo && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-4 bg-foreground/5 rounded-xl"
+              >
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-lg bg-akash-400/20 flex items-center justify-center mr-3">
+                    {getFileIconComponent(fileInfo.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{fileInfo.name}</p>
+                    <p className="text-sm text-foreground/50">{formatFileSize(fileInfo.size)}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Get Share Code</h4>
-                  <p className="text-sm text-foreground/60">Ask the sender for the 4-digit share code</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3">
-                <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full bg-white/20">
-                  <span className="text-sm font-bold text-white">2</span>
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Enter Code</h4>
-                  <p className="text-sm text-foreground/60">Type the code in the input field above</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start space-x-3">
-                <div className="flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-full bg-white/20">
-                  <span className="text-sm font-bold text-white">3</span>
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">Download Files</h4>
-                  <p className="text-sm text-foreground/60">Preview and download the shared files</p>
-                </div>
-              </div>
-            </div>
+              </motion.div>
+            )}
+            
+            <button
+              onClick={handleDownload}
+              disabled={!code || code.length !== 4 || downloading || !fileInfo || backendStatus !== 'online'}
+              className={`w-full py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center ${
+                !code || code.length !== 4 || downloading || !fileInfo || backendStatus !== 'online'
+                  ? 'bg-foreground/10 text-foreground/50 cursor-not-allowed'
+                  : 'bg-akash-500 hover:bg-akash-400 text-white hover:shadow-lg'
+              }`}
+            >
+              {downloading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Downloading...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download File
+                </>
+              )}
+            </button>
           </div>
         </motion.div>
 
-        {/* File Preview Section */}
+        {/* Instructions */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="space-y-6"
+          className="bg-card p-6 rounded-lg border border-border"
         >
-          {/* File Preview */}
-          <div className="p-6 glass-card" style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '1rem',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-          }}>
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Files Available</h3>
+          <h2 className="text-xl font-semibold mb-4 flex items-center">
+            <Share2 className="w-5 h-5 mr-2 text-akash-400" />
+            How It Works
+          </h2>
+          
+          <div className="space-y-4">
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-akash-400/20 flex items-center justify-center mr-3 flex-shrink-0">
+                <span className="text-akash-400 font-bold">1</span>
+              </div>
+              <div>
+                <h3 className="font-medium">Get Share Code</h3>
+                <p className="text-sm text-foreground/70 mt-1">Ask the sender for the 4-digit share code</p>
+              </div>
+            </div>
             
-            {foundFiles ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="space-y-4"
-              >
-                <div className="mb-4 text-center">
-                  <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-700 to-black">
-                    <CheckCircle className="w-8 h-8 text-white" />
-                  </div>
-                  <h4 className="mb-2 font-medium text-foreground">Files Found!</h4>
-                  <p className="text-sm text-foreground/60">
-                    {foundFiles.length} file(s) ready for download
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  {foundFiles.map((file, _index) => (
-                    <FilePreview
-                      key={file.id}
-                      file={file}
-                      onDownload={handleDownload}
-                      onPreview={handlePreview}
-                    />
-                  ))}
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleDownloadAll}
-                  disabled={downloading}
-                  className="flex items-center justify-center w-full space-x-2 btn-primary"
-                >
-                  {downloading ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      >
-                        <Download className="w-5 h-5 text-white" />
-                      </motion.div>
-                      <span className="text-white">Downloading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-5 h-5 text-white" />
-                      <span className="text-white">Download All Files</span>
-                    </>
-                  )}
-                </motion.button>
-              </motion.div>
-            ) : (
-              <div className="py-8 text-center">
-                <Code className="w-12 h-12 mx-auto mb-3 text-foreground/40" />
-                <p className="text-foreground/60">No files found</p>
-                <p className="text-sm text-foreground/40">Enter a valid share code to see files</p>
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-akash-400/20 flex items-center justify-center mr-3 flex-shrink-0">
+                <span className="text-akash-400 font-bold">2</span>
               </div>
-            )}
-          </div>
-
-          {/* Security Info */}
-          <div className="p-6 glass-card" style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
-            backdropFilter: 'blur(20px) saturate(180%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '1rem',
-            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-          }}>
-            <h3 className="mb-4 text-lg font-semibold text-foreground">Security Features</h3>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <Shield className="w-5 h-5 text-white" />
-                <div>
-                  <h4 className="font-medium text-foreground">Secure Transfer</h4>
-                  <p className="text-sm text-foreground/60">End-to-end encrypted file sharing</p>
-                </div>
+              <div>
+                <h3 className="font-medium">Enter Code</h3>
+                <p className="text-sm text-foreground/70 mt-1">Type the code in the input field above</p>
               </div>
-              
-              <div className="flex items-center space-x-3">
-                <Clock className="w-5 h-5 text-white" />
-                <div>
-                  <h4 className="font-medium text-foreground">Time Limited</h4>
-                  <p className="text-sm text-foreground/60">Codes expire after 24 hours</p>
-                </div>
+            </div>
+            
+            <div className="flex items-start">
+              <div className="w-8 h-8 rounded-full bg-akash-400/20 flex items-center justify-center mr-3 flex-shrink-0">
+                <span className="text-akash-400 font-bold">3</span>
               </div>
-              
-              <div className="flex items-center space-x-3">
-                <AlertCircle className="w-5 h-5 text-white" />
-                <div>
-                  <h4 className="font-medium text-foreground">Safe & Private</h4>
-                  <p className="text-sm text-foreground/60">No personal data required</p>
-                </div>
+              <div>
+                <h3 className="font-medium">Download File</h3>
+                <p className="text-sm text-foreground/70 mt-1">Click download to save the file to your device</p>
               </div>
+            </div>
+            
+            <div className="mt-6 p-4 bg-foreground/5 rounded-lg">
+              <div className="flex items-center">
+                <CheckCircle className="w-5 h-5 text-akash-400 mr-2" />
+                <span className="font-medium">Files expire after 24 hours</span>
+              </div>
+              <p className="text-sm text-foreground/70 mt-2">
+                For security, all files are automatically deleted 24 hours after upload
+              </p>
             </div>
           </div>
         </motion.div>

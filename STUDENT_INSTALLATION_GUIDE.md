@@ -63,7 +63,8 @@ Akash Share is a modern file sharing application that allows students to easily 
 ### Backend Configuration (.env file needed in backend folder):
 ```env
 # MongoDB Atlas Configuration (Use your actual connection string)
-MONGO_URI=mongodb+srv://username:password@cluster0.mongodb.net/akashshare?retryWrites=true&w=majority
+MONGO_URI=mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
+
 
 # JWT Secret
 JWT_SECRET=student-lab-secret-key

@@ -53,3 +53,25 @@ logs/
 *.swp
 *.swo
 *~
+
+# Large distribution files and directories
+AkashShare-Distribution*/
+*Distribution*/
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.asar
+*.zip
+
+# Backend node_modules
+/backend/node_modules/
+
+# Uploads directory
+uploads/
+/backend/uploads/
+
+# Audio files
+*.mp3
+*.wav
+*.ogg

@@ -176,13 +176,13 @@ const Settings = () => {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="h-10 bg-foreground/10 rounded-xl animate-pulse mb-4 w-1/4"></div>
-            <div className="h-6 bg-foreground/10 rounded-lg animate-pulse w-1/2"></div>
+            <div className="w-1/4 h-10 mb-4 bg-foreground/10 rounded-xl animate-pulse"></div>
+            <div className="w-1/2 h-6 rounded-lg bg-foreground/10 animate-pulse"></div>
           </div>
-          <div className="h-10 w-24 bg-foreground/10 rounded-xl animate-pulse"></div>
+          <div className="w-24 h-10 bg-foreground/10 rounded-xl animate-pulse"></div>
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div className="space-y-6">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-40 bg-foreground/10 rounded-2xl animate-pulse"></div>
@@ -207,7 +207,7 @@ const Settings = () => {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold gradient-text mb-2">Settings</h1>
+          <h1 className="mb-2 text-3xl font-bold gradient-text">Settings</h1>
           <p className="text-foreground/70">Configure your Akash Share preferences</p>
         </div>
         
@@ -216,7 +216,7 @@ const Settings = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleResetSettings}
-            className="btn-secondary flex items-center space-x-2"
+            className="flex items-center space-x-2 btn-secondary"
           >
             <RotateCcw className="w-4 h-4 text-white" />
             <span className="text-white">Reset</span>
@@ -224,7 +224,7 @@ const Settings = () => {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Main Settings */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -239,7 +239,7 @@ const Settings = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: sectionIndex * 0.1 }}
-                className="glass-card-enhanced p-6"
+                className="p-6 glass-card-enhanced"
                 style={{
                   background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
                   backdropFilter: 'blur(20px) saturate(180%)',
@@ -248,7 +248,7 @@ const Settings = () => {
                   boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
                 }}
               >
-                <div className="flex items-center space-x-3 mb-4">
+                <div className="flex items-center mb-4 space-x-3">
                   <Icon className="w-6 h-6 text-white" />
                   <h3 className="text-lg font-semibold text-foreground">{section.title}</h3>
                 </div>
@@ -257,9 +257,9 @@ const Settings = () => {
                   {section.settings.map((setting) => (
                     <div key={setting.key} className="flex items-center justify-between">
                       <div>
-                        <p className="text-foreground font-medium">{setting.label}</p>
+                        <p className="font-medium text-foreground">{setting.label}</p>
                         {setting.description && (
-                          <p className="text-foreground/60 text-sm">{setting.description}</p>
+                          <p className="text-sm text-foreground/60">{setting.description}</p>
                         )}
                       </div>
                       
@@ -311,7 +311,7 @@ const Settings = () => {
           className="space-y-6"
         >
           {/* Advanced Settings */}
-          <div className="glass-card p-6" style={{
+          <div className="p-6 glass-card" style={{
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
             backdropFilter: 'blur(20px) saturate(180%)',
             border: '1px solid rgba(59, 130, 246, 0.1)',
@@ -344,16 +344,16 @@ const Settings = () => {
                 >
                   {advancedSettings.map((section) => (
                     <div key={section.title}>
-                      <div className="flex items-center space-x-3 mb-3">
+                      <div className="flex items-center mb-3 space-x-3">
                         <section.icon className="w-5 h-5 text-white" />
-                        <h4 className="text-foreground font-medium">{section.title}</h4>
+                        <h4 className="font-medium text-foreground">{section.title}</h4>
                       </div>
                       
                       <div className="space-y-3">
                         {section.settings.map((setting) => (
                           <div key={setting.key} className="flex items-center justify-between">
                             <div>
-                              <p className="text-foreground font-medium">{setting.label}</p>
+                              <p className="font-medium text-foreground">{setting.label}</p>
                             </div>
                             
                             <div className="flex items-center space-x-2">
@@ -386,14 +386,14 @@ const Settings = () => {
           </div>
 
           {/* App Information */}
-          <div className="glass-card p-6" style={{
+          <div className="p-6 glass-card" style={{
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
             backdropFilter: 'blur(20px) saturate(180%)',
             border: '1px solid rgba(59, 130, 246, 0.1)',
             borderRadius: '1rem',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
           }}>
-            <div className="flex items-center space-x-3 mb-4">
+            <div className="flex items-center mb-4 space-x-3">
               <Info className="w-6 h-6 text-white" />
               <h3 className="text-lg font-semibold text-foreground">App Information</h3>
             </div>
@@ -401,37 +401,37 @@ const Settings = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Version</span>
-                <span className="text-foreground font-medium">1.0.0</span>
+                <span className="font-medium text-foreground">1.0.0</span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Build</span>
-                <span className="text-foreground font-medium">2024.1.0</span>
+                <span className="font-medium text-foreground">2024.1.0</span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Platform</span>
-                <span className="text-foreground font-medium capitalize">
+                <span className="font-medium capitalize text-foreground">
                   {window.electronAPI?.platform || 'web'}
                 </span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Storage Used</span>
-                <span className="text-foreground font-medium">2.4 GB</span>
+                <span className="font-medium text-foreground">2.4 GB</span>
               </div>
             </div>
           </div>
 
           {/* Current Settings Summary */}
-          <div className="glass-card p-6" style={{
+          <div className="p-6 glass-card" style={{
             background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
             backdropFilter: 'blur(20px) saturate(180%)',
             border: '1px solid rgba(59, 130, 246, 0.1)',
             borderRadius: '1rem',
             boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
           }}>
-            <div className="flex items-center space-x-3 mb-4">
+            <div className="flex items-center mb-4 space-x-3">
               <SettingsIcon className="w-6 h-6 text-akash-400" />
               <h3 className="text-lg font-semibold text-foreground">Current Settings</h3>
             </div>
@@ -439,27 +439,27 @@ const Settings = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Theme</span>
-                <span className="text-foreground font-medium capitalize">{theme}</span>
+                <span className="font-medium capitalize text-foreground">{theme}</span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Max File Size</span>
-                <span className="text-foreground font-medium">{formatFileSize(settings.maxFileSize)}</span>
+                <span className="font-medium text-foreground">{formatFileSize(settings.maxFileSize)}</span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Code Expiry</span>
-                <span className="text-foreground font-medium">{formatTime(settings.codeExpiry)}</span>
+                <span className="font-medium text-foreground">{formatTime(settings.codeExpiry)}</span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Notifications</span>
-                <span className="text-foreground font-medium">{settings.notifications ? 'Enabled' : 'Disabled'}</span>
+                <span className="font-medium text-foreground">{settings.notifications ? 'Enabled' : 'Disabled'}</span>
               </div>
               
               <div className="flex items-center justify-between">
                 <span className="text-foreground/60">Language</span>
-                <span className="text-foreground font-medium uppercase">{settings.language}</span>
+                <span className="font-medium uppercase text-foreground">{settings.language}</span>
               </div>
             </div>
           </div>

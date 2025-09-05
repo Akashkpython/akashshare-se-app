@@ -8,7 +8,9 @@ import {
   Settings, 
   Share2,
   User,
-  MessageCircle
+  MessageCircle,
+  Music,
+  DownloadCloud
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -52,6 +54,18 @@ const Sidebar = () => {
       label: 'Bca Group Chat',
       description: 'Community Discussion',
       danceEffect: true // Add dancing effect flag for Bca Group Chat item
+    },
+    {
+      path: '/sa-re-ga-ma-pa',
+      icon: Music,
+      label: 'Sa Re Ga Ma Pa',
+      description: 'Musical Fun'
+    },
+    {
+      path: '/app-updates',
+      icon: DownloadCloud,
+      label: 'App Updates',
+      description: 'Manage Updates'
     },
     {
       path: '/settings',

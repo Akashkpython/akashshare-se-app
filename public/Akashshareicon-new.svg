@@ -1,0 +1,52 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="background" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="arrow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00c9ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#92fe9d;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#92fe9d" flood-opacity="0.5" result="glowColor"/>
+      <feComposite in="glowColor" in2="blur" operator="in" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="url(#background)"/>
+  
+  <!-- File icon -->
+  <g transform="translate(128, 100)">
+    <path d="M0 0 L120 0 L120 40 L80 40 L80 80 L0 80 Z" fill="white" opacity="0.9"/>
+    <path d="M80 0 L120 40 L80 40 Z" fill="white" opacity="0.7"/>
+  </g>
+  
+  <!-- Transfer arrows -->
+  <g filter="url(#glow)">
+    <path d="M180 220 L320 220 L320 200 L350 230 L320 260 L320 240 L180 240 Z" fill="url(#arrow)"/>
+    <path d="M332 290 L192 290 L192 310 L162 280 L192 250 L192 270 L332 270 Z" fill="url(#arrow)"/>
+  </g>
+  
+  <!-- Data points -->
+  <circle cx="200" cy="230" r="4" fill="white" opacity="0.8"/>
+  <circle cx="230" cy="230" r="4" fill="white" opacity="0.8"/>
+  <circle cx="260" cy="230" r="4" fill="white" opacity="0.8"/>
+  <circle cx="290" cy="230" r="4" fill="white" opacity="0.8"/>
+  <circle cx="320" cy="230" r="4" fill="white" opacity="0.8"/>
+  
+  <circle cx="200" cy="280" r="4" fill="white" opacity="0.8"/>
+  <circle cx="230" cy="280" r="4" fill="white" opacity="0.8"/>
+  <circle cx="260" cy="280" r="4" fill="white" opacity="0.8"/>
+  <circle cx="290" cy="280" r="4" fill="white" opacity="0.8"/>
+  <circle cx="320" cy="280" r="4" fill="white" opacity="0.8"/>
+  
+  <!-- App name initials -->
+  <text x="256" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="64" font-weight="bold" fill="white">AS</text>
+</svg>

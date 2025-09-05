@@ -13,13 +13,13 @@ Var ErrorLabel
 Var NameAttempts
 
 ; Uninstaller initialization
-Function un.onInit
+Function un.customOnInit
   ; Initialize name attempts counter
   StrCpy $NameAttempts "0"
 FunctionEnd
 
 ; Create the name confirmation dialog
-Function un.NameConfirmationPage
+Function un.customNameConfirmationPage
   ; Create the custom dialog
   nsDialogs::Create 1018
   Pop $Dialog
@@ -61,7 +61,7 @@ Function un.NameConfirmationPage
 FunctionEnd
 
 ; Validate the name when leaving the page
-Function un.NameConfirmationPageLeave
+Function un.customNameConfirmationPageLeave
   ; Get the entered name
   ${NSD_GetText} $NameBox $0
   
@@ -93,15 +93,3 @@ FunctionEnd
 Section "Uninstall"
   ; The standard uninstall process will continue after name confirmation
 SectionEnd
-
-; Add the custom page to the uninstaller
-!insertmacro MUI_UNPAGE_CONFIRM
-!insertmacro MUI_UNPAGE_INSTFILES
-
-; Override the default uninstall confirmation with our custom one
-!define MUI_UNCONFIRMPAGE_CUSTOMFUNCTION_SHOW un.NameConfirmationPageShow
-!define MUI_UNCONFIRMPAGE_CUSTOMFUNCTION_LEAVE un.NameConfirmationPageLeave
-
-Function un.NameConfirmationPageShow
-  Call un.NameConfirmationPage
-FunctionEnd
