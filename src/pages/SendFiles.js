@@ -32,29 +32,16 @@ const SendFiles = () => {
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'online', 'offline'
   const fileInputRef = useRef(null);
 
-  useEffect(() => {
-    // Simulate data loading with a more realistic delay
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 600);
-    
-    // Check backend status
-    checkBackendStatus();
-    
-    // Set up periodic backend status checks
-    const statusCheckInterval = setInterval(() => {
-      if (!uploading) { // Only check when not uploading
-        checkBackendStatus();
-      }
-    }, 10000); // Check every 10 seconds
-    
-    return () => {
-      clearTimeout(timer);
-      clearInterval(statusCheckInterval);
+  // Debounce function for backend status checks
+  const debounce = useCallback((func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func.apply(null, args), delay);
     };
-  }, [uploading]);
+  }, []);
 
-  const checkBackendStatus = async () => {
+  const checkBackendStatus = useCallback(async () => {
     setBackendStatus('checking');
     try {
       console.log('🔍 Checking backend status at:', `${environment.baseApiUrl}/health`);
@@ -73,7 +60,31 @@ const SendFiles = () => {
         message: 'The backend server is not running. Please start the backend server on port 5002.'
       });
     }
-  };
+  }, [addNotification]);
+
+  useEffect(() => {
+    // Simulate data loading with a more realistic delay
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
+    
+    // Check backend status
+    checkBackendStatus();
+    
+    // Set up periodic backend status checks with debouncing
+    const debouncedStatusCheck = debounce(() => {
+      if (!uploading) { // Only check when not uploading
+        checkBackendStatus();
+      }
+    }, 5000); // Debounce for 5 seconds
+    
+    const statusCheckInterval = setInterval(debouncedStatusCheck, 30000); // Check every 30 seconds instead of 10
+    
+    return () => {
+      clearTimeout(timer);
+      clearInterval(statusCheckInterval);
+    };
+  }, [uploading, checkBackendStatus, debounce]);
 
   const handleFileSelect = useCallback((selectedFiles) => {
     const newFiles = Array.from(selectedFiles).map(file => ({
@@ -110,7 +121,8 @@ const SendFiles = () => {
     setFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  const handleUpload = async () => {
+  // Batch upload function for better performance with multiple files
+  const handleBatchUpload = async () => {
     if (files.length === 0) {
       addNotification({
         type: 'warning',
@@ -132,46 +144,57 @@ const SendFiles = () => {
     setUploading(true);
 
     try {
-      // Upload each file and collect results
+      // Upload files in parallel for better performance (limit to 3 concurrent uploads)
+      const concurrencyLimit = 3;
       const uploadResults = [];
       
-      for (const fileItem of files) {
-        const transferId = Date.now().toString();
-        
-        addTransfer({
-          fileName: fileItem.name,
-          fileSize: fileItem.size,
-          fileType: fileItem.type,
-          direction: 'upload'
-        });
-
-        try {
-          // Simulate upload progress
-          for (let progress = 0; progress <= 90; progress += 10) {
-            await new Promise(resolve => setTimeout(resolve, 50));
-            updateTransferProgress(transferId, progress, 'uploading');
-          }
-
-          // Make actual API call
-          const result = await api.uploadFile(fileItem.file);
+      // Process files in batches
+      for (let i = 0; i < files.length; i += concurrencyLimit) {
+        const batch = files.slice(i, i + concurrencyLimit);
+        const batchPromises = batch.map(async (fileItem) => {
+          const transferId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
           
-          uploadResults.push(result);
-          
-          updateTransferProgress(transferId, 100, 'uploading');
-          completeTransfer(transferId, 'completed');
-          
-          // Add share code
-          addShareCode(result.code, {
+          addTransfer({
             fileName: fileItem.name,
             fileSize: fileItem.size,
             fileType: fileItem.type,
-            uploadStats: result.uploadStats // Add upload stats
+            direction: 'upload'
           });
-        } catch (error) {
-          updateTransferProgress(transferId, 0, 'failed');
-          completeTransfer(transferId, 'failed');
-          throw error;
-        }
+
+          try {
+            // Make actual API call
+            const result = await api.uploadFile(fileItem.file);
+            
+            updateTransferProgress(transferId, 100, 'uploading');
+            completeTransfer(transferId, 'completed');
+            
+            // Add share code
+            addShareCode(result.code, {
+              fileName: fileItem.name,
+              fileSize: fileItem.size,
+              fileType: fileItem.type,
+              uploadStats: result.uploadStats
+            });
+            
+            return result;
+          } catch (error) {
+            updateTransferProgress(transferId, 0, 'failed');
+            completeTransfer(transferId, 'failed');
+            throw error;
+          }
+        });
+        
+        // Wait for all uploads in this batch to complete
+        const batchResults = await Promise.allSettled(batchPromises);
+        
+        // Process results
+        batchResults.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            uploadResults.push(result.value);
+          } else {
+            console.error('Upload failed for file:', batch[index].name, result.reason);
+          }
+        });
       }
 
       // Use the first upload's code as the primary share code
@@ -180,10 +203,12 @@ const SendFiles = () => {
       }
 
       setUploading(false);
+      
+      // Show success notification
       addNotification({
         type: 'success',
         title: 'Upload Complete!',
-        message: `Files uploaded successfully with code: ${uploadResults[0]?.code || 'N/A'}`
+        message: `${uploadResults.length} file(s) uploaded successfully with code: ${uploadResults[0]?.code || 'N/A'}`
       });
       
       // Show performance notification if stats are available
@@ -216,6 +241,11 @@ const SendFiles = () => {
         message: errorMessage
       });
     }
+  };
+
+  const handleUpload = async () => {
+    // Use batch upload for better performance
+    await handleBatchUpload();
   };
 
   const handleCopyCode = async () => {

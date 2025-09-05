@@ -1,6 +1,6 @@
 {
   "name": "akash-share",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Next-generation desktop application for fast and secure file sharing",
   "main": "electron/main.js",
   "homepage": ".",
@@ -17,20 +17,25 @@
     "electron:copy": "node scripts/copy-electron.js",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
-    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md}"
+    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md}",
+    "serve-updates": "npx http-server dist/ -p 3000"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.1.7",
     "express-rate-limit": "^8.0.1",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.292.0",
     "png-to-ico": "^3.0.1",
+    "puppeteer": "^24.19.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.8.2",
     "react-scripts": "^5.0.1",
     "recharts": "^2.8.0",
+    "sharp": "^0.34.3",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "ws": "^8.18.3",
@@ -53,6 +58,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
+    "http-server": "^14.1.1",
     "postcss": "^8.4.31",
     "prettier": "^3.2.5",
     "tailwindcss": "^3.3.5",
@@ -67,14 +73,16 @@
     "files": [
       "build/**/*",
       "electron/**/*",
-      "node_modules/**/*"
+      "backend/**/*",
+      "node_modules/**/*",
+      "!backend/node_modules",
+      "!backend/uploads/*"
     ],
     "extraMetadata": {
       "main": "electron/main.js"
     },
     "icon": "public/Akashshareicon.png",
     "nsis": {
-      "include": "installer.nsh",
       "uninstallDisplayName": "AkAsH Share",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
@@ -93,7 +101,24 @@
     "linux": {
       "target": "AppImage",
       "icon": "public/Akashshareicon.png"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "backend/",
+        "to": "backend/",
+        "filter": [
+          "**/*",
+          "!node_modules",
+          "!uploads/*"
+        ]
+      }
+    ],
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "http://192.168.0.185:3000/"
+      }
+    ]
   },
   "jest": {
     "collectCoverageFrom": [

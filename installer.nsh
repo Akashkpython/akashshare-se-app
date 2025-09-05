@@ -25,17 +25,18 @@ Var PasswordAttempts
 !define MUI_FINISHPAGE_TITLE "AkAsH Share Installation Complete"
 !define MUI_FINISHPAGE_TEXT "AkAsH Share has been successfully installed on your computer.$\r$\n$\r$\nClick Finish to close this wizard."
 
-; Pages
+; Languages MUST come after page definitions
+!insertmacro MUI_LANGUAGE "English"
+
+; Pages - ORDER IS IMPORTANT!
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 
+; Uninstall pages
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
-
-; Languages
-!insertmacro MUI_LANGUAGE "English"
 
 ; Initialize password attempts counter
 Function .onInit

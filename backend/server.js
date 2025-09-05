@@ -1,6 +1,3 @@
-//cd backend; node server.js
-//cd frontend; npm start
-// backend/server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const multer = require("multer");
@@ -224,9 +221,9 @@ app.use(cors({
         
         // List of allowed origins
         const allowedOrigins = [
-          'http://localhost:3000', 'http://localhost:3001', 'http://localhost:5002', 'http://localhost:5004', 'http://localhost:59489',
-          'http://127.0.0.1:3000', 'http://127.0.0.1:5002', 'http://127.0.0.1:5004', 'http://127.0.0.1:59489',
-          'http://192.168.0.185:3000', 'http://192.168.0.185:3001', 'http://192.168.0.185:5002', 'http://192.168.0.185:5004', 'http://192.168.0.185:59489'
+          'http://localhost:3000', 'http://localhost:3001', 'http://localhost:5002', 'http://localhost:5003', 'http://localhost:5004', 'http://localhost:59489',
+          'http://127.0.0.1:3000', 'http://127.0.0.1:5002', 'http://127.0.0.1:5003', 'http://127.0.0.1:5004', 'http://127.0.0.1:59489',
+          'http://192.168.0.185:3000', 'http://192.168.0.185:3001', 'http://192.168.0.185:5002', 'http://192.168.0.185:5003', 'http://192.168.0.185:5004', 'http://192.168.0.185:59489'
         ];
         
         // Check if origin is in allowed list
@@ -254,131 +251,6 @@ app.use(cors({
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-// Serve static files from the React app build directory in production
-if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '../build');
-  console.log('🗂️  Serving React build files from:', buildPath);
-  app.use(express.static(buildPath));
-  
-  // Catch-all handler to serve the React app for any non-API routes
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
-} else {
-  // In development, still serve static files from public directory
-  const publicPath = path.join(__dirname, '../public');
-  console.log('🗂️  Serving static files from:', publicPath);
-  app.use(express.static(publicPath));
-  
-  // Debug route to test static file serving
-  app.get('/debug/static', (req, res) => {
-    const fs = require('fs');
-    const akashPath = path.join(publicPath, 'akash.jpg');
-    res.json({
-      publicPath,
-      akashExists: fs.existsSync(akashPath),
-      akashPath
-    });
-  });
-}
-
-// MongoDB Connect
-mongoose.connect(process.env.MONGO_URI, {
-  // Additional options for MongoDB Atlas
-  serverSelectionTimeoutMS: 30000, // Increase server selection timeout
-  socketTimeoutMS: 45000, // Increase socket timeout
-  bufferCommands: false, // Disable command buffering
-  // Retry connection options
-  retryWrites: true,
-  retryReads: true
-})
-.then(() => {
-  console.log("✅ MongoDB Connected successfully");
-  
-  // Start server only after MongoDB connection is established
-  const PORT = process.env.PORT || 5002;
-  const HOST = process.env.HOST || 'localhost'; // Bind to localhost for testing
-  
-  console.log(`Attempting to start server on ${HOST}:${PORT}`);
-  
-  server.listen(PORT, HOST, () => {
-    console.log(`🚀 Server running on ${HOST}:${PORT}`);
-    console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
-    console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
-    console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
-    console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
-    console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
-    
-    // In production, serve the React app
-    if (process.env.NODE_ENV === 'production') {
-      console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
-    }
-  });
-  
-  // Add error handler for the server
-  server.on('error', (err) => {
-    console.error('❌ Server failed to start:', err.message);
-    if (err.code === 'EADDRINUSE') {
-      console.error(`   Port ${PORT} is already in use. Please stop the process using this port or use a different port.`);
-    } else if (err.code === 'EACCES') {
-      console.error(`   Permission denied. You may need to run this with elevated privileges or use a port number above 1024.`);
-    }
-    process.exit(1);
-  });
-})
-.catch(err => {
-  console.error("❌ MongoDB Connection Error:", err.message);
-  console.error("📋 Please ensure MongoDB Atlas is accessible at:", process.env.MONGO_URI);
-  console.error("💡 Check your network connection and MongoDB Atlas cluster status.");
-  console.error("🔧 MongoDB Atlas connection requires:");
-  console.error("   1. Correct connection string");
-  console.error("   2. Network access configured in MongoDB Atlas");
-  console.error("   3. Proper IP whitelist settings");
-  process.exit(1);
-});
-
-// File Schema
-const FileSchema = new mongoose.Schema({
-  filename: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 255
-  },
-  originalName: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 255
-  },
-  path: {
-    type: String,
-    required: true
-  },
-  code: {
-    type: String,
-    required: true,
-    unique: true,
-    minlength: 4,
-    maxlength: 10
-  },
-  size: {
-    type: Number,
-    required: true
-  },
-  mimetype: {
-    type: String,
-    required: true
-  },
-  uploadedAt: { 
-    type: Date, 
-    default: Date.now,
-    expires: 24 * 60 * 60 * 1000 // Auto-delete after 24 hours
-  }
-});
-
-const File = mongoose.model("File", FileSchema);
 
 // File type validation
 // Expanded file type support for better user experience
@@ -480,6 +352,7 @@ const validateDownload = [
   }
 ];
 
+// IMPORTANT: API routes must be defined BEFORE static file serving to avoid conflicts
 // Root endpoint
 app.get("/", (req, res) => {
   res.status(200).json({ 
@@ -525,19 +398,39 @@ app.post("/upload", validateUpload, async (req, res) => {
       mimetype: req.file?.mimetype
     });
     
-    // Generate a 4-digit random code
-    const randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+    // Generate a 4-digit random code with retry logic to avoid duplicates
+    let randomCode;
+    let newFile;
+    let attempts = 0;
+    const maxAttempts = 5;
     
-    const newFile = new File({
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      path: req.file.path,
-      code: randomCode,
-      size: req.file.size,
-      mimetype: req.file.mimetype
-    });
+    while (attempts < maxAttempts) {
+      randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+      
+      try {
+        newFile = new File({
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          path: req.file.path,
+          code: randomCode,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        });
+        
+        await newFile.save();
+        break; // Success, exit the loop
+      } catch (saveErr) {
+        if (saveErr.code === 11000) { // Duplicate key error
+          attempts++;
+          if (attempts >= maxAttempts) {
+            throw new Error("Unable to generate unique code after multiple attempts");
+          }
+          continue; // Try again with a new code
+        }
+        throw saveErr; // Some other error, re-throw
+      }
+    }
     
-    await newFile.save();
     console.log('File saved successfully with code:', randomCode);
     
     res.status(201).json({ 
@@ -548,10 +441,6 @@ app.post("/upload", validateUpload, async (req, res) => {
     });
   } catch (err) {
     console.error('Upload error:', err);
-    if (err.code === 11000) {
-      // Duplicate code, retry
-      return res.status(500).json({ error: "Upload failed, please try again" });
-    }
     if (err.name === 'MongoNetworkError' || err.name === 'MongooseServerSelectionError') {
       return res.status(500).json({ error: "Database connection failed. Please check MongoDB Atlas connection and network access." });
     }
@@ -559,10 +448,11 @@ app.post("/upload", validateUpload, async (req, res) => {
   }
 });
 
-// Download Route
+// Download Route with caching
 app.get("/download/:code", validateDownload, async (req, res) => {
   try {
-    const file = await File.findOne({ code: req.params.code });
+    // Use lean() for faster query performance
+    const file = await File.findOne({ code: req.params.code }).lean();
     if (!file) {
       return res.status(404).json({ error: "File not found or code is invalid" });
     }
@@ -574,6 +464,10 @@ app.get("/download/:code", validateDownload, async (req, res) => {
       return res.status(404).json({ error: "File not found on server" });
     }
 
+    // Set cache headers for better performance
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.setHeader('ETag', file.code);
+    
     res.download(file.path, file.originalName || file.filename, (err) => {
       if (err) {
         console.error('Download error:', err);
@@ -586,7 +480,37 @@ app.get("/download/:code", validateDownload, async (req, res) => {
   }
 });
 
-// Error handling middleware
+// Serve static files from the React app build directory in production
+// This must come AFTER all API routes to avoid conflicts
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, '../build');
+  console.log('🗂️  Serving React build files from:', buildPath);
+  app.use(express.static(buildPath));
+  
+  // Catch-all handler to serve the React app for any non-API routes
+  // This must come AFTER all API routes to avoid conflicts
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
+} else {
+  // In development, still serve static files from public directory
+  const publicPath = path.join(__dirname, '../public');
+  console.log('🗂️  Serving static files from:', publicPath);
+  app.use(express.static(publicPath));
+  
+  // Debug route to test static file serving
+  app.get('/debug/static', (req, res) => {
+    const fs = require('fs');
+    const akashPath = path.join(publicPath, 'akash.jpg');
+    res.json({
+      publicPath,
+      akashExists: fs.existsSync(akashPath),
+      akashPath
+    });
+  });
+}
+
+// Error handling middleware - must be defined after routes
 app.use((err, req, res, _next) => {
   console.error('Unhandled error:', err);
   
@@ -608,6 +532,107 @@ app.use((err, req, res, _next) => {
   
   res.status(500).json({ error: "Internal server error" });
 });
+
+// MongoDB Connect - this should be at the end to ensure all routes are defined
+mongoose.connect(process.env.MONGO_URI, {
+  // Additional options for MongoDB Atlas
+  serverSelectionTimeoutMS: 30000, // Increase server selection timeout
+  socketTimeoutMS: 45000, // Increase socket timeout
+  bufferCommands: false, // Disable command buffering
+  // Retry connection options
+  retryWrites: true,
+  retryReads: true
+})
+.then(() => {
+  console.log("✅ MongoDB Connected successfully");
+  
+  // Start server only after MongoDB connection is established
+  const PORT = process.env.PORT || 5002;
+  const HOST = process.env.HOST || 'localhost'; // Bind to localhost for testing
+  
+  console.log(`Attempting to start server on ${HOST}:${PORT}`);
+  
+  server.listen(PORT, HOST, () => {
+    console.log(`🚀 Server running on ${HOST}:${PORT}`);
+    console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
+    console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
+    console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
+    console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
+    console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
+    
+    // In production, serve the React app
+    if (process.env.NODE_ENV === 'production') {
+      console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
+    }
+  });
+  
+  // Add error handler for the server
+  server.on('error', (err) => {
+    console.error('❌ Server failed to start:', err.message);
+    if (err.code === 'EADDRINUSE') {
+      console.error(`   Port ${PORT} is already in use. Please stop the process using this port or use a different port.`);
+    } else if (err.code === 'EACCES') {
+      console.error(`   Permission denied. You may need to run this with elevated privileges or use a port number above 1024.`);
+    }
+    process.exit(1);
+  });
+})
+.catch(err => {
+  console.error("❌ MongoDB Connection Error:", err.message);
+  console.error("📋 Please ensure MongoDB Atlas is accessible at:", process.env.MONGO_URI);
+  console.error("💡 Check your network connection and MongoDB Atlas cluster status.");
+  console.error("🔧 MongoDB Atlas connection requires:");
+  console.error("   1. Correct connection string");
+  console.error("   2. Network access configured in MongoDB Atlas");
+  console.error("   3. Proper IP whitelist settings");
+  process.exit(1);
+});
+
+// File Schema
+const FileSchema = new mongoose.Schema({
+  filename: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 255
+  },
+  originalName: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 255
+  },
+  path: {
+    type: String,
+    required: true
+  },
+  code: {
+    type: String,
+    required: true,
+    unique: true,
+    minlength: 4,
+    maxlength: 10
+  },
+  size: {
+    type: Number,
+    required: true
+  },
+  mimetype: {
+    type: String,
+    required: true
+  },
+  uploadedAt: { 
+    type: Date, 
+    default: Date.now,
+    expires: 24 * 60 * 60 // Auto-delete after 24 hours
+  }
+});
+
+// Add indexes for better query performance
+FileSchema.index({ code: 1 });
+FileSchema.index({ uploadedAt: 1 });
+
+const File = mongoose.model("File", FileSchema);
 
 // Export app for testing
 module.exports = app;

@@ -11,6 +11,7 @@ import NotificationContainer from './components/ui/NotificationContainer';
 import ErrorBoundary from './components/ErrorBoundary';
 import SplashScreen from './components/splash/SplashScreen';
 import Developer from './pages/Developer';
+import UpdateManager from './components/ui/UpdateManager';
 
 // Contexts
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -90,6 +91,28 @@ const SplashDemo = lazy(() => {
   }).catch(error => {
     console.error('Failed to load SplashDemo:', error);
     return { default: () => <div>Error loading Splash Demo</div> };
+  });
+});
+
+const SaReGaMaPa = lazy(() => {
+  performanceMonitor.start('load-sa-re-ga-ma-pa');
+  return import('./pages/SaReGaMaPa').then(module => {
+    performanceMonitor.end('load-sa-re-ga-ma-pa');
+    return module;
+  }).catch(error => {
+    console.error('Failed to load SaReGaMaPa:', error);
+    return { default: () => <div>Error loading Sa Re Ga Ma Pa</div> };
+  });
+});
+
+const AppUpdates = lazy(() => {
+  performanceMonitor.start('load-app-updates');
+  return import('./pages/AppUpdates').then(module => {
+    performanceMonitor.end('load-app-updates');
+    return module;
+  }).catch(error => {
+    console.error('Failed to load AppUpdates:', error);
+    return { default: () => <div>Error loading App Updates</div> };
   });
 });
 
@@ -274,6 +297,8 @@ function AppContent() {
                       <Route path="/receive" element={<ReceiveFiles />} />
                       <Route path="/history" element={<History />} />
                       <Route path="/chat" element={<GroupChat />} />
+                      <Route path="/sa-re-ga-ma-pa" element={<SaReGaMaPa />} />
+                      <Route path="/app-updates" element={<AppUpdates />} />
                       <Route path="/settings" element={<Settings />} />
                       <Route path="/developer" element={<Developer />} /> {/* Use Developer instead of DeveloperPage */}
                       <Route path="/splash-demo" element={<SplashDemo />} />
@@ -287,6 +312,9 @@ function AppContent() {
 
       {/* Notifications */ }
       <NotificationContainer />
+      
+      {/* Update Manager */}
+      <UpdateManager />
     </div>
   );
 }

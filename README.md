@@ -6,7 +6,7 @@ A modern, cross-platform desktop application built with React, Electron, and cut
 
 ![Akash Share](https://img.shields.io/badge/Akash-Share-blue?style=for-the-badge&logo=react)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.0.0-green?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.0.4-green?style=for-the-badge)
 ![Security](https://img.shields.io/badge/Security-Audited-brightgreen?style=for-the-badge)
 
 ## ✨ Features
@@ -31,6 +31,7 @@ A modern, cross-platform desktop application built with React, Electron, and cut
 - **Search & Filter** - Advanced filtering and search capabilities
 - **Statistics Dashboard** - Beautiful charts and analytics
 - **Settings Management** - Comprehensive app configuration
+- **Auto-Update** - Automatic update checking and installation
 
 ### 🔒 Security & Performance
 - **Input Validation** - Comprehensive validation for all user inputs
@@ -61,6 +62,7 @@ A modern, cross-platform desktop application built with React, Electron, and cut
 ### Desktop Framework
 - **Electron** - Cross-platform desktop application framework
 - **Electron Builder** - Complete solution for packaging and building
+- **Electron Updater** - Automatic update functionality
 
 ### State Management
 - **Zustand** - Lightweight state management with persistence
@@ -79,7 +81,7 @@ A modern, cross-platform desktop application built with React, Electron, and cut
 - Node.js 16+ 
 - npm or yarn
 - Git
-- MongoDB (for backend)
+- MongoDB (for development)
 
 ### Environment Setup
 
@@ -128,6 +130,48 @@ A modern, cross-platform desktop application built with React, Electron, and cut
    # In another terminal
    npm run electron-dev
    ```
+
+## 📦 Standalone Desktop Application
+
+Akash Share now includes a fully integrated backend in the packaged desktop application:
+
+### Building the Application
+```bash
+# Package for distribution (includes integrated backend)
+npm run dist
+```
+
+### How It Works
+- The backend server is automatically started when the desktop application launches
+- Backend dependencies are installed automatically on first run
+- All file uploads are stored locally in the application's data directory
+- No separate backend process is required for the desktop version
+
+### Benefits
+- **Fully Standalone**: No need to run separate backend services
+- **Automatic Setup**: Backend dependencies installed automatically
+- **Easy Distribution**: Single installer includes everything needed
+- **Local Storage**: Files stored locally with automatic cleanup
+
+## 🔁 Auto-Update Feature
+
+The desktop application includes automatic update functionality:
+
+### How It Works
+- Checks for updates on startup
+- Downloads updates in the background
+- Prompts user to install updates
+- Restarts application with new version
+
+### Configuration
+Updates are configured to be served from a local network server by default:
+- **Update Server**: `http://192.168.0.185:3000/`
+- **Serve Updates**: `npm run serve-updates`
+
+### Publishing Updates
+1. Increment version in `package.json`
+2. Build with `npm run dist`
+3. Serve updates with `npm run serve-updates`
 
 ## 🧪 Testing
 
@@ -196,7 +240,7 @@ npm start
 
 ### Desktop Application
 ```bash
-# Package for distribution
+# Package for distribution (includes integrated backend and auto-update)
 npm run dist
 ```
 
@@ -227,6 +271,11 @@ The built application will be available in the `dist` folder.
 - Enable/disable notifications
 - Set language preferences
 
+### Auto-Update
+- Updates are checked automatically on startup
+- Download and install updates with one click
+- View update progress in the bottom-right corner
+
 ## 🎨 Design System
 
 ### Color Palette
@@ -256,7 +305,7 @@ Create a `.env` file in the root directory:
 MONGO_URI=mongodb://localhost:27017/akashshare
 
 # Server Configuration
-PORT=5000
+PORT=5002
 HOST=0.0.0.0
 
 # Security
@@ -280,10 +329,12 @@ The Electron configuration is in `electron/main.js` and includes:
 - File dialog integration
 - IPC communication setup
 - Security settings
+- **Backend Integration**: Automatic backend server startup
+- **Auto-Update**: Automatic update checking and installation
 
 ## 📦 Project Structure
 
-```
+```bash
 akash-share/
 ├── backend/                  # Backend server
 │   ├── server.js            # Express server with security
@@ -291,13 +342,13 @@ akash-share/
 │   ├── test/                # Backend tests
 │   └── uploads/             # File upload directory
 ├── electron/                 # Electron main process
-│   ├── main.js              # Main process file
+│   ├── main.js              # Main process file (with backend integration and auto-update)
 │   └── preload.js           # Preload script for security
 ├── public/                  # Static assets
 ├── src/
 │   ├── components/          # Reusable UI components
 │   │   ├── layout/          # Layout components
-│   │   └── ui/              # UI components
+│   │   └── ui/              # UI components (including UpdateManager)
 │   ├── contexts/            # React contexts
 │   ├── lib/                 # Utility functions
 │   ├── pages/               # Page components (lazy loaded)
@@ -306,6 +357,9 @@ akash-share/
 │   ├── App.test.js          # App component tests
 │   ├── index.js             # Entry point
 │   └── index.css            # Global styles
+├── scripts/                 # Build scripts
+│   ├── copy-electron.js     # Copy files for Electron build
+│   └── install-backend-deps.js # Backend dependency installer
 ├── .env.example             # Environment variables template
 ├── .eslintrc.js             # ESLint configuration
 ├── .prettierrc              # Prettier configuration
@@ -332,7 +386,8 @@ akash-share/
 ### Desktop Scripts
 - `npm run electron` - Start Electron app
 - `npm run electron-dev` - Start Electron with React dev server
-- `npm run dist` - Build and package for distribution
+- `npm run dist` - Build and package for distribution (with integrated backend and auto-update)
+- `npm run serve-updates` - Start HTTP server for serving updates
 
 ## 🤝 Contributing
 

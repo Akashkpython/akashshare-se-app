@@ -44,7 +44,11 @@ export const api = {
       const response = await fetch(`${API_BASE_URL}/upload`, {
         method: 'POST',
         body: formData,
-        signal: controller.signal
+        signal: controller.signal,
+        // Add performance headers
+        headers: {
+          'X-Request-Start': Date.now().toString()
+        }
       });
       
       clearTimeout(timeoutId);
@@ -102,7 +106,7 @@ export const api = {
     }
   },
 
-  // Download a file by code with performance monitoring
+  // Download a file by code with performance monitoring and caching
   downloadFile: async (code) => {
     performanceMonitor.start('file-download');
     
@@ -113,7 +117,12 @@ export const api = {
       
       const response = await fetch(`${API_BASE_URL}/download/${code}`, {
         method: 'GET',
-        signal: controller.signal
+        signal: controller.signal,
+        // Add cache control headers
+        headers: {
+          'Cache-Control': 'max-age=3600',
+          'X-Request-Start': Date.now().toString()
+        }
       });
       
       clearTimeout(timeoutId);
@@ -159,7 +168,7 @@ export const api = {
     }
   },
 
-  // Health check
+  // Health check with caching
   healthCheck: async () => {
     try {
       const controller = new AbortController();
@@ -167,7 +176,11 @@ export const api = {
       
       const response = await fetch(`${API_BASE_URL}/health`, {
         method: 'GET',
-        signal: controller.signal
+        signal: controller.signal,
+        // Add cache control for health checks
+        headers: {
+          'Cache-Control': 'max-age=30'
+        }
       });
       
       clearTimeout(timeoutId);

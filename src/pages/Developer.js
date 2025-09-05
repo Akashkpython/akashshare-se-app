@@ -47,7 +47,7 @@ const Developer = () => {
 
   const developerInfo = {
     name: "Akash",
-    role: "Full Stack Developer",
+    role: "App developer AI/ML",
     bio: "Passionate developer with expertise in creating modern web applications. Focused on building intuitive user experiences with cutting-edge technologies. Always eager to learn new skills and tackle challenging problems.",
     email: "kotariakash2005@gmail.com",
     github: "https://github.com/AkashKotari",
@@ -78,10 +78,10 @@ const Developer = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background py-12 px-4 sm:px-6">
+    <div className="min-h-screen px-4 py-12 bg-background sm:px-6">
       {showMessage ? (
         // Show message after 3 seconds
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center justify-center min-h-screen">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -89,7 +89,7 @@ const Developer = () => {
             className="text-center"
           >
             <motion.h1 
-              className="text-4xl md:text-5xl font-bold text-white mb-6"
+              className="mb-6 text-4xl font-bold text-white md:text-5xl"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
@@ -111,12 +111,12 @@ const Developer = () => {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
+            className="mb-12 text-center"
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+            <h1 className="mb-4 text-4xl font-bold text-white md:text-5xl">
               Meet the <span className="text-akash-400">Developer</span>
             </h1>
-            <p className="text-white/70 max-w-2xl mx-auto">
+            <p className="max-w-2xl mx-auto text-white/70">
               The creative mind behind Akash Share - a passionate developer dedicated to building 
               seamless file sharing experiences.
             </p>
@@ -127,16 +127,16 @@ const Developer = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-card max-w-4xl mx-auto mb-12 rounded-lg border border-border p-8"
+            className="max-w-4xl p-8 mx-auto mb-12 border rounded-lg bg-card border-border"
           >
-            <div className="flex flex-col md:flex-row items-center p-8 space-y-8 md:space-y-0 md:space-x-12">
+            <div className="flex flex-col items-center p-8 space-y-8 md:flex-row md:space-y-0 md:space-x-12">
               {/* Developer Image with glowing effect */}
               <div className="relative developer-profile-frame">
-                <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-akash-400/30 shadow-2xl shadow-akash-400/20 relative z-10">
+                <div className="relative z-10 w-40 h-40 overflow-hidden border-4 rounded-full shadow-2xl border-akash-400/30 shadow-akash-400/20">
                   <img 
                     src={getAssetPath('/Akashshareicon-backup.png')} 
                     alt="Akash" 
-                    className="w-full h-full object-cover"
+                    className="object-cover w-full h-full"
                     onError={(e) => {
                       console.error('Failed to load developer image:', e);
                       // Fallback to initials if image fails to load
@@ -144,29 +144,29 @@ const Developer = () => {
                       e.target.nextSibling.style.display = 'flex';
                     }}
                   />
-                  <div className="w-full h-full bg-gradient-to-br from-akash-400 to-purple-500 flex items-center justify-center text-white text-4xl font-bold hidden">
+                  <div className="flex items-center justify-center hidden w-full h-full text-4xl font-bold text-white bg-gradient-to-br from-akash-400 to-purple-500">
                     {developerInfo.name.split(' ').map(n => n[0]).join('')}
                   </div>
                 </div>
-                <div className="absolute -bottom-2 -right-2 w-12 h-12 rounded-full bg-akash-400 flex items-center justify-center border-4 border-slate-900 z-20">
+                <div className="absolute z-20 flex items-center justify-center w-12 h-12 border-4 rounded-full -bottom-2 -right-2 bg-akash-400 border-slate-900">
                   <Code className="w-6 h-6 text-white" />
                 </div>
               </div>
               
               {/* Developer Info */}
               <div className="flex-1 text-center md:text-left">
-                <h2 className="text-3xl font-bold text-white mb-2">{developerInfo.name}</h2>
-                <p className="text-akash-400 font-medium text-lg mb-3">{developerInfo.role}</p>
-                <p className="text-white/80 mb-6 leading-relaxed">{developerInfo.bio}</p>
+                <h2 className="mb-2 text-3xl font-bold text-white">{developerInfo.name}</h2>
+                <p className="mb-3 text-lg font-medium text-akash-400">{developerInfo.role}</p>
+                <p className="mb-6 leading-relaxed text-white/80">{developerInfo.bio}</p>
                 
-                <div className="flex justify-center md:justify-start space-x-4">
+                <div className="flex justify-center space-x-4 md:justify-start">
                   <motion.a
                     href={developerInfo.github}
                     target="_blank"
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-3 rounded-full bg-white/10 hover:bg-akash-400/20 transition-all duration-300 flex items-center justify-center"
+                    className="flex items-center justify-center p-3 transition-all duration-300 rounded-full bg-white/10 hover:bg-akash-400/20"
                   >
                     <Github className="w-5 h-5 text-white" />
                   </motion.a>
@@ -176,7 +176,7 @@ const Developer = () => {
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-3 rounded-full bg-white/10 hover:bg-akash-400/20 transition-all duration-300 flex items-center justify-center"
+                    className="flex items-center justify-center p-3 transition-all duration-300 rounded-full bg-white/10 hover:bg-akash-400/20"
                   >
                     <Linkedin className="w-5 h-5 text-white" />
                   </motion.a>
@@ -184,7 +184,7 @@ const Developer = () => {
                     href={`mailto:${developerInfo.email}`}
                     whileHover={{ scale: 1.1, y: -2 }}
                     whileTap={{ scale: 0.95 }}
-                    className="p-3 rounded-full bg-white/10 hover:bg-akash-400/20 transition-all duration-300 flex items-center justify-center"
+                    className="flex items-center justify-center p-3 transition-all duration-300 rounded-full bg-white/10 hover:bg-akash-400/20"
                   >
                     <Mail className="w-5 h-5 text-white" />
                   </motion.a>
@@ -198,7 +198,7 @@ const Developer = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="glass-card p-8 max-w-4xl mx-auto"
+            className="max-w-4xl p-8 mx-auto glass-card"
             style={{
               background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03))',
               backdropFilter: 'blur(20px) saturate(180%)',
@@ -207,25 +207,25 @@ const Developer = () => {
               boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
             }}
           >
-            <h2 className="text-2xl font-bold text-white text-center mb-8">Technical Skills</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <h2 className="mb-8 text-2xl font-bold text-center text-white">Technical Skills</h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
               {skills.map((skill, index) => (
                 <motion.div
                   key={skill.name}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + index * 0.1 }}
-                  className="bg-card p-6 rounded-lg border border-border hover:border-akash-400/30 transition-all duration-300"
+                  className="p-6 transition-all duration-300 border rounded-lg bg-card border-border hover:border-akash-400/30"
                 >
                   <div className="flex items-center mb-4">
-                    <div className="p-2 rounded-lg bg-akash-400/20 mr-3">
+                    <div className="p-2 mr-3 rounded-lg bg-akash-400/20">
                       {skill.icon}
                     </div>
-                    <h3 className="text-akash-400 font-semibold">{skill.name}</h3>
+                    <h3 className="font-semibold text-akash-400">{skill.name}</h3>
                   </div>
                   <ul className="space-y-2">
                     {skill.items.map((item, itemIndex) => (
-                      <li key={itemIndex} className="text-white/70 text-sm flex items-center">
+                      <li key={itemIndex} className="flex items-center text-sm text-white/70">
                         <div className="w-1.5 h-1.5 rounded-full bg-akash-400 mr-2"></div>
                         {item}
                       </li>
