@@ -547,8 +547,9 @@ mongoose.connect(process.env.MONGO_URI, {
   console.log("✅ MongoDB Connected successfully");
   
   // Start server only after MongoDB connection is established
-  const PORT = process.env.PORT || 5002;
-  const HOST = process.env.HOST || 'localhost'; // Bind to localhost for testing
+  // Use Render's PORT if available, otherwise default to 5002
+  const PORT = process.env.PORT || process.env.BACKEND_PORT || 5002;
+  const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces for Render
   
   console.log(`Attempting to start server on ${HOST}:${PORT}`);
   
