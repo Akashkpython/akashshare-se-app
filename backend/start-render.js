@@ -12,6 +12,9 @@ console.log(`🔧 Environment: ${process.env.NODE_ENV}`);
 console.log(`🔧 Host: ${process.env.HOST}`);
 console.log(`🔧 Port: ${process.env.PORT}`);
 
+// Test dependencies before starting
+console.log('🔍 Testing dependencies...');
+
 // Handle MongoDB dependency issues
 try {
   // Try to require the saslprep module directly
@@ -22,8 +25,21 @@ try {
   console.warn('Error:', err.message);
 }
 
+// Test express-rate-limit
+try {
+  const rateLimit = require('express-rate-limit');
+  console.log('✅ express-rate-limit module loaded successfully');
+  console.log('Version:', require('express-rate-limit/package.json').version);
+} catch (err) {
+  console.error('❌ Failed to load express-rate-limit:', err);
+  console.error('Error code:', err.code);
+  console.error('Error path:', err.path);
+  process.exit(1);
+}
+
 // Import and start the server
 try {
+  console.log('🔄 Starting server...');
   require('./server.js');
 } catch (err) {
   console.error('❌ Failed to start server:', err);
