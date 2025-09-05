@@ -11,6 +11,34 @@ const WebSocket = require("ws");
 const url = require("url");
 require("dotenv").config();
 
+// Handle MongoDB dependency issues
+let mongoOptions = {
+  // Additional options for MongoDB Atlas
+  serverSelectionTimeoutMS: 30000, // Increase server selection timeout
+  socketTimeoutMS: 45000, // Increase socket timeout
+  bufferCommands: false, // Disable command buffering
+  // Retry connection options
+  retryWrites: true,
+  retryReads: true,
+  // Add these options to handle potential connection issues on Render
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4 // Use IPv4, skip trying IPv6
+};
+
+// Try to add saslprep option if available
+try {
+  mongoOptions = {
+    ...mongoOptions,
+    authMechanismProperties: {
+      SERVICE_NAME: 'mongodb'
+    }
+  };
+} catch (err) {
+  console.warn('⚠️ Could not configure saslprep, continuing without it');
+}
+
 // Environment validation
 const requiredEnvVars = ['MONGO_URI', 'JWT_SECRET'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
@@ -538,20 +566,6 @@ app.use((err, req, res, _next) => {
 
 // MongoDB Connect - this should be at the end to ensure all routes are defined
 // Add more robust connection options for Render deployment
-const mongoOptions = {
-  // Additional options for MongoDB Atlas
-  serverSelectionTimeoutMS: 30000, // Increase server selection timeout
-  socketTimeoutMS: 45000, // Increase socket timeout
-  bufferCommands: false, // Disable command buffering
-  // Retry connection options
-  retryWrites: true,
-  retryReads: true,
-  // Add these options to handle potential connection issues on Render
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-  family: 4 // Use IPv4, skip trying IPv6
-};
 
 // Handle potential MongoDB connection issues more gracefully
 mongoose.connection.on('error', err => {
@@ -568,56 +582,87 @@ mongoose.connection.on('reconnect', () => {
   console.log('✅ MongoDB Reconnected');
 });
 
-mongoose.connect(process.env.MONGO_URI, mongoOptions)
-.then(() => {
-  console.log("✅ MongoDB Connected successfully");
-  
-  // Start server only after MongoDB connection is established
-  // Use Render's PORT if available, otherwise default to 5002
-  const PORT = process.env.PORT || process.env.BACKEND_PORT || 5002;
-  const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces for Render
-  
-  console.log(`Attempting to start server on ${HOST}:${PORT}`);
-  
-  server.listen(PORT, HOST, () => {
-    console.log(`🚀 Server running on ${HOST}:${PORT}`);
-    console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
-    console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
-    console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
-    console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
-    console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
+// Try to connect to MongoDB with fallback options
+const connectWithRetry = async () => {
+  try {
+    console.log('🔄 Attempting to connect to MongoDB...');
+    await mongoose.connect(process.env.MONGO_URI, mongoOptions);
+    console.log("✅ MongoDB Connected successfully");
+    return true;
+  } catch (err) {
+    console.error("❌ MongoDB Connection Error:", err.message);
     
-    // In production, serve the React app
-    if (process.env.NODE_ENV === 'production') {
-      console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
+    // Try with minimal options as fallback
+    try {
+      console.log('🔄 Retrying with minimal options...');
+      await mongoose.connect(process.env.MONGO_URI, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 10000,
+        family: 4
+      });
+      console.log("✅ MongoDB Connected successfully with fallback options");
+      return true;
+    } catch (fallbackErr) {
+      console.error("❌ MongoDB Connection failed with fallback options:", fallbackErr.message);
+      console.error("📋 Please ensure MongoDB Atlas is accessible at:", process.env.MONGO_URI);
+      console.error("💡 Check your network connection and MongoDB Atlas cluster status.");
+      console.error("🔧 MongoDB Atlas connection requires:");
+      console.error("   1. Correct connection string");
+      console.error("   2. Network access configured in MongoDB Atlas");
+      console.error("   3. Proper IP whitelist settings");
+      
+      // Don't exit in production, let Render handle it
+      if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+      }
+      return false;
     }
-  });
-  
-  // Add error handler for the server
-  server.on('error', (err) => {
-    console.error('❌ Server failed to start:', err.message);
-    if (err.code === 'EADDRINUSE') {
-      console.error(`   Port ${PORT} is already in use. Please stop the process using this port or use a different port.`);
-    } else if (err.code === 'EACCES') {
-      console.error(`   Permission denied. You may need to run this with elevated privileges or use a port number above 1024.`);
-    }
+  }
+};
+
+// Connect to MongoDB and start server
+connectWithRetry().then(success => {
+  if (success) {
+    // Start server only after MongoDB connection is established
+    // Use Render's PORT if available, otherwise default to 5002
+    const PORT = process.env.PORT || process.env.BACKEND_PORT || 5002;
+    const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces for Render
+    
+    console.log(`Attempting to start server on ${HOST}:${PORT}`);
+    
+    server.listen(PORT, HOST, () => {
+      console.log(`🚀 Server running on ${HOST}:${PORT}`);
+      console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
+      console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
+      console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
+      console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
+      console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
+      
+      // In production, serve the React app
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
+      }
+    });
+    
+    // Add error handler for the server
+    server.on('error', (err) => {
+      console.error('❌ Server failed to start:', err.message);
+      if (err.code === 'EADDRINUSE') {
+        console.error(`   Port ${PORT} is already in use. Please stop the process using this port or use a different port.`);
+      } else if (err.code === 'EACCES') {
+        console.error(`   Permission denied. You may need to run this with elevated privileges or use a port number above 1024.`);
+      }
+      // Don't exit in production, let Render handle it
+      if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+      }
+    });
+  } else {
+    console.error("❌ Failed to start server due to MongoDB connection issues");
     // Don't exit in production, let Render handle it
     if (process.env.NODE_ENV !== 'production') {
       process.exit(1);
     }
-  });
-})
-.catch(err => {
-  console.error("❌ MongoDB Connection Error:", err.message);
-  console.error("📋 Please ensure MongoDB Atlas is accessible at:", process.env.MONGO_URI);
-  console.error("💡 Check your network connection and MongoDB Atlas cluster status.");
-  console.error("🔧 MongoDB Atlas connection requires:");
-  console.error("   1. Correct connection string");
-  console.error("   2. Network access configured in MongoDB Atlas");
-  console.error("   3. Proper IP whitelist settings");
-  // Don't exit in production, let Render handle it
-  if (process.env.NODE_ENV !== 'production') {
-    process.exit(1);
   }
 });
 

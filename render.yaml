@@ -3,7 +3,7 @@ services:
     name: akash-share-backend
     runtime: node
     plan: free
-    buildCommand: "npm install && cd backend && npm install"
+    buildCommand: "npm install && cd backend && npm install @mongodb-js/saslprep@1.1.0 && npm install"
     startCommand: "cd backend && npm run start-render"
     envVars:
       - key: NODE_ENV
