@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Akash Share Icon Styles</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .icon-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin: 40px 0;
+        }
+        .icon-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .icon-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .icon-card h3 {
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .icon-preview {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+        .icon-preview svg {
+            width: 100%;
+            height: 100%;
+        }
+        .features {
+            text-align: left;
+            margin: 20px 0;
+        }
+        .features li {
+            margin: 8px 0;
+            opacity: 0.9;
+        }
+        .download-section {
+            margin: 40px 0;
+            padding: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(20px);
+        }
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            margin: 10px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #00f5ff, #4facfe);
+            border: none;
+        }
+        .current-icon {
+            border: 3px solid #00f5ff;
+            box-shadow: 0 0 20px rgba(0,245,255,0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Choose Your Akash Share Icon Style</h1>
+        
+        <div class="icon-comparison">
+            <!-- Current Simple Icon -->
+            <div class="icon-card current-icon">
+                <h3>💎 Current Icon</h3>
+                <div class="icon-preview">
+                    <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="currentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#667eea" />
+                                <stop offset="100%" stop-color="#764ba2" />
+                            </linearGradient>
+                        </defs>
+                        <rect width="512" height="512" rx="80" fill="url(#currentGrad)"/>
+                        <circle cx="256" cy="256" r="32" fill="#ffffff" opacity="0.95"/>
+                        <circle cx="256" cy="256" r="20" fill="#00f5ff"/>
+                        <circle cx="176" cy="176" r="24" fill="#ffffff" opacity="0.95"/>
+                        <circle cx="336" cy="176" r="24" fill="#ffffff" opacity="0.95"/>
+                        <circle cx="256" cy="356" r="24" fill="#ffffff" opacity="0.95"/>
+                        <line x1="236" y1="236" x2="196" y2="196" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="276" y1="236" x2="316" y2="196" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+                        <line x1="256" y1="288" x2="256" y2="332" stroke="#ffffff" stroke-width="8" stroke-linecap="round" opacity="0.8"/>
+                        <text x="256" y="420" text-anchor="middle" fill="#ffffff" font-family="system-ui" font-size="48" font-weight="800">AKASH</text>
+                        <text x="256" y="460" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="32" font-weight="300">SHARE</text>
+                    </svg>
+                </div>
+                <ul class="features">
+                    <li>✨ Clean, modern design</li>
+                    <li>🎯 Clear network symbol</li>
+                    <li>📱 Perfect for app icons</li>
+                    <li>⚡ Simple and recognizable</li>
+                </ul>
+                <button class="btn btn-primary" onclick="useCurrentIcon()">Keep This Style</button>
+            </div>
+            
+            <!-- Animated Advanced Icon -->
+            <div class="icon-card">
+                <h3>🚀 Advanced Animated</h3>
+                <div class="icon-preview">
+                    <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#667eea" />
+                                <stop offset="50%" stop-color="#764ba2" />
+                                <stop offset="100%" stop-color="#f093fb" />
+                            </linearGradient>
+                            <linearGradient id="innerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#4facfe" />
+                                <stop offset="100%" stop-color="#00f2fe" />
+                            </linearGradient>
+                        </defs>
+                        <circle cx="256" cy="256" r="240" fill="url(#bgGradient)"/>
+                        <circle cx="256" cy="256" r="180" fill="url(#innerGradient)" opacity="0.8"/>
+                        <circle cx="256" cy="256" r="24" fill="#ffffff"/>
+                        <circle cx="256" cy="256" r="16" fill="url(#bgGradient)" opacity="0.8"/>
+                        <circle cx="180" cy="180" r="18" fill="#ffffff"/>
+                        <circle cx="332" cy="180" r="18" fill="#ffffff"/>
+                        <circle cx="256" cy="350" r="18" fill="#ffffff"/>
+                        <line x1="232" y1="232" x2="198" y2="198" stroke="url(#innerGradient)" stroke-width="6" stroke-linecap="round"/>
+                        <line x1="280" y1="232" x2="314" y2="198" stroke="url(#innerGradient)" stroke-width="6" stroke-linecap="round"/>
+                        <line x1="256" y1="280" x2="256" y2="332" stroke="url(#innerGradient)" stroke-width="6" stroke-linecap="round"/>
+                        <text x="256" y="430" text-anchor="middle" fill="#ffffff" font-family="system-ui" font-size="42" font-weight="700">AKASH</text>
+                        <text x="256" y="470" text-anchor="middle" fill="#e0e7ff" font-family="system-ui" font-size="28" font-weight="300">SHARE</text>
+                    </svg>
+                </div>
+                <ul class="features">
+                    <li>🎨 Rich gradient effects</li>
+                    <li>✨ Animated elements</li>
+                    <li>🌟 Premium appearance</li>
+                    <li>💫 Advanced visual effects</li>
+                </ul>
+                <button class="btn" onclick="useAdvancedIcon()">Use Advanced Style</button>
+            </div>
+        </div>
+        
+        <div class="download-section">
+            <h3>📁 How to Apply Your Choice</h3>
+            <p>After selecting your preferred style:</p>
+            <ol style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <li>Click the download button for your chosen style</li>
+                <li>Save the PNG file as "Akashshareicon.png"</li>
+                <li>Replace the current file in the public folder</li>
+                <li>Restart your application to see the changes</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function downloadSVGAsPNG(svgElement, filename, size = 512) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = size;
+            canvas.height = size;
+            
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, size, size);
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png', 1.0);
+                URL.revokeObjectURL(svgUrl);
+            };
+            img.src = svgUrl;
+        }
+        
+        function useCurrentIcon() {
+            const svg = document.querySelector('.current-icon svg');
+            downloadSVGAsPNG(svg, 'Akashshareicon.png');
+            alert('📥 Downloading current style icon!\n\n🔄 Replace the file in your public folder and restart the app.');
+        }
+        
+        function useAdvancedIcon() {
+            const svg = document.querySelectorAll('.icon-card svg')[1];
+            downloadSVGAsPNG(svg, 'Akashshareicon.png');
+            alert('📥 Downloading advanced style icon!\n\n🔄 Replace the file in your public folder and restart the app.');
+        }
+    </script>
+</body>
+</html>

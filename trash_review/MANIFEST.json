@@ -1,0 +1,54 @@
+{
+  "trash_review_manifest": {
+    "created_at": "2025-08-24T12:00:00Z",
+    "description": "Safe deletions and waste files moved for review",
+    "items": [
+      {
+        "file": "backend/index.html",
+        "reason": "Duplicate outdated server file - replaced by server.js",
+        "original_path": "backend/index.html",
+        "size_bytes": 1632,
+        "safe_to_delete": true,
+        "justification": "This is an old version of the server with hardcoded MongoDB connection and missing security features. Current server.js has proper environment variables, security middleware, and validation."
+      },
+      {
+        "file": "src/logo.svg",
+        "reason": "Unused React logo - not referenced in any source files",
+        "original_path": "src/logo.svg",
+        "size_bytes": 2632,
+        "safe_to_delete": true,
+        "justification": "Default React logo that is not imported or used anywhere in the application."
+      },
+      {
+        "file": "src/App.css",
+        "reason": "Unused default React CSS - not imported in any component",
+        "original_path": "src/App.css",
+        "size_bytes": 602,
+        "safe_to_delete": true,
+        "justification": "Default Create React App CSS file that is not imported. Project uses Tailwind CSS for styling."
+      },
+      {
+        "file": "public/logo192.png",
+        "reason": "Default React logo not customized for Akash Share",
+        "original_path": "public/logo192.png",
+        "size_bytes": 5347,
+        "safe_to_delete": false,
+        "justification": "Default React PWA logo. Should be replaced with Akash Share branding but keeping for now as it's referenced in manifest.json."
+      },
+      {
+        "file": "public/logo512.png",
+        "reason": "Default React logo not customized for Akash Share",
+        "original_path": "public/logo512.png",
+        "size_bytes": 9664,
+        "safe_to_delete": false,
+        "justification": "Default React PWA logo. Should be replaced with Akash Share branding but keeping for now as it's referenced in manifest.json."
+      }
+    ],
+    "summary": {
+      "total_files": 5,
+      "safe_deletions": 3,
+      "requires_replacement": 2,
+      "bytes_saved": 4866
+    }
+  }
+}

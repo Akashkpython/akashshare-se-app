@@ -1,13 +1,681 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    /* Apply the modern black gradient background */
+    background: linear-gradient(180deg, #000000 0%, #121212 50%, #1C1C1C 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .glass-effect {
+    @apply bg-background/5 backdrop-blur-xl border border-foreground/20 shadow-2xl;
+  }
+  
+  /* Update the glass card styles to work with the new sidebar */
+  .glass-card {
+    @apply bg-background/10 backdrop-blur-2xl border border-gray-800 rounded-2xl shadow-glass backdrop-saturate-150;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  
+  .glass-card-enhanced {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03));
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(59, 130, 246, 0.1);
+    border-radius: 1rem;
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 0, 0, 0.37),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-akash-300 to-purple-400 bg-clip-text text-transparent;
+    background: linear-gradient(135deg, #60a5fa, #a78bfa, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 shadow-xl hover:shadow-glow-lg transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-background;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #4f46e5;
+  }
+  
+  .btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn-primary:hover::before {
+    left: 100%;
+  }
+  
+  .btn-secondary {
+    @apply bg-gradient-to-r from-indigo-500/20 to-purple-500/20 backdrop-blur-xl border border-indigo-400/30 text-white font-semibold py-3 px-6 rounded-2xl transition-all duration-300 hover:from-indigo-500/30 hover:to-purple-500/30 hover:shadow-glow hover:border-indigo-400/50 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-indigo-400/50;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+    border: 1px solid rgba(99, 102, 241, 0.3);
+  }
+  
+  .btn-secondary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+  }
+  
+  .btn-secondary:hover::before {
+    left: 100%;
+  }
+  
+  .input-field {
+    @apply bg-background/15 backdrop-blur-xl border border-foreground/30 rounded-2xl px-4 py-3 text-foreground placeholder-foreground/70 focus:outline-none focus:ring-2 focus:ring-akash-400 focus:border-akash-400/50 focus:bg-background/20 transition-all duration-300 shadow-inner;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  }
+  
+  .input-field:focus {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.08));
+    box-shadow: 
+      0 0 0 2px rgba(59, 130, 246, 0.5),
+      inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .progress-bar {
+    @apply bg-background/10 rounded-full overflow-hidden;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  }
+  
+  .progress-fill {
+    @apply bg-gradient-to-r from-akash-400 to-purple-500 h-full transition-all duration-300;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+  
+  .floating-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.06));
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 1rem;
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.5s ease;
+    transform: scale(1);
+  }
+
+  .floating-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 
+      0 20px 40px rgba(59, 130, 246, 0.3),
+      0 8px 32px rgba(31, 38, 135, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 0 40px rgba(59, 130, 246, 0.5);
+  }
+  
+  .text-glow {
+    text-shadow: 
+      0 0 10px rgba(59, 130, 246, 0.5),
+      0 0 20px rgba(59, 130, 246, 0.3),
+      0 0 30px rgba(59, 130, 246, 0.1);
+  }
+  
+  .neon-border {
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    box-shadow: 
+      0 0 10px rgba(59, 130, 246, 0.3),
+      inset 0 0 10px rgba(59, 130, 246, 0.1);
+  }
+  
+  .morphing-bg {
+    background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #1e1b4b);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+  }
+  
+  /* Text color utilities that adapt to theme */
+  .text-primary {
+    @apply text-foreground;
+  }
+  
+  .text-secondary {
+    @apply text-muted-foreground;
+  }
+  
+  .text-muted {
+    @apply text-muted-foreground;
+  }
+  
+  .text-accent {
+    @apply text-accent-foreground;
+  }
+
+  /* Add new styles for sidebar menu items */
+  .sidebar-menu-item {
+    transition: all 0.3s ease;
+  }
+  
+  .sidebar-menu-item:hover {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    transform: translateY(-2px);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+  
+  .sidebar-menu-item-active {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+    border: 1px solid rgba(59, 130, 246, 0.5);
+  }
+  
+  /* Add glow effect classes */
+  .glow-effect {
+    transition: all 0.3s ease;
+  }
+  
+  .glow-effect:hover {
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.7);
+    transform: translateY(-2px);
+  }
+  
+  .glow-effect-active {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.9);
+    border: 1px solid rgba(59, 130, 246, 0.7);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-foreground/20 rounded-full hover:bg-foreground/30 transition-colors;
+}
+
+/* Custom selection */
+::selection {
+  @apply bg-akash-400/30 text-foreground;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom animations */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.8);
+  }
+}
+
+@keyframes dance {
+  0%, 100% {
+    transform: rotate(0deg) translateY(0px);
+  }
+  25% {
+    transform: rotate(5deg) translateY(-3px);
+  }
+  50% {
+    transform: rotate(-5deg) translateY(2px);
+  }
+  75% {
+    transform: rotate(3deg) translateY(-1px);
+  }
+}
+
+/* Glowing effect with rotating edges and radiant smoke for developer profile */
+.developer-profile-frame::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(59, 130, 246, 0.8),
+    rgba(139, 92, 246, 0.8),
+    rgba(236, 72, 153, 0.8),
+    transparent
+  );
+  border-radius: 50%;
+  animation: rotate-glow 3s linear infinite;
+  z-index: -1;
+  filter: blur(8px);
+  opacity: 0.7;
+}
+
+.developer-profile-frame::after {
+  content: '';
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  background: radial-gradient(
+    circle at center,
+    rgba(59, 130, 246, 0.3) 0%,
+    rgba(139, 92, 246, 0.2) 30%,
+    rgba(236, 72, 153, 0.1) 60%,
+    transparent 80%
+  );
+  border-radius: 50%;
+  animation: pulse-smoke 4s ease-in-out infinite;
+  z-index: -2;
+  opacity: 0.5;
+}
+
+@keyframes rotate-glow {
+  0% {
+    transform: rotate(0deg);
+    filter: blur(8px) hue-rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+    filter: blur(8px) hue-rotate(360deg);
+  }
+}
+
+@keyframes pulse-smoke {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.6;
+  }
+}
+
+/* Updated moving light animation - moving from right to left */
+@keyframes moving-light {
+  0% {
+    mask-position: 200% 0; /* Start from the right */
+  }
+  100% {
+    mask-position: -100% 0; /* End at the left */
+  }
+}
+
+.neon-trail {
+  animation: trail-fade 0.8s ease-out forwards;
+}
+
+.neon-glow {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.neon-flicker {
+  animation: neon-flicker 3s infinite;
+}
+
+/* Text with moving light effect without changing text color */
+.neon-text-light-effect {
+  color: transparent; /* Make text initially invisible */
+  position: relative;
+  display: inline-block;
+  /* Removed background effects */
+  text-shadow: none;
+}
+
+.neon-text-light-effect::before {
+  content: attr(data-text); /* Use data attribute to display text content */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: #ffffff; /* Text color when revealed */
+  text-shadow: 
+    0 0 5px rgba(255, 255, 255, 0.3),
+    0 0 10px rgba(255, 255, 255, 0.2),
+    0 0 15px rgba(255, 255, 255, 0.1);
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.1) 5%, rgba(0,0,0,0.4) 20%, black 40%, black 60%, rgba(0,0,0,0.4) 80%, rgba(0,0,0,0.1) 95%, transparent 100%);
+  mask-size: 200% 100%;
+  mask-position: 200% 0; /* Start from the right */
+  mask-repeat: no-repeat;
+  animation: moving-light 1s linear infinite; /* Increased speed - reduced from 3s to 1s */
+}
+
+/* Special effect for Developer menu item */
+.neon-developer-text {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(90deg, #60a5fa, #a78bfa, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 
+    0 0 5px rgba(96, 165, 250, 0.5),
+    0 0 10px rgba(167, 139, 250, 0.3),
+    0 0 15px rgba(236, 72, 153, 0.2);
+  animation: developer-text-glow 3s ease-in-out infinite;
+}
+
+/* Special effect for Akash Share text */
+.neon-akash-share-text {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 
+    0 0 5px rgba(59, 130, 246, 0.5),
+    0 0 10px rgba(139, 92, 246, 0.3),
+    0 0 15px rgba(236, 72, 153, 0.2);
+  animation: akash-share-text-glow 3s ease-in-out infinite;
+}
+
+/* Dancing effect for Group Chat text */
+.dance-text {
+  display: inline-block;
+  animation: dance 1.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Sparky electric effect for "Akash" text */
+/*
+.sparky-text {
+  position: relative;
+  display: inline-block;
+  color: #60a5fa;
+  text-shadow: 
+    0 0 5px rgba(96, 165, 250, 0.5),
+    0 0 10px rgba(96, 165, 250, 0.3),
+    0 0 15px rgba(96, 165, 250, 0.2);
+  animation: sparky-glow 1.2s ease-in-out infinite alternate;
+}
+
+.sparky-text::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, 
+    transparent, 
+    rgba(96, 165, 250, 0.1), 
+    rgba(167, 139, 250, 0.3), 
+    rgba(96, 165, 250, 0.1), 
+    transparent);
+  background-size: 200% 200%;
+  animation: sparky-flash 0.8s linear infinite;
+  z-index: -1;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.sparky-text::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: inherit;
+  filter: blur(10px);
+  z-index: -2;
+  opacity: 0.5;
+}
+
+@keyframes sparky-glow {
+  0% {
+    text-shadow: 
+      0 0 5px rgba(96, 165, 250, 0.5),
+      0 0 10px rgba(96, 165, 250, 0.3),
+      0 0 15px rgba(96, 165, 250, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    text-shadow: 
+      0 0 10px rgba(96, 165, 250, 0.7),
+      0 0 20px rgba(96, 165, 250, 0.5),
+      0 0 30px rgba(96, 165, 250, 0.3),
+      0 0 40px rgba(96, 165, 250, 0.2);
+    transform: scale(1.02);
+  }
+  100% {
+    text-shadow: 
+      0 0 5px rgba(96, 165, 250, 0.5),
+      0 0 10px rgba(96, 165, 250, 0.3),
+      0 0 15px rgba(96, 165, 250, 0.2);
+    transform: scale(1);
+  }
+}
+
+@keyframes sparky-flash {
+  0% {
+    background-position: 0% 0%;
+    opacity: 0.3;
+  }
+  25% {
+    opacity: 0.7;
+  }
+  50% {
+    background-position: 100% 100%;
+    opacity: 0.4;
+  }
+  75% {
+    opacity: 0.8;
+  }
+  100% {
+    background-position: 200% 200%;
+    opacity: 0.3;
+  }
+}
+*/
+
+@keyframes dance {
+  0%, 100% {
+    transform: rotate(0deg) translateY(0px);
+  }
+  25% {
+    transform: rotate(5deg) translateY(-3px);
+  }
+  50% {
+    transform: rotate(-5deg) translateY(2px);
+  }
+  75% {
+    transform: rotate(3deg) translateY(-1px);
+  }
+}
+
+@keyframes developer-text-glow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes akash-share-text-glow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+/* Updated moving light animation - moving from right to left */
+@keyframes moving-light {
+  0% {
+    mask-position: 200% 0; /* Start from the right */
+  }
+  100% {
+    mask-position: -100% 0; /* End at the left */
+  }
+}
+
+/* Enhanced cursor styles for neon drag */
+.neon-cursor {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="%2300f5ff" stroke-width="2" opacity="0.8"/><circle cx="10" cy="10" r="3" fill="%2300f5ff" opacity="0.6"/></svg>') 10 10, grab;
+}
+
+.neon-cursor:active {
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="%2300f5ff" stroke-width="3" opacity="1"/><circle cx="10" cy="10" r="4" fill="%2300f5ff" opacity="0.8"/></svg>') 10 10, grabbing;
+}
+
+.shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200px 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .glass-card {
+    @apply mx-2 p-4;
+  }
+  
+  .floating-card {
+    @apply mx-2;
+  }
+  
+  .gradient-text {
+    @apply text-2xl;
+  }
+  
+  .neon-text-light-effect {
+    font-size: 2rem;
+  }
+}
+
+/* Touch device improvements */
+@media (hover: none) and (pointer: coarse) {
+  .btn-primary,
+  .btn-secondary {
+    @apply active:scale-95 transform-none;
+  }
+  
+  .floating-card {
+    @apply hover:scale-100;
+  }
 }
