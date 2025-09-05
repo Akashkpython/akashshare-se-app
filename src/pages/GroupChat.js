@@ -80,7 +80,7 @@ const GroupChat = () => {
         wsRef.current = null;
       }
     };
-  }, []);
+  }, [connectToChat]);
 
   const connectToChat = useCallback(() => {
     // Check if component is still mounted
@@ -128,8 +128,42 @@ const GroupChat = () => {
         hostname: window.location.hostname,
         port: window.location.port,
         apiUrl: environment.apiUrl,
-        isProduction: environment.isProduction
+        isProduction: environment.isProduction,
+        baseApiUrl: environment.baseApiUrl
       });
+      
+      // Additional debugging for WebSocket connection
+      console.log('🔧 WebSocket connection details:', {
+        username: sanitizeString(username, 50),
+        room: currentRoom,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Test if WebSocket constructor is available
+      if (typeof WebSocket === 'undefined') {
+        console.error('❌ WebSocket constructor is not available');
+        addNotification({
+          type: 'error',
+          title: 'Connection Failed',
+          message: 'WebSocket support is not available in this environment.'
+        });
+        setIsConnecting(false);
+        return;
+      }
+      
+      // Test URL format
+      try {
+        new URL(wsUrl);
+      } catch (urlError) {
+        console.error('❌ Invalid WebSocket URL:', wsUrl, urlError);
+        addNotification({
+          type: 'error',
+          title: 'Connection Failed',
+          message: `Invalid WebSocket URL: ${wsUrl}`
+        });
+        setIsConnecting(false);
+        return;
+      }
       
       wsRef.current = new WebSocket(wsUrl);
       
@@ -173,7 +207,7 @@ const GroupChat = () => {
         
         try {
           const data = JSON.parse(event.data);
-          console.log('📨 Received:', data.type);
+          console.log('📨 Received:', data.type, data);
           
           switch (data.type) {
             case 'message':
@@ -202,7 +236,7 @@ const GroupChat = () => {
               console.log('❓ Unknown message type:', data.type);
           }
         } catch (error) {
-          console.error('💥 Message parsing error:', error);
+          console.error('💥 Message parsing error:', error, 'Data:', event.data);
         }
       };
       
@@ -214,7 +248,7 @@ const GroupChat = () => {
           connectionTimeoutRef.current = null;
         }
         
-        console.log('🔌 WebSocket closed, code:', event.code);
+        console.log('🔌 WebSocket closed, code:', event.code, 'reason:', event.reason);
         setIsConnecting(false);
         setIsConnected(false);
         
@@ -247,6 +281,13 @@ const GroupChat = () => {
         }
         
         console.error('🚨 WebSocket error:', error);
+        console.error('🚨 WebSocket error details:', {
+          message: error.message,
+          code: error.code,
+          reason: error.reason,
+          target: error.target,
+          type: error.type
+        });
         setIsConnecting(false);
         setIsConnected(false);
         
@@ -263,6 +304,11 @@ const GroupChat = () => {
           }
         }
         
+        // Add additional context for Electron environment
+        if (window.location.protocol === 'file:') {
+          errorMessage += ' Note: In the desktop app, the backend should start automatically. If this error persists, try restarting the application.';
+        }
+        
         addNotification({
           type: 'error',
           title: 'Connection Error',
@@ -272,6 +318,11 @@ const GroupChat = () => {
       
     } catch (error) {
       console.error('💥 Connection setup failed:', error);
+      console.error('💥 Connection setup error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       setIsConnecting(false);
       setIsConnected(false);
       addNotification({
