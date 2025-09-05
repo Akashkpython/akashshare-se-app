@@ -1,0 +1,52 @@
+END USER LICENSE AGREEMENT (EULA)
+=====================================
+
+AKASH SHARE - FILE SHARING APPLICATION
+
+This End User License Agreement ("EULA") is a legal agreement between you and Akash Share.
+
+BY INSTALLING OR USING THIS SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS OF THIS EULA.
+
+1. GRANT OF LICENSE
+   Akash Share grants you a non-exclusive, non-transferable license to use this software 
+   on your personal or business computers.
+
+2. PERMITTED USES
+   - Install and use the software on multiple devices
+   - Share files securely using the application features
+   - Use all features provided in the application
+
+3. RESTRICTIONS
+   - You may not reverse engineer, decompile, or disassemble the software
+   - You may not distribute, rent, lease, or sublicense the software
+   - You may not remove or modify any copyright notices
+
+4. PRIVACY AND DATA
+   - The application processes files locally on your device
+   - No personal data is transmitted without your consent
+   - Share codes are generated locally and expire automatically
+
+5. WARRANTY DISCLAIMER
+   This software is provided "AS IS" without warranty of any kind. The author 
+   disclaims all warranties, express or implied, including but not limited to 
+   warranties of merchantability and fitness for a particular purpose.
+
+6. LIMITATION OF LIABILITY
+   In no event shall Akash Share be liable for any damages arising from the use 
+   or inability to use this software.
+
+7. TERMINATION
+   This license is effective until terminated. You may terminate it at any time 
+   by uninstalling the software.
+
+8. GOVERNING LAW
+   This EULA shall be governed by the laws of your local jurisdiction.
+
+By clicking "I Agree" below, you acknowledge that you have read this agreement, 
+understand it, and agree to be bound by its terms and conditions.
+
+If you do not agree to the terms of this EULA, click "I Disagree" and the 
+installation will be cancelled.
+
+=====================================
+Copyright © 2024 Akash Share. All rights reserved.

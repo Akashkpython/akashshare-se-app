@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Icon Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        svg {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .instructions {
+            max-width: 600px;
+            text-align: center;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .download-btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .download-btn:hover {
+            background: #5a6fd8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Akash Share Modern Icon</h1>
+        
+        <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient Definitions -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea" />
+      <stop offset="50%" stop-color="#764ba2" />
+      <stop offset="100%" stop-color="#f093fb" />
+    </linearGradient>
+    
+    <linearGradient id="innerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4facfe" />
+      <stop offset="100%" stop-color="#00f2fe" />
+    </linearGradient>
+    
+    <radialGradient id="glowGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+      <stop offset="70%" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    
+    <!-- Drop Shadow Filter -->
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+    
+    <!-- Icon Glow Filter -->
+    <filter id="iconGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/> 
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Main Background Circle with Gradient -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGradient)" filter="url(#dropShadow)"/>
+  
+  <!-- Inner Circle with Gradient -->
+  <circle cx="256" cy="256" r="180" fill="url(#innerGradient)" opacity="0.8"/>
+  
+  <!-- Glow Overlay -->
+  <circle cx="256" cy="256" r="200" fill="url(#glowGradient)"/>
+  
+  <!-- Modern Share Icon Design -->
+  <!-- Central Hub -->
+  <circle cx="256" cy="256" r="24" fill="#ffffff" filter="url(#iconGlow)"/>
+  <circle cx="256" cy="256" r="16" fill="url(#bgGradient)" opacity="0.8"/>
+  
+  <!-- Share Nodes with Modern Design -->
+  <g filter="url(#iconGlow)">
+    <!-- Top Left Node -->
+    <circle cx="180" cy="180" r="18" fill="#ffffff"/>
+    <circle cx="180" cy="180" r="12" fill="#4facfe"/>
+    
+    <!-- Top Right Node -->
+    <circle cx="332" cy="180" r="18" fill="#ffffff"/>
+    <circle cx="332" cy="180" r="12" fill="#4facfe"/>
+    
+    <!-- Bottom Node -->
+    <circle cx="256" cy="350" r="18" fill="#ffffff"/>
+    <circle cx="256" cy="350" r="12" fill="#4facfe"/>
+  </g>
+  
+  <!-- Connection Lines with Gradient -->
+  <g stroke="url(#innerGradient)" stroke-width="6" stroke-linecap="round" filter="url(#iconGlow)">
+    <line x1="232" y1="232" x2="198" y2="198"/>
+    <line x1="280" y1="232" x2="314" y2="198"/>
+    <line x1="256" y1="280" x2="256" y2="332"/>
+  </g>
+  
+  <!-- Data Flow Animation Circles -->
+  <g fill="#ffffff" opacity="0.6">
+    <circle cx="220" cy="220" r="3">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="292" cy="220" r="3">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" begin="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="256" cy="310" r="3">
+      <animate attributeName="opacity" values="0.6;1;0.6" dur="2s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Modern Typography -->
+  <g filter="url(#iconGlow)">
+    <text x="256" y="430" text-anchor="middle" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="42" font-weight="700" letter-spacing="2px">AKASH</text>
+    <text x="256" y="470" text-anchor="middle" fill="#e0e7ff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="28" font-weight="300" letter-spacing="4px">SHARE</text>
+  </g>
+  
+  <!-- Subtle Corner Accent -->
+  <circle cx="400" cy="112" r="8" fill="#ffffff" opacity="0.3"/>
+  <circle cx="112" cy="400" r="6" fill="#ffffff" opacity="0.2"/>
+</svg>
+        
+        <div class="instructions">
+            <h3>📝 How to Generate PNG:</h3>
+            <p><strong>Method 1 - Browser Screenshot:</strong></p>
+            <ol>
+                <li>Right-click on the icon above</li>
+                <li>Select "Save image as..." or "Copy image"</li>
+                <li>Save as "Akashshareicon.png" in the public folder</li>
+            </ol>
+            
+            <p><strong>Method 2 - Canvas Download:</strong></p>
+            <button class="download-btn" onclick="downloadPNG()">Download as PNG (512x512)</button>
+            
+            <p><strong>Method 3 - Online Converter:</strong></p>
+            <p>Copy the SVG code and use an online SVG to PNG converter like:</p>
+            <ul>
+                <li>convertio.co</li>
+                <li>cloudconvert.com</li>
+                <li>online-convert.com</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function downloadPNG() {
+            const svg = document.querySelector('svg');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set high resolution
+            canvas.width = 512;
+            canvas.height = 512;
+            
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, 512, 512);
+                
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Akashshareicon.png';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }, 'image/png', 1.0);
+                
+                URL.revokeObjectURL(svgUrl);
+            };
+            
+            img.src = svgUrl;
+        }
+    </script>
+</body>
+</html>
