@@ -51,7 +51,8 @@ if (missingVars.length > 0) {
 }
 
 const app = express();
-const server = http.createServer(app);
+// Explicitly create server with IPv4 to avoid ::1 binding issues on Render
+const server = http.createServer({ family: 4 }, app);
 
 // WebSocket Server
 const wss = new WebSocket.Server({ server, path: '/chat' });
@@ -627,21 +628,25 @@ connectWithRetry().then(success => {
     const PORT = process.env.PORT || process.env.BACKEND_PORT || 5002;
     const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces for Render
     
-    console.log(`Attempting to start server on ${HOST}:${PORT}`);
+    // Ensure HOST is explicitly set to 0.0.0.0 for Render
+    const BIND_HOST = HOST === '::' ? '0.0.0.0' : HOST;
     
-    server.listen(PORT, HOST, () => {
-      // Log the actual address the server is listening on
-      const address = server.address();
-      console.log(`🚀 Server running on ${address.address}:${address.port}`);
+    console.log(`🔧 Configuring server to bind to ${BIND_HOST}:${PORT}`);
+    console.log(`🔧 Environment variables - PORT: ${process.env.PORT}, HOST: ${process.env.HOST}`);
+    
+    // Force IPv4 family to avoid ::1 binding issues on Render
+    server.listen(PORT, BIND_HOST, () => {
+      // Log a clear message that Render can detect
+      console.log(`🚀 Server successfully started on http://${BIND_HOST}:${PORT}`);
       console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
       console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
       console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
-      console.log(`🌐 API endpoints available at: http://${address.address}:${address.port}`);
-      console.log(`💬 WebSocket chat available at: ws://${address.address}:${address.port}/chat`);
+      console.log(`🌐 API endpoints available at: http://${BIND_HOST}:${PORT}`);
+      console.log(`💬 WebSocket chat available at: ws://${BIND_HOST}:${PORT}/chat`);
       
       // In production, serve the React app
       if (process.env.NODE_ENV === 'production') {
-        console.log(`🖥️  Frontend available at: http://${address.address}:${address.port}`);
+        console.log(`🖥️  Frontend available at: http://${BIND_HOST}:${PORT}`);
       }
     });
     
