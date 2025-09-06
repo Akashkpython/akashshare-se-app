@@ -624,29 +624,25 @@ connectWithRetry().then(success => {
   if (success) {
     // Start server only after MongoDB connection is established
     // Use Render's PORT if available, otherwise default to 5002
-    // IMPORTANT: Bind to 0.0.0.0 (all interfaces) for Render deployment
-    const PORT = process.env.PORT || process.env.BACKEND_PORT || 5002;
-    const HOST = process.env.HOST || '0.0.0.0'; // Bind to all interfaces for Render
+    const PORT = process.env.PORT || 5002;
     
-    // Ensure HOST is explicitly set to 0.0.0.0 for Render
-    const BIND_HOST = HOST === '::' ? '0.0.0.0' : HOST;
+    // Explicitly bind to 0.0.0.0 for Render deployment
+    const HOST = '0.0.0.0';
     
-    console.log(`🔧 Configuring server to bind to ${BIND_HOST}:${PORT}`);
-    console.log(`🔧 Environment variables - PORT: ${process.env.PORT}, HOST: ${process.env.HOST}`);
+    console.log(`🔧 Configuring server to bind to ${HOST}:${PORT}`);
     
-    // Force IPv4 family to avoid ::1 binding issues on Render
-    server.listen(PORT, BIND_HOST, () => {
-      // Log a clear message that Render can detect
-      console.log(`🚀 Server successfully started on http://${BIND_HOST}:${PORT}`);
+    server.listen(PORT, HOST, () => {
+      // Log the exact message requested for Render detection
+      console.log(`Server running on http://${HOST}:${PORT}`);
       console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
       console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
       console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
-      console.log(`🌐 API endpoints available at: http://${BIND_HOST}:${PORT}`);
-      console.log(`💬 WebSocket chat available at: ws://${BIND_HOST}:${PORT}/chat`);
+      console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
+      console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
       
       // In production, serve the React app
       if (process.env.NODE_ENV === 'production') {
-        console.log(`🖥️  Frontend available at: http://${BIND_HOST}:${PORT}`);
+        console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
       }
     });
     
