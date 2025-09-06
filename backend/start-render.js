@@ -27,9 +27,15 @@ try {
 
 // Test express-rate-limit
 try {
-  const rateLimit = require('express-rate-limit');
+  require('express-rate-limit');
   console.log('✅ express-rate-limit module loaded successfully');
-  console.log('Version:', require('express-rate-limit/package.json').version);
+  // Safer way to get version information
+  try {
+    const rateLimitPkg = require('express-rate-limit/package.json');
+    console.log('Version:', rateLimitPkg.version);
+  } catch (versionErr) {
+    console.log('Version: Unable to determine (non-critical)');
+  }
 } catch (err) {
   console.error('❌ Failed to load express-rate-limit:', err);
   console.error('Error code:', err.code);
