@@ -24,6 +24,9 @@ yarn-error.log*
 
 # dotenv files
 .env
+.env.production
+/backend/.env
+jwt-secret-*.txt
 
 # build output
 dist/

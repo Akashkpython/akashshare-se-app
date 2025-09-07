@@ -7,9 +7,10 @@ import cors from "cors";
 import helmet from "helmet";
 import { rateLimit } from "express-rate-limit";
 import { body, validationResult, param } from "express-validator";
-import { WebSocketServer } from "ws";
+import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
 import shortid from "shortid";
+import mongoose from "mongoose";
 import connectToMongoDB from "./mongo-connection.js";
 import { validateFile, sanitizeFilename } from "./utils/fileValidation.js";
 import { 
@@ -50,11 +51,7 @@ try {
   }
 }
 
-// Override MONGO_URI for testing - but only if not already set in test environment
-if (process.env.NODE_ENV === 'test' && !process.env.MONGO_URI.includes('localhost')) {
-  process.env.MONGO_URI = 'mongodb://localhost:27017/akashshare_test';
-  console.log('🔧 Using test MongoDB URI:', process.env.MONGO_URI);
-}
+// Removed localhost override: always use MONGO_URI (Atlas recommended)
 
 const app = express();
 // Explicitly create server with IPv4 to avoid ::1 binding issues on Render
@@ -542,7 +539,8 @@ const FileSchema = new mongoose.Schema({
     required: true,
     unique: true,
     minlength: 4,
-    maxlength: 10
+    maxlength: 10,
+    index: true
   },
   size: {
     type: Number,
@@ -555,13 +553,12 @@ const FileSchema = new mongoose.Schema({
   uploadedAt: { 
     type: Date, 
     default: Date.now,
-    expires: 24 * 60 * 60 // Auto-delete after 24 hours
+    expires: 24 * 60 * 60, // Auto-delete after 24 hours
+    index: true
   }
 });
 
-// Add indexes for better query performance
-FileSchema.index({ code: 1 });
-FileSchema.index({ uploadedAt: 1 });
+// Indexes are now defined in the schema fields above
 
 const File = mongoose.model("File", FileSchema);
 
@@ -747,7 +744,6 @@ if (process.env.NODE_ENV === 'production') {
   
   // Debug route to test static file serving
   app.get('/debug/static', (req, res) => {
-    const fs = require('fs');
     const akashPath = path.join(publicPath, 'akash.jpg');
     res.json({
       publicPath,
@@ -783,57 +779,48 @@ mongoose.connection.on('reconnect', () => {
 // Start server only when this file is run directly (not when imported for testing)
 if (import.meta.url === `file://${process.argv[1]}`) {
   (async () => {
+    let dbConnected = false;
     try {
       await connectToMongoDB(process.env.MONGO_URI);
-
-      // Start server only after MongoDB connection is established
-      // Use Render's PORT if available, otherwise default to 5002
-      const PORT = process.env.PORT || 5002;
-
-      // Explicitly bind to 0.0.0.0 for Render deployment
-      const HOST = process.env.HOST || '0.0.0.0';
-
-      console.log(`🔧 Configuring server to bind to ${HOST}:${PORT}`);
-
-      server.listen(PORT, HOST, () => {
-        // Log the exact message requested for Render detection
-        console.log(`Server running on http://${HOST}:${PORT}`);
-        console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
-        console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
-        console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
-        console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
-        console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
-
-        // In production, serve the React app
-        if (process.env.NODE_ENV === 'production') {
-          console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
-        }
-      });
-
-      // Add error handler for the server
-      server.on('error', (err) => {
-        console.error('❌ Server failed to start:', err.message);
-        if (err.code === 'EADDRINUSE') {
-          console.error(`   Port ${PORT} is already in use. Please stop the process using this port or use a different port.`);
-        } else if (err.code === 'EACCES') {
-          console.error(`   Permission denied. You may need to run this with elevated privileges or use a port number above 1024.`);
-        } else {
-          console.error(`   Error details:`, err);
-        }
-        // Don't exit in production, let Render handle it
-        if (process.env.NODE_ENV !== 'production') {
-          process.exit(1);
-        }
-      });
+      dbConnected = true;
     } catch (error) {
-      console.error("❌ Failed to start server due to MongoDB connection issues:", error.message);
-      console.error("🔧 Please check your MongoDB connection string and network access.");
+      console.error("❌ MongoDB connection failed:", error.message);
+      console.error("🔧 Continuing to start HTTP/WebSocket server in degraded mode.");
       console.error("📋 MONGO_URI:", process.env.MONGO_URI ? "Set" : "Not set");
-      // Don't exit in production, let Render handle it
-      if (process.env.NODE_ENV !== 'production') {
-        process.exit(1);
-      }
     }
+
+    // Start server regardless of DB status so Electron app can function (chat/UI)
+    const PORT = process.env.PORT || 5002;
+    const HOST = process.env.HOST || '0.0.0.0';
+    console.log(`🔧 Configuring server to bind to ${HOST}:${PORT}`);
+
+    server.listen(PORT, HOST, () => {
+      console.log(`Server running on http://${HOST}:${PORT}`);
+      console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
+      console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
+      console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
+      console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
+      console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
+      if (!dbConnected) {
+        console.warn('⚠️ Server started in degraded mode: database not connected. Upload/download endpoints may fail.');
+      }
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`🖥️  Frontend available at: http://${HOST}:${PORT}`);
+      }
+    });
+
+    // Add error handler for the server
+    server.on('error', (err) => {
+      console.error('❌ Server failed to start:', err.message);
+      if (err.code === 'EADDRINUSE') {
+        console.error(`   Port ${PORT} is already in use. Please stop the process using this port or use a different port.`);
+      } else if (err.code === 'EACCES') {
+        console.error(`   Permission denied. You may need to run this with elevated privileges or use a port number above 1024.`);
+      } else {
+        console.error(`   Error details:`, err);
+      }
+      // In non-production we previously exited; keep the process up to let Electron manage.
+    });
   })();
 }
 

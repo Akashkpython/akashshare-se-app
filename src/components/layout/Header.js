@@ -14,7 +14,11 @@ import {
   User,
   Code,
   Wifi,
-  WifiOff
+  WifiOff,
+  Search,
+  Bell,
+  Minimize2,
+  Maximize2
 } from 'lucide-react';
 import useStore from '../../store/useStore.js';
 import { useTheme } from '../../contexts/ThemeContext.js';

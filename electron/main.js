@@ -1,7 +1,14 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage, screen } from 'electron';
 import path from 'path';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
+import { promisify } from 'util';
 import fs from 'fs';
+import http from 'http';
+import { fileURLToPath } from 'url';
+
+// ESM-compatible __dirname/__filename
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Function to safely load a module with detailed error reporting
 async function safeRequire(moduleName, fallback = null) {
@@ -18,7 +25,7 @@ async function safeRequire(moduleName, fallback = null) {
     // Additional debugging for electron-log specifically
     if (moduleName === 'electron-log') {
       try {
-        const modulePath = path.join(path.dirname(import.meta.url), '../node_modules/electron-log');
+        const modulePath = path.join(__dirname, '../node_modules/electron-log');
         console.warn('Checking module path:', modulePath);
         console.warn('Module exists:', fs.existsSync(modulePath));
       } catch (pathError) {
@@ -122,7 +129,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 // Set update feed URL from package.json
 try {
-  const packageJson = JSON.parse(fs.readFileSync(path.join(path.dirname(import.meta.url), '../package.json'), 'utf8'));
+  const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
   if (packageJson.build && packageJson.build.publish && packageJson.build.publish[0]) {
     const publishConfig = packageJson.build.publish[0];
     if (publishConfig.provider === 'generic' && publishConfig.url) {
@@ -186,7 +193,6 @@ if (isDev) {
 // Function to create the main window
 function createWindow() {
   // Get screen size to set appropriate window dimensions
-  const { screen } = require('electron');
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
   
@@ -304,9 +310,7 @@ async function ensureBackendDependencies() {
       log.warn('⚠️ Backend dependencies not found, attempting to install...');
 
       // Try to install backend dependencies
-      const { exec } = require('child_process');
-      const util = require('util');
-      const execAsync = util.promisify(exec);
+      const execAsync = promisify(exec);
 
       try {
         log.info('🔧 Installing backend dependencies...');
@@ -335,6 +339,27 @@ async function ensureBackendDependencies() {
   }
 }
 
+// Simple .env parser (KEY=VALUE, ignores comments/empty lines)
+function parseEnvFile(content) {
+  const env = {};
+  content.split(/\r?\n/).forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const idx = trimmed.indexOf('=');
+    if (idx === -1) return;
+    const key = trimmed.slice(0, idx).trim();
+    let val = trimmed.slice(idx + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    env[key] = val;
+  });
+  return env;
+}
+
+// Cache of env vars to inject into spawned backend
+let backendEnvCache = {};
+
 // Function to ensure backend environment variables are set
 async function ensureBackendEnv() {
   try {
@@ -354,6 +379,7 @@ async function ensureBackendEnv() {
     }
     
     const envPath = path.join(backendDir, '.env');
+    const rootEnvProductionPath = path.join(__dirname, '../.env.production');
     
     log.info(`🔧 Checking backend environment configuration...`);
     
@@ -361,6 +387,17 @@ async function ensureBackendEnv() {
     if (!fs.existsSync(envPath)) {
       log.warn('⚠️ Backend .env file not found, checking for .env.example...');
       
+      // Prefer copying real production env if available at project root
+      if (fs.existsSync(rootEnvProductionPath)) {
+        try {
+          const prodContent = fs.readFileSync(rootEnvProductionPath, 'utf8');
+          fs.writeFileSync(envPath, prodContent, 'utf8');
+          log.info('✅ Copied .env.production to backend/.env');
+        } catch (copyErr) {
+          log.warn('⚠️ Failed to copy .env.production to backend/.env:', copyErr.message);
+        }
+      }
+
       // Check if .env.example exists
       if (fs.existsSync(envExamplePath)) {
         log.info('✅ Found .env.example, copying to backend directory...');
@@ -384,9 +421,20 @@ NODE_ENV=production
       log.info('✅ Backend .env file already exists');
     }
     
-    // Load environment variables
-    require('dotenv').config({ path: envPath });
-    log.info('✅ Backend environment variables loaded');
+    // Parse env file ourselves to later inject into spawned backend
+    try {
+      if (fs.existsSync(envPath)) {
+        const envContent = fs.readFileSync(envPath, 'utf8');
+        backendEnvCache = parseEnvFile(envContent);
+        // Do not log secrets; only keys
+        log.info('✅ Parsed backend .env keys:', Object.keys(backendEnvCache));
+      } else {
+        backendEnvCache = {};
+      }
+    } catch (e) {
+      log.warn('⚠️ Failed to parse backend .env:', e.message);
+    }
+    log.info('✅ Backend environment configuration ready');
     return true;
   } catch (error) {
     log.error('❌ Error ensuring backend environment:', error.message);
@@ -471,9 +519,12 @@ async function createBackendProcess() {
     cwd: backendDir,
     env: {
       ...process.env,
+      // Inject parsed backend env (if any)
+      ...backendEnvCache,
+      // Ensure these are set explicitly
       NODE_ENV: isDev ? 'development' : 'production',
-      PORT: process.env.PORT || '5002',
-      HOST: '0.0.0.0' // Always bind to 0.0.0.0 for proper network accessibility
+      PORT: backendEnvCache.PORT || process.env.PORT || '5002',
+      HOST: backendEnvCache.HOST || '0.0.0.0'
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -642,10 +693,8 @@ function createTray() {
   log.info(`✅ System tray created with icon: ${iconPathUsed || 'default'}`);
 }
 
-// Function to check if backend is already running
 async function checkIfBackendIsRunning() {
   return new Promise((resolve) => {
-    const http = require('http');
     const options = {
       hostname: '127.0.0.1', // Use IPv4 instead of localhost to avoid IPv6 issues
       port: 5002,
@@ -653,7 +702,7 @@ async function checkIfBackendIsRunning() {
       method: 'GET',
       timeout: 3000
     };
-    
+
     const req = http.request(options, (res) => {
       let data = '';
       res.on('data', chunk => {
