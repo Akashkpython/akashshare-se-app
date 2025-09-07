@@ -18,8 +18,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import useStore from '../store/useStore';
-import { formatFileSize, formatDate } from '../lib/utils';
+import useStore from '../store/useStore.js';
+import { formatFileSize, formatDate } from '../lib/utils.js';
 
 const History = () => {
   const { transferHistory, clearHistory, addNotification } = useStore();

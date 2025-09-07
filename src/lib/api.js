@@ -1,8 +1,14 @@
-import environment from '../config/environment';
-import performanceMonitor from './performance';
+import environment from '../config/environment.js';
+import performanceMonitor from './performance.js';
 
 // Dynamic API URL configuration with security improvements
 const getApiBaseUrl = () => {
+  // In Electron environment, always use localhost:5002
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return 'http://localhost:5002';
+  }
+  
+  // Use environment configuration
   return environment.baseApiUrl;
 };
 

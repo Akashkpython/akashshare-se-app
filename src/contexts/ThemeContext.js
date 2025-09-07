@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect } from 'react';
-import useStore from '../store/useStore';
+import useStore from '../store/useStore.js';
 
 const ThemeContext = createContext();
 

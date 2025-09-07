@@ -1,25 +1,25 @@
 import React, { useEffect, Suspense, lazy, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
-import useStore from './store/useStore';
-import performanceMonitor from './lib/performance';
+import useStore from './store/useStore.js';
+import performanceMonitor from './lib/performance.js';
 
 // Components
-import Sidebar from './components/layout/Sidebar';
-import Header from './components/layout/Header';
-import NotificationContainer from './components/ui/NotificationContainer';
-import ErrorBoundary from './components/ErrorBoundary';
-import SplashScreen from './components/splash/SplashScreen';
-import Developer from './pages/Developer';
-import UpdateManager from './components/ui/UpdateManager';
+import Sidebar from './components/layout/Sidebar.js';
+import Header from './components/layout/Header.js';
+import NotificationContainer from './components/ui/NotificationContainer.js';
+import ErrorBoundary from './components/ErrorBoundary.js';
+import SplashScreen from './components/splash/SplashScreen.js';
+import Developer from './pages/Developer.js';
+import UpdateManager from './components/ui/UpdateManager.js';
 
 // Contexts
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider } from './contexts/ThemeContext.js';
 
 // Lazy load pages for code splitting with proper error handling
 const Dashboard = lazy(() => {
   performanceMonitor.start('load-dashboard');
-  return import('./pages/Dashboard').then(module => {
+  return import('./pages/Dashboard.js').then(module => {
     performanceMonitor.end('load-dashboard');
     return module;
   }).catch(error => {
@@ -30,7 +30,7 @@ const Dashboard = lazy(() => {
 
 const SendFiles = lazy(() => {
   performanceMonitor.start('load-sendfiles');
-  return import('./pages/SendFiles').then(module => {
+  return import('./pages/SendFiles.js').then(module => {
     performanceMonitor.end('load-sendfiles');
     return module;
   }).catch(error => {
@@ -41,7 +41,7 @@ const SendFiles = lazy(() => {
 
 const ReceiveFiles = lazy(() => {
   performanceMonitor.start('load-receivefiles');
-  return import('./pages/ReceiveFiles').then(module => {
+  return import('./pages/ReceiveFiles.js').then(module => {
     performanceMonitor.end('load-receivefiles');
     return module;
   }).catch(error => {
@@ -52,7 +52,7 @@ const ReceiveFiles = lazy(() => {
 
 const History = lazy(() => {
   performanceMonitor.start('load-history');
-  return import('./pages/History').then(module => {
+  return import('./pages/History.js').then(module => {
     performanceMonitor.end('load-history');
     return module;
   }).catch(error => {
@@ -63,7 +63,7 @@ const History = lazy(() => {
 
 const GroupChat = lazy(() => {
   performanceMonitor.start('load-groupchat');
-  return import('./pages/GroupChat').then(module => {
+  return import('./pages/GroupChat.js').then(module => {
     performanceMonitor.end('load-groupchat');
     return module;
   }).catch(error => {
@@ -74,7 +74,7 @@ const GroupChat = lazy(() => {
 
 const Settings = lazy(() => {
   performanceMonitor.start('load-settings');
-  return import('./pages/Settings').then(module => {
+  return import('./pages/Settings.js').then(module => {
     performanceMonitor.end('load-settings');
     return module;
   }).catch(error => {
@@ -85,7 +85,7 @@ const Settings = lazy(() => {
 
 const SplashDemo = lazy(() => {
   performanceMonitor.start('load-splashdemo');
-  return import('./pages/SplashDemo').then(module => {
+  return import('./pages/SplashDemo.js').then(module => {
     performanceMonitor.end('load-splashdemo');
     return module;
   }).catch(error => {
@@ -96,7 +96,7 @@ const SplashDemo = lazy(() => {
 
 const SaReGaMaPa = lazy(() => {
   performanceMonitor.start('load-sa-re-ga-ma-pa');
-  return import('./pages/SaReGaMaPa').then(module => {
+  return import('./pages/SaReGaMaPa.js').then(module => {
     performanceMonitor.end('load-sa-re-ga-ma-pa');
     return module;
   }).catch(error => {
@@ -107,7 +107,7 @@ const SaReGaMaPa = lazy(() => {
 
 const AppUpdates = lazy(() => {
   performanceMonitor.start('load-app-updates');
-  return import('./pages/AppUpdates').then(module => {
+  return import('./pages/AppUpdates.js').then(module => {
     performanceMonitor.end('load-app-updates');
     return module;
   }).catch(error => {

@@ -42,7 +42,6 @@ try {
   const backendFiles = [
     'server.js',
     'package.json',
-    '.env',
     '.env.example'
   ];
   

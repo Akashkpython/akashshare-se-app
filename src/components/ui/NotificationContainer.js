@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-import useStore from '../../store/useStore';
+import useStore from '../../store/useStore.js';
 
 const NotificationContainer = () => {
   const { notifications, removeNotification } = useStore();

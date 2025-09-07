@@ -1,10 +1,11 @@
 {
   "name": "akash-share",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Next-generation desktop application for fast and secure file sharing",
   "main": "electron/main.js",
   "homepage": ".",
   "private": true,
+  "type": "module",
   "engines": {
     "node": "18.x"
   },
@@ -22,13 +23,16 @@
     "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md}",
     "serve-updates": "npx http-server dist/ -p 3000",
-    "postinstall": "cd backend && npm install"
+    "postinstall": "cd backend && npm install",
+    "start-full": "node start-full-app.js --experimental-modules"
   },
   "resolutions": {
     "@mongodb-js/saslprep": "^1.1.0",
     "mongoose": "^7.5.0"
   },
   "dependencies": {
+    "chai": "^6.0.1",
+    "chai-http": "^5.1.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "electron-log": "^5.4.3",
@@ -36,14 +40,16 @@
     "express-rate-limit": "^8.0.1",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.292.0",
+    "mocha": "^11.7.2",
     "png-to-ico": "^3.0.1",
     "puppeteer": "^24.19.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.8.2",
-    "react-scripts": "^5.0.1",
+    "react-scripts": "^0.0.0",
     "recharts": "^2.8.0",
     "sharp": "^0.34.3",
+    "supertest": "^7.1.4",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
     "ws": "^8.18.3",
@@ -62,8 +68,9 @@
     "autoprefixer": "^10.4.16",
     "concurrently": "^8.2.2",
     "cross-env": "^7.0.3",
-    "electron": "^28.1.0",
+    "electron": "^38.0.0",
     "electron-builder": "^24.6.4",
+    "electron-packager": "^17.1.2",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.33.2",
@@ -106,11 +113,18 @@
       "icon": "public/Akashshareicon.png"
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis",
+        "portable"
+      ],
       "icon": "public/Akashshareicon.png"
     },
     "linux": {
-      "target": "AppImage",
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
       "icon": "public/Akashshareicon.png"
     },
     "extraResources": [

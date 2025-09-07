@@ -1,19 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Settings as SettingsIcon, 
-  Moon, 
-  Sun, 
-  Bell, 
-  Shield,
-  Globe,
-  Upload,
-  Info,
-  RotateCcw,
-  Zap
-} from 'lucide-react';
-import { useTheme } from '../contexts/ThemeContext';
-import useStore from '../store/useStore';
+import { Palette, Monitor, Download, Upload, Shield, Info, Moon, Sun, MonitorSpeaker } from 'lucide-react';
+import useStore from '../store/useStore.js';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext.js';
 import { AnimatePresence } from 'framer-motion';
 
 const Settings = () => {
@@ -91,7 +80,7 @@ const Settings = () => {
     },
     {
       title: 'Notifications',
-      icon: Bell,
+      icon: MonitorSpeaker,
       settings: [
         {
           key: 'notifications',
@@ -138,7 +127,7 @@ const Settings = () => {
     },
     {
       title: 'Language',
-      icon: Globe,
+      icon: Palette,
       settings: [
         {
           key: 'language',

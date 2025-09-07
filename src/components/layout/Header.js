@@ -1,16 +1,23 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import useStore from '../../store/useStore';
-import { useTheme } from '../../contexts/ThemeContext';
 import { 
-  Search, 
-  Bell, 
+  Menu, 
+  X, 
   Sun, 
   Moon, 
-  Minimize2, 
-  Maximize2, 
-  X 
+  Home, 
+  Upload, 
+  Download, 
+  History, 
+  MessageCircle,
+  Settings,
+  User,
+  Code,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
+import useStore from '../../store/useStore.js';
+import { useTheme } from '../../contexts/ThemeContext.js';
 
 const Header = () => {
   const { notifications } = useStore();

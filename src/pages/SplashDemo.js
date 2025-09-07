@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
-import SplashScreen from '../components/splash/SplashScreen';
+import SplashScreen from '../components/splash/SplashScreen.js';
 
 const SplashDemo = () => {
   const [showSplash, setShowSplash] = useState(true);

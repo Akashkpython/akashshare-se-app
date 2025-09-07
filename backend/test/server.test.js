@@ -1,34 +1,31 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const expect = chai.expect;
-const path = require('path');
 
-// Load environment variables for testing
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
-
-// Set test environment
+// Set test environment BEFORE loading dotenv
 process.env.NODE_ENV = 'test';
+// Use local MongoDB for testing
+process.env.MONGO_URI = 'mongodb://localhost:27017/akashshare_test';
 
 chai.use(chaiHttp);
 
 // Import the app after setting environment
-const app = require('../server');
+const { app } = require('../server');
 
 describe('Server API Tests', () => {
   let server;
 
-  beforeEach((done) => {
-    // Start server for testing
-    server = app.listen(0, () => {
-      done();
-    });
+  beforeEach(async () => {
+    // Start server for testing on a random available port
+    server = app.listen(0);
+    console.log(`Test server listening on port ${server.address().port}`);
   });
 
-  afterEach((done) => {
+  afterEach(async () => {
     // Close server after tests
-    server.close(() => {
-      done();
-    });
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 
   describe('GET /health', () => {
@@ -73,23 +70,20 @@ describe('Server API Tests', () => {
         });
     });
 
-    it('should successfully upload a valid file', (done) => {
-      chai.request(server)
+    it('should successfully upload a valid file', async () => {
+      const res = await chai.request(server)
         .post('/upload')
         .attach('file', Buffer.from('test content'), {
           filename: 'test.txt',
           contentType: 'text/plain'
-        })
-        .end((err, res) => {
-          expect(err).to.be.null;
-          expect(res).to.have.status(201);
-          expect(res.body).to.have.property('code');
-          expect(res.body).to.have.property('filename', 'test.txt');
-          expect(res.body).to.have.property('size');
-          expect(res.body).to.have.property('message', 'File uploaded successfully');
-          expect(res.body.code).to.match(/^[0-9]{4}$/); // 4 digit code
-          done();
         });
+
+      expect(res).to.have.status(201);
+      expect(res.body).to.have.property('code');
+      expect(res.body).to.have.property('filename', 'test.txt');
+      expect(res.body).to.have.property('size');
+      expect(res.body).to.have.property('message', 'File uploaded successfully');
+      expect(res.body.code).to.match(/^[0-9]{4}$/); // 4 digit code
     });
 
     // Enhanced tests for edge cases
@@ -130,38 +124,33 @@ describe('Server API Tests', () => {
         });
     });
 
-    it('should handle special characters in filename', (done) => {
-      chai.request(server)
+    it('should handle special characters in filename', async () => {
+      const res = await chai.request(server)
         .post('/upload')
         .attach('file', Buffer.from('test content'), {
           filename: 'test file with spaces & symbols @#$%.txt',
           contentType: 'text/plain'
-        })
-        .end((err, res) => {
-          expect(err).to.be.null;
-          expect(res).to.have.status(201);
-          expect(res.body).to.have.property('code');
-          expect(res.body).to.have.property('filename');
-          done();
         });
+
+      expect(res).to.have.status(201);
+      expect(res.body).to.have.property('code');
+      expect(res.body).to.have.property('filename');
     });
   });
 
   describe('GET /download/:code', () => {
     let testCode;
 
-    beforeEach((done) => {
+    beforeEach(async () => {
       // Upload a test file first
-      chai.request(server)
+      const res = await chai.request(server)
         .post('/upload')
         .attach('file', Buffer.from('download test content'), {
           filename: 'download-test.txt',
           contentType: 'text/plain'
-        })
-        .end((err, res) => {
-          testCode = res.body.code;
-          done();
         });
+
+      testCode = res.body.code;
     });
 
     it('should return 400 for invalid code format', (done) => {
@@ -297,32 +286,32 @@ describe('Server API Tests', () => {
   });
 
   describe('Rate Limiting', () => {
-    it('should enforce rate limiting', function(done) {
-      // Skip this test in test mode since we disabled rate limiting
-      if (process.env.NODE_ENV === 'test') {
-        this.skip();
-      }
-      
-      const requests = [];
+    it('should enforce rate limiting', async function() {
+      this.timeout(30000); // Increase timeout for rate limiting test
+
       const maxRequests = 101; // Exceed the limit
+      let rateLimitedCount = 0;
 
+      // Send requests sequentially to ensure rate limiter counts them properly
       for (let i = 0; i < maxRequests; i++) {
-        requests.push(
-          new Promise((resolve) => {
-            chai.request(server)
-              .get('/health')
-              .end((err, res) => {
-                resolve({ err, res, status: res ? res.status : null });
-              });
-          })
-        );
+        try {
+          const res = await chai.request(server)
+            .get('/health');
+          if (res.status === 429) {
+            rateLimitedCount++;
+          }
+        } catch (err) {
+          if (err.response?.status === 429) {
+            rateLimitedCount++;
+          }
+        }
+
+        // Small delay between requests to allow rate limiter to process
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
 
-      Promise.all(requests).then((responses) => {
-        const rateLimited = responses.filter(response => response.status === 429);
-        expect(rateLimited.length).to.be.greaterThan(0);
-        done();
-      }).catch(done);
+      console.log(`Rate limited requests: ${rateLimitedCount}`);
+      expect(rateLimitedCount).to.be.greaterThan(0);
     });
   });
 
@@ -341,7 +330,7 @@ describe('Server API Tests', () => {
 
     // Additional error handling tests
     it('should handle malformed requests gracefully', (done) => {
-      // Add a small delay to avoid rate limiting
+      // Add a much longer delay to allow rate limiter window to reset
       setTimeout(() => {
         chai.request(server)
           .post('/upload')
@@ -353,11 +342,11 @@ describe('Server API Tests', () => {
             expect(res.status).to.be.oneOf([400, 500]);
             done();
           });
-      }, 100);
+      }, 20000); // 20 second delay to reset rate limiter window
     });
 
     it('should handle upload with no content', (done) => {
-      // Add a small delay to avoid rate limiting
+      // Add a much longer delay to allow rate limiter window to reset
       setTimeout(() => {
         chai.request(server)
           .post('/upload')
@@ -371,11 +360,11 @@ describe('Server API Tests', () => {
             expect(res).to.have.status(201);
             done();
           });
-      }, 100);
+      }, 20000); // 20 second delay to reset rate limiter window
     });
 
     it('should handle upload with very long filename', (done) => {
-      // Add a small delay to avoid rate limiting
+      // Add a much longer delay to allow rate limiter window to reset
       setTimeout(() => {
         const longFilename = `${'a'.repeat(200)}.txt`;
         chai.request(server)
@@ -390,7 +379,7 @@ describe('Server API Tests', () => {
             expect(res.status).to.be.oneOf([201, 400]);
             done();
           });
-      }, 100);
+      }, 20000); // 20 second delay to reset rate limiter window
     });
   });
 });

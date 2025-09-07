@@ -1,23 +1,9 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Download, 
-  File, 
-  Image, 
-  Video, 
-  Music, 
-  Archive,
-  Code,
-  Share2,
-  CheckCircle,
-  AlertCircle,
-  Wifi,
-  Search
-} from 'lucide-react';
-import useStore from '../store/useStore';
-import { formatFileSize } from '../lib/utils';
-import api from '../lib/api';
-import environment from '../config/environment';
+import { Upload, Download, File, Copy, Check, AlertCircle } from 'lucide-react';
+import useStore from '../store/useStore.js';
+import { api } from '../lib/api.js';
+import { validateShareCode } from '../lib/utils.js';
 
 const ReceiveFiles = () => {
   const { addTransfer, updateTransferProgress, completeTransfer, addNotification } = useStore();

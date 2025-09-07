@@ -30,28 +30,28 @@ function validateEnvironment() {
   // Check required variables
   Object.entries(requiredEnvVars).forEach(([key, settings]) => {
     const value = process.env[key];
-    
+
     if (settings.required && !value) {
       errors.push(`Missing required environment variable: ${key} - ${settings.description}`);
     }
-    
+
     const finalValue = value || settings.default;
-    
+
     if (finalValue && settings.validate && !settings.validate(finalValue)) {
       errors.push(`Invalid value for ${key}: ${finalValue}`);
     }
-    
+
     config[key] = finalValue;
   });
 
   // Check optional variables
   Object.entries(optionalEnvVars).forEach(([key, settings]) => {
     const value = process.env[key] || settings.default;
-    
+
     if (settings.validate && !settings.validate(value)) {
       errors.push(`Invalid value for ${key}: ${value}`);
     }
-    
+
     config[key] = value;
   });
 
@@ -70,31 +70,31 @@ function validateEnvironment() {
 const config = validateEnvironment();
 
 // Export configuration with proper typing hints
-export const environment = {
+const environment = {
   // API Settings
   apiUrl: config.REACT_APP_API_URL,
-  
+
   // App Settings
   isDevelopment: config.NODE_ENV === 'development',
   isProduction: config.NODE_ENV === 'production',
   isTest: config.NODE_ENV === 'test',
   debugMode: config.REACT_APP_DEBUG === 'true',
-  
+
   // Computed values
   get baseApiUrl() {
     if (this.apiUrl) {
       return this.apiUrl;
     }
-    
+
     // In Electron/Production mode, use localhost for the backend
-    if (this.isProduction || window.location.protocol === 'file:') {
+    if (this.isProduction || (typeof window !== 'undefined' && window.location.protocol === 'file:')) {
       return 'http://localhost:5002';
     }
-    
+
     // Development fallback - use localhost:5002
     return 'http://localhost:5002';
   },
-  
+
   // Get dynamic WebSocket URL based on current context
   getWebSocketUrl: (username, room) => {
     // If we have an explicit API URL, use it
@@ -102,17 +102,28 @@ export const environment = {
       const wsUrl = environment.apiUrl.replace(/^http/, 'ws');
       return `${wsUrl}/chat?username=${encodeURIComponent(username)}&room=${room}`;
     }
-    
-    // In Electron or production, use localhost:5002
-    if (environment.isProduction || window.location.protocol === 'file:') {
+
+    // In Electron or production (distributed app), use localhost:5002
+    if (environment.isProduction || (typeof window !== 'undefined' && window.location.protocol === 'file:')) {
       // For Electron apps, we need to ensure we're using the correct localhost address
       // Always use localhost:5002 for Electron apps
+      // Add additional debugging for distributed app
+      console.log('🔧 Using WebSocket URL for distributed app:', `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`);
       return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
     }
-    
-    // Fallback to localhost
+
+    // Development mode - use localhost:5002
+    // Explicitly handle development mode to ensure correct URL
+    if (environment.isDevelopment) {
+      console.log('🔧 Using WebSocket URL for development:', `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`);
+      return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    }
+
+    // Fallback to localhost with additional logging
+    console.log('🔧 Using fallback WebSocket URL:', `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`);
     return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
   }
 };
 
+export { environment };
 export default environment;

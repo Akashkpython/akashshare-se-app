@@ -11,9 +11,9 @@ import {
   Wifi,
   WifiOff
 } from 'lucide-react';
-import useStore from '../store/useStore';
-import environment from '../config/environment';
-import { sanitizeString } from '../lib/utils';
+import useStore from '../store/useStore.js';
+import environment from '../config/environment.js';
+import { sanitizeString } from '../lib/utils.js';
 
 // Format time for chat messages
 const formatTime = (date) => {
@@ -41,70 +41,29 @@ const GroupChat = () => {
     { id: 'announcements', name: 'Announcements', icon: Users }
   ];
 
-  useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Auto-connect when component mounts
-  useEffect(() => {
-    connectToChat();
-    
-    return () => {
-      console.log('🧹 GroupChat component unmount - cleaning up');
-      isMountedRef.current = false;
-      
-      // Clear all timeouts
-      if (connectionTimeoutRef.current) {
-        clearTimeout(connectionTimeoutRef.current);
-        connectionTimeoutRef.current = null;
-      }
-      
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-      
-      // Close WebSocket connection
-      if (wsRef.current) {
-        console.log('🧹 Closing WebSocket connection');
-        wsRef.current.onopen = null;
-        wsRef.current.onmessage = null;
-        wsRef.current.onclose = null;
-        wsRef.current.onerror = null;
-        
-        if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
-          wsRef.current.close(1000, 'Component unmounting');
-        }
-        
-        wsRef.current = null;
-      }
-    };
-  }, [connectToChat]);
-
   const connectToChat = useCallback(() => {
     // Check if component is still mounted
     if (!isMountedRef.current) {
       console.log('🚫 Component unmounted, aborting connection');
       return;
     }
-    
+
     // Prevent multiple simultaneous connection attempts
     if (isConnecting || (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING)) {
       console.log('🚫 Connection already in progress, skipping');
       return;
     }
-    
+
     // Set connecting state
     setIsConnecting(true);
-    
+
     try {
       // Clear any existing timeouts
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
         connectionTimeoutRef.current = null;
       }
-      
+
       // Close existing connection if any
       if (wsRef.current) {
         console.log('🔌 Closing existing WebSocket connection');
@@ -115,13 +74,13 @@ const GroupChat = () => {
         wsRef.current.close();
         wsRef.current = null;
       }
-      
+
       console.log('🔌 Starting fresh connection attempt');
-      
+
       // Use environment configuration for WebSocket URL
       const wsUrl = environment.getWebSocketUrl(sanitizeString(username, 50), currentRoom);
       console.log('🔗 Connecting to:', wsUrl);
-      
+
       // Add additional debugging for Electron environment
       console.log('📍 Environment info:', {
         protocol: window.location.protocol,
@@ -131,14 +90,14 @@ const GroupChat = () => {
         isProduction: environment.isProduction,
         baseApiUrl: environment.baseApiUrl
       });
-      
+
       // Additional debugging for WebSocket connection
       console.log('🔧 WebSocket connection details:', {
         username: sanitizeString(username, 50),
         room: currentRoom,
         timestamp: new Date().toISOString()
       });
-      
+
       // Test if WebSocket constructor is available
       if (typeof WebSocket === 'undefined') {
         console.error('❌ WebSocket constructor is not available');
@@ -150,7 +109,7 @@ const GroupChat = () => {
         setIsConnecting(false);
         return;
       }
-      
+
       // Test URL format
       try {
         new URL(wsUrl);
@@ -164,174 +123,230 @@ const GroupChat = () => {
         setIsConnecting(false);
         return;
       }
-      
+
       wsRef.current = new WebSocket(wsUrl);
-      
-      // Set a reasonable connection timeout
+
+      // Set a reasonable connection timeout (increased for distributed app)
       connectionTimeoutRef.current = setTimeout(() => {
         if (!isMountedRef.current) return;
-        
+
         if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
-          console.log('⏰ Connection timeout');
+          console.log('⏰ Connection timeout - backend may be offline');
           wsRef.current.close();
           setIsConnecting(false);
           setIsConnected(false);
           addNotification({
             type: 'error',
             title: 'Connection Timeout',
-            message: 'Could not connect to chat server. Please check if the backend is running on port 5002 and try again.'
+            message: 'Could not connect to chat server. Please ensure the Akash Share backend is running on port 5002 and try again.'
           });
         }
-      }, 10000);
-      
+      }, 15000); // Increased timeout for distributed app
+
       wsRef.current.onopen = () => {
         if (!isMountedRef.current) return;
-        
+
         if (connectionTimeoutRef.current) {
           clearTimeout(connectionTimeoutRef.current);
           connectionTimeoutRef.current = null;
         }
-        
-        console.log('✅ WebSocket connected successfully');
+
+        console.log('✅ WebSocket connected successfully to backend server');
         setIsConnecting(false);
         setIsConnected(true);
         addNotification({
           type: 'success',
           title: 'Connected!',
-          message: 'Successfully connected to group chat'
+          message: 'You are now connected to the group chat.'
         });
       };
-      
+
       wsRef.current.onmessage = (event) => {
         if (!isMountedRef.current) return;
-        
+
         try {
-          const data = JSON.parse(event.data);
-          console.log('📨 Received:', data.type, data);
-          
-          switch (data.type) {
-            case 'message':
+          const message = JSON.parse(event.data);
+          console.log('📥 Received message:', message);
+
+          switch (message.type) {
+            case 'userList':
+              console.log('👥 Updating online users:', message.users);
+              setOnlineUsers(message.users || []);
+              break;
+            case 'userJoined':
+              console.log('➕ User joined, updating users:', message.users);
+              setOnlineUsers(message.users || []);
               setMessages(prev => [...prev, {
-                id: Date.now() + Math.random(),
-                username: sanitizeString(data.username, 50),
-                message: sanitizeString(data.message, 500),
-                timestamp: new Date(data.timestamp),
-                room: data.room
+                id: Date.now(),
+                type: 'system',
+                content: `${message.username} joined the chat`,
+                timestamp: message.timestamp
               }]);
               break;
-              
-            case 'userJoined':
-              setOnlineUsers(data.users || []);
-              break;
-              
             case 'userLeft':
-              setOnlineUsers(data.users || []);
+              console.log('➖ User left, updating users:', message.users);
+              setOnlineUsers(message.users || []);
+              setMessages(prev => [...prev, {
+                id: Date.now(),
+                type: 'system',
+                content: `${message.username} left the chat`,
+                timestamp: message.timestamp
+              }]);
               break;
-              
-            case 'userList':
-              setOnlineUsers(data.users || []);
+            case 'message':
+              console.log('💬 New chat message:', message.username, message.message);
+              setMessages(prev => [...prev, {
+                id: Date.now(),
+                type: 'message',
+                username: message.username,
+                content: message.message,
+                timestamp: message.timestamp
+              }]);
               break;
-              
+            case 'error':
+              console.error('❌ Chat server error:', message.message);
+              addNotification({
+                type: 'error',
+                title: 'Chat Error',
+                message: message.message
+              });
+              break;
             default:
-              console.log('❓ Unknown message type:', data.type);
+              console.log('📥 Unknown message type:', message.type);
           }
-        } catch (error) {
-          console.error('💥 Message parsing error:', error, 'Data:', event.data);
+        } catch (parseError) {
+          console.error('❌ Error parsing message:', parseError, event.data);
+          addNotification({
+            type: 'error',
+            title: 'Message Error',
+            message: 'Failed to parse incoming message'
+          });
         }
       };
-      
+
       wsRef.current.onclose = (event) => {
         if (!isMountedRef.current) return;
-        
+
+        console.log('🔌 WebSocket connection closed:', event.code, event.reason);
+        setIsConnected(false);
+        setIsConnecting(false);
+
+        // Clear timeout
         if (connectionTimeoutRef.current) {
           clearTimeout(connectionTimeoutRef.current);
           connectionTimeoutRef.current = null;
         }
-        
-        console.log('🔌 WebSocket closed, code:', event.code, 'reason:', event.reason);
-        setIsConnecting(false);
-        setIsConnected(false);
-        
-        // Only notify if it was an unexpected close
-        if (event.code !== 1000) {
+
+        // Show notification only for unexpected closures
+        if (event.code !== 1000) { // 1000 = Normal closure
           addNotification({
             type: 'warning',
-            title: 'Disconnected',
-            message: 'Connection to chat server was lost. Reconnecting...'
+            title: 'Connection Lost',
+            message: 'Chat connection was lost. Attempting to reconnect...'
           });
-          
-          // Auto-reconnect with delay
-          if (isMountedRef.current) {
-            reconnectTimeoutRef.current = setTimeout(() => {
-              if (isMountedRef.current && !isConnecting && !isConnected) {
-                console.log('🔄 Auto-reconnecting to chat server...');
-                connectToChat();
-              }
-            }, 3000);
+
+          // Attempt to reconnect after a delay (increased for distributed app)
+          if (reconnectTimeoutRef.current) {
+            clearTimeout(reconnectTimeoutRef.current);
           }
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              console.log('🔁 Attempting to reconnect to chat server...');
+              connectToChat();
+            }
+          }, 8000); // Increased delay for distributed app
         }
       };
-      
+
       wsRef.current.onerror = (error) => {
         if (!isMountedRef.current) return;
-        
+
+        console.error('❌ WebSocket error:', error);
+        if (error && error.message) {
+          console.error('Detailed WebSocket error message:', error.message);
+        }
+        setIsConnected(false);
+        setIsConnecting(false);
+
+        // Clear timeout
         if (connectionTimeoutRef.current) {
           clearTimeout(connectionTimeoutRef.current);
           connectionTimeoutRef.current = null;
         }
-        
-        console.error('🚨 WebSocket error:', error);
-        console.error('🚨 WebSocket error details:', {
-          message: error.message,
-          code: error.code,
-          reason: error.reason,
-          target: error.target,
-          type: error.type
-        });
-        setIsConnecting(false);
-        setIsConnected(false);
-        
-        // Provide more specific error messages based on the error type
-        let errorMessage = 'Failed to connect to chat server. Please check if the backend is running on port 5002 and try again.';
-        
-        if (error && error.message) {
-          if (error.message.includes('ECONNREFUSED')) {
-            errorMessage = 'Connection refused. Please ensure the backend server is running on port 5002.';
-          } else if (error.message.includes('ENOTFOUND')) {
-            errorMessage = 'Server not found. Please check if the backend server is running on port 5002.';
-          } else if (error.message.includes('ECONNRESET')) {
-            errorMessage = 'Connection reset. The server may have restarted. Please try again.';
-          }
-        }
-        
-        // Add additional context for Electron environment
-        if (window.location.protocol === 'file:') {
-          errorMessage += ' Note: In the desktop app, the backend should start automatically. If this error persists, try restarting the application.';
-        }
-        
+
         addNotification({
           type: 'error',
           title: 'Connection Error',
-          message: errorMessage
+          message: 'Failed to connect to chat server. Please ensure the backend is running on port 5002.'
         });
       };
-      
+
     } catch (error) {
-      console.error('💥 Connection setup failed:', error);
-      console.error('💥 Connection setup error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+      console.error('❌ Error establishing WebSocket connection:', error);
       setIsConnecting(false);
-      setIsConnected(false);
+
+      // Clear timeout
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+
       addNotification({
         type: 'error',
         title: 'Connection Failed',
-        message: `Could not setup WebSocket connection: ${error.message}`
+        message: `Failed to connect to chat server: ${error.message}`
       });
     }
-  }, [username, currentRoom, addNotification, isConnecting, isConnected]);
+  }, [username, currentRoom, addNotification, isConnecting]);
+
+  // Auto-connect when component mounts
+  useEffect(() => {
+    // Add a small delay to ensure component is fully mounted
+    const connectTimer = setTimeout(() => {
+      if (isMountedRef.current) {
+        console.log('🚀 GroupChat component mounted, connecting to chat...');
+        connectToChat();
+      }
+    }, 100);
+
+    return () => {
+      console.log('🧹 GroupChat component unmount - cleaning up');
+      clearTimeout(connectTimer);
+      isMountedRef.current = false;
+
+      // Clear all timeouts
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+
+      // Close WebSocket connection
+      if (wsRef.current) {
+        console.log('🧹 Closing WebSocket connection');
+        wsRef.current.onopen = null;
+        wsRef.current.onmessage = null;
+        wsRef.current.onclose = null;
+        wsRef.current.onerror = null;
+
+        if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+          wsRef.current.close(1000, 'Component unmounting');
+        }
+
+        wsRef.current = null;
+      }
+    };
+  }, [connectToChat]);
+
+  useEffect(() => {
+    // Auto-scroll to bottom when new messages arrive
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   const leaveChat = () => {
     // Clear all timeouts
@@ -382,16 +397,28 @@ const GroupChat = () => {
   const switchRoom = (roomId) => {
     if (currentRoom === roomId) return;
     
+    // Clear messages immediately when switching rooms
+    setMessages([]);
+    
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       // Send room switch message
-      wsRef.current.send(JSON.stringify({
-        type: 'switchRoom',
-        room: roomId
-      }));
+      try {
+        wsRef.current.send(JSON.stringify({
+          type: 'switchRoom',
+          room: roomId
+        }));
+      } catch (error) {
+        console.error('❌ Error sending room switch message:', error);
+        addNotification({
+          type: 'error',
+          title: 'Room Switch Failed',
+          message: 'Failed to switch rooms. Please try again.'
+        });
+        return;
+      }
     }
     
     setCurrentRoom(roomId);
-    setMessages([]); // Clear messages when switching rooms
   };
 
   const sendMessage = () => {
@@ -409,13 +436,22 @@ const GroupChat = () => {
     const message = sanitizeString(newMessage, 500);
     if (!message) return;
     
-    wsRef.current.send(JSON.stringify({
-      type: 'message',
-      message,
-      room: currentRoom
-    }));
-    
-    setNewMessage('');
+    try {
+      wsRef.current.send(JSON.stringify({
+        type: 'message',
+        message,
+        room: currentRoom
+      }));
+      
+      setNewMessage('');
+    } catch (error) {
+      console.error('❌ Error sending message:', error);
+      addNotification({
+        type: 'error',
+        title: 'Send Failed',
+        message: 'Failed to send message. Please try again.'
+      });
+    }
   };
 
   const handleKeyPress = (e) => {

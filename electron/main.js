@@ -1,14 +1,15 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage } = require('electron');
-const path = require('path');
-const { spawn } = require('child_process');
-const fs = require('fs');
+import { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage } from 'electron';
+import path from 'path';
+import { spawn } from 'child_process';
+import fs from 'fs';
 
 // Function to safely load a module with detailed error reporting
-function safeRequire(moduleName, fallback = null) {
+async function safeRequire(moduleName, fallback = null) {
   try {
-    const module = require(moduleName);
+    // For ES modules, we need to use dynamic imports
+    const module = await import(moduleName);
     console.log(`✅ Successfully loaded module: ${moduleName}`);
-    return module;
+    return module.default || module;
   } catch (error) {
     console.warn(`⚠️ Failed to load module: ${moduleName}`);
     console.warn('Error details:', error.message);
@@ -17,17 +18,9 @@ function safeRequire(moduleName, fallback = null) {
     // Additional debugging for electron-log specifically
     if (moduleName === 'electron-log') {
       try {
-        const modulePath = path.join(__dirname, '../node_modules/electron-log');
+        const modulePath = path.join(path.dirname(import.meta.url), '../node_modules/electron-log');
         console.warn('Checking module path:', modulePath);
         console.warn('Module exists:', fs.existsSync(modulePath));
-        
-        if (fs.existsSync(modulePath)) {
-          const packageJsonPath = path.join(modulePath, 'package.json');
-          if (fs.existsSync(packageJsonPath)) {
-            const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-            console.warn('Module package.json version:', packageJson.version);
-          }
-        }
       } catch (pathError) {
         console.warn('Error checking module path:', pathError.message);
       }
@@ -41,49 +34,54 @@ function safeRequire(moduleName, fallback = null) {
 let autoUpdater, log;
 
 // Load electron-log with improved error handling
-const electronLog = safeRequire('electron-log');
-if (electronLog) {
-  log = electronLog;
-  try {
-    const electronUpdater = safeRequire('electron-updater');
-    if (electronUpdater) {
-      autoUpdater = electronUpdater.autoUpdater;
-      // Configure autoUpdater logger
-      autoUpdater.logger = log;
-      autoUpdater.logger.transports.file.level = 'info';
-      autoUpdater.logger.transports.console.level = 'info';
-      console.log = log.info;
-      console.error = log.error;
-      console.warn = log.warn;
-      log.info('✅ electron-log and electron-updater loaded successfully');
-    } else {
-      throw new Error('electron-updater not available');
+(async () => {
+try {
+  const electronLog = await safeRequire('electron-log');
+  if (electronLog) {
+    log = electronLog;
+    try {
+      const electronUpdater = await safeRequire('electron-updater');
+      if (electronUpdater && electronUpdater.autoUpdater) {
+        autoUpdater = electronUpdater.autoUpdater;
+        // Configure autoUpdater logger
+        autoUpdater.logger = log;
+        autoUpdater.logger.transports.file.level = 'info';
+        autoUpdater.logger.transports.console.level = 'info';
+        console.log = log.info;
+        console.error = log.error;
+        console.warn = log.warn;
+        log.info('✅ electron-log and electron-updater loaded successfully');
+      } else {
+        throw new Error('electron-updater not available');
+      }
+    } catch (error) {
+      console.warn('⚠️ electron-updater not available, using basic console logging');
+      console.warn('Error details:', error.message);
+      autoUpdater = null;
     }
-  } catch (error) {
-    console.warn('⚠️ electron-updater not available, using basic console logging');
-    console.warn('Error details:', error.message);
+  } else {
+    console.warn('⚠️ electron-log not available, using basic console logging');
+    
+    // Create a more robust fallback logging system
+    const createFallbackLogger = () => {
+      const formatDate = () => new Date().toISOString();
+      return {
+        info: (...args) => console.log(`[INFO ${formatDate()}]`, ...args),
+        error: (...args) => console.error(`[ERROR ${formatDate()}]`, ...args),
+        warn: (...args) => console.warn(`[WARN ${formatDate()}]`, ...args),
+        transports: {
+          file: { level: 'info' },
+          console: { level: 'info' }
+        }
+      };
+    };
+    
+    log = createFallbackLogger();
+    log.info('🔧 Using fallback logger');
     autoUpdater = null;
   }
-} else {
-  console.warn('⚠️ electron-log not available, using basic console logging');
-  
-  // Create a more robust fallback logging system
-  const createFallbackLogger = () => {
-    const formatDate = () => new Date().toISOString();
-    return {
-      info: (...args) => console.log(`[INFO ${formatDate()}]`, ...args),
-      error: (...args) => console.error(`[ERROR ${formatDate()}]`, ...args),
-      warn: (...args) => console.warn(`[WARN ${formatDate()}]`, ...args),
-      transports: {
-        file: { level: 'info' },
-        console: { level: 'info' }
-      }
-    };
-  };
-  
-  log = createFallbackLogger();
-  log.info('🔧 Using fallback logger');
-  autoUpdater = null;
+} catch (error) {
+  console.error('Error loading electron-log:', error);
 }
 
 // Create a mock autoUpdater that does nothing but logs if electron-updater is not available
@@ -91,15 +89,27 @@ if (!autoUpdater) {
   autoUpdater = {
     logger: log,
     checkForUpdatesAndNotify: () => {
-      log.info('ℹ️ Update check skipped - autoUpdater not available');
+      if (log && log.info) {
+        log.info('ℹ️ Update check skipped - autoUpdater not available');
+      } else {
+        console.log('ℹ️ Update check skipped - autoUpdater not available');
+      }
       return Promise.resolve();
     },
     on: (event, _callback) => {
-      log.info(`ℹ️ AutoUpdater event listener registered for: ${event}`);
+      if (log && log.info) {
+        log.info(`ℹ️ AutoUpdater event listener registered for: ${event}`);
+      } else {
+        console.log(`ℹ️ AutoUpdater event listener registered for: ${event}`);
+      }
       // Do nothing - no events will be emitted
     },
     setFeedURL: (url) => {
-      log.info(`ℹ️ AutoUpdater feed URL set:`, url);
+      if (log && log.info) {
+        log.info(`ℹ️ AutoUpdater feed URL set:`, url);
+      } else {
+        console.log(`ℹ️ AutoUpdater feed URL set:`, url);
+      }
     }
   };
 }
@@ -112,7 +122,7 @@ const isDev = process.env.NODE_ENV === 'development';
 
 // Set update feed URL from package.json
 try {
-  const packageJson = require('../package.json');
+  const packageJson = JSON.parse(fs.readFileSync(path.join(path.dirname(import.meta.url), '../package.json'), 'utf8'));
   if (packageJson.build && packageJson.build.publish && packageJson.build.publish[0]) {
     const publishConfig = packageJson.build.publish[0];
     if (publishConfig.provider === 'generic' && publishConfig.url) {
@@ -120,27 +130,56 @@ try {
         provider: 'generic',
         url: publishConfig.url
       });
-      log.info(`✅ Auto-updater feed URL set to: ${publishConfig.url}`);
+      if (log && log.info) {
+        log.info(`✅ Auto-updater feed URL set to: ${publishConfig.url}`);
+      } else {
+        console.log(`✅ Auto-updater feed URL set to: ${publishConfig.url}`);
+      }
     }
   }
 } catch (error) {
-  log.warn('⚠️ Could not set auto-updater feed URL:', error.message);
+  if (log && log.warn) {
+    log.warn('⚠️ Could not set auto-updater feed URL:', error.message);
+  } else {
+    console.warn('⚠️ Could not set auto-updater feed URL:', error.message);
+  }
 }
 
 // Add performance tracking
-log.info(`🚀 Electron main process started at ${new Date().toISOString()}`);
+if (log && log.info) {
+  log.info(`🚀 Electron main process started at ${new Date().toISOString()}`);
+} else {
+  console.log(`🚀 Electron main process started at ${new Date().toISOString()}`);
+}
 
 // Conditionally import electron-devtools-installer in development mode
 if (isDev) {
   try {
-    const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer');
+    const devToolsInstaller = await import('electron-devtools-installer');
+    const { default: installExtension, REACT_DEVELOPER_TOOLS } = devToolsInstaller;
     app.whenReady().then(() => {
       installExtension(REACT_DEVELOPER_TOOLS)
-        .then((name) => log.info(`Added Extension: ${name}`))
-        .catch((err) => log.warn('An error occurred: ', err));
+        .then((name) => {
+          if (log && log.info) {
+            log.info(`Added Extension: ${name}`);
+          } else {
+            console.log(`Added Extension: ${name}`);
+          }
+        })
+        .catch((err) => {
+          if (log && log.warn) {
+            log.warn('An error occurred: ', err);
+          } else {
+            console.warn('An error occurred: ', err);
+          }
+        });
     });
   } catch (err) {
-    log.warn('electron-devtools-installer not available in this environment');
+    if (log && log.warn) {
+      log.warn('electron-devtools-installer not available in this environment');
+    } else {
+      console.warn('electron-devtools-installer not available in this environment');
+    }
   }
 }
 
@@ -233,7 +272,7 @@ async function ensureBackendDependencies() {
   try {
     // Determine the correct path for the backend based on whether we're in a packaged app or development
     let backendDir;
-    
+
     if (app.isPackaged) {
       // In packaged app, backend is in resources/backend
       backendDir = path.join(process.resourcesPath, 'backend');
@@ -243,11 +282,11 @@ async function ensureBackendDependencies() {
       backendDir = path.join(__dirname, '../backend');
       log.info(`💻 Running in development mode. Backend dir: ${backendDir}`);
     }
-    
+
     const nodeModulesPath = path.join(backendDir, 'node_modules');
-    
+
     log.info(`🔧 Checking backend dependencies in: ${backendDir}`);
-    
+
     // In a packaged app, dependencies should already be installed
     if (app.isPackaged) {
       if (fs.existsSync(nodeModulesPath)) {
@@ -259,26 +298,26 @@ async function ensureBackendDependencies() {
         return true;
       }
     }
-    
+
     // Check if node_modules exists (development mode)
     if (!fs.existsSync(nodeModulesPath)) {
       log.warn('⚠️ Backend dependencies not found, attempting to install...');
-      
+
       // Try to install backend dependencies
       const { exec } = require('child_process');
       const util = require('util');
       const execAsync = util.promisify(exec);
-      
+
       try {
         log.info('🔧 Installing backend dependencies...');
-        const { stdout, stderr } = await execAsync('npm install', { 
+        const { stdout, stderr } = await execAsync('npm install', {
           cwd: backendDir,
           timeout: 120000 // 2 minute timeout
         });
-        
+
         if (stdout) log.info(`[npm install stdout] ${stdout}`);
         if (stderr) log.warn(`[npm install stderr] ${stderr}`);
-        
+
         log.info('✅ Backend dependencies installed successfully');
         return true;
       } catch (installError) {
@@ -331,11 +370,11 @@ async function ensureBackendEnv() {
         log.warn('⚠️ No .env.example found, creating minimal .env file...');
         
         // Create a minimal .env file with required variables
-        const minimalEnv = `# Auto-generated .env file
-MONGO_URI=mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/akashshare?retryWrites=true&w=majority
+        const minimalEnv = `# Auto-generated .env file - SECURITY WARNING: Update these values!
+MONGO_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
 PORT=5002
 HOST=0.0.0.0
-JWT_SECRET=y3k4WUFsPsv9wQW1ywaEeT9Dg1bdMIUnzqyJBPeZedf7SoRnq19HZI8D02XcUXI5KBWscen/y43UHmYMtKABKg==
+JWT_SECRET=YOUR_JWT_SECRET_HERE_GENERATE_WITH_CRYPTO_RANDOM_BYTES
 NODE_ENV=production
 `;
         fs.writeFileSync(envPath, minimalEnv);
@@ -359,6 +398,13 @@ NODE_ENV=production
 async function createBackendProcess() {
   log.info('🔧 Starting backend server process...');
   const backendStartTime = Date.now();
+  
+  // Check if backend is already running on port 5002
+  const isBackendRunning = await checkIfBackendIsRunning();
+  if (isBackendRunning) {
+    log.info('✅ Backend server is already running on port 5002, skipping startup');
+    return Promise.resolve(null);
+  }
   
   // Ensure backend dependencies are installed
   const depsInstalled = await ensureBackendDependencies();
@@ -420,14 +466,14 @@ async function createBackendProcess() {
   log.info(`🔧 PORT: ${process.env.PORT || 'not set'}`);
   log.info(`🔧 MONGO_URI: ${process.env.MONGO_URI ? 'set' : 'not set'}`);
   
-  // Spawn the backend process
+  // Spawn the backend process with enhanced error handling
   const backendProcess = spawn('node', [backendPath], {
     cwd: backendDir,
     env: {
       ...process.env,
       NODE_ENV: isDev ? 'development' : 'production',
-      PORT: process.env.PORT || 5002,
-      HOST: process.env.HOST || 'localhost'
+      PORT: process.env.PORT || '5002',
+      HOST: '0.0.0.0' // Always bind to 0.0.0.0 for proper network accessibility
     },
     stdio: ['ignore', 'pipe', 'pipe']
   });
@@ -444,7 +490,8 @@ async function createBackendProcess() {
     // Performance tracking for backend startup
     if (output.includes('Server running on')) {
       const serverStartTime = Date.now();
-      log.info(`✅ Backend server started in ${serverStartTime - backendStartTime}ms`);
+      log.info(`✅ Backend server started successfully in ${serverStartTime - backendStartTime}ms`);
+      log.info('🎉 Backend server is now online and ready to handle requests');
     }
     
     // Check for MongoDB connection errors
@@ -477,6 +524,8 @@ async function createBackendProcess() {
       log.error('❌ Node.js not found. Please ensure Node.js is installed.');
     } else if (error.code === 'EACCES') {
       log.error('❌ Permission denied. Please check file permissions.');
+    } else {
+      log.error(`❌ Unexpected error starting backend: ${error.message}`);
     }
   });
 
@@ -487,7 +536,34 @@ async function createBackendProcess() {
     }
   });
 
-  return backendProcess;
+  // Wait for backend to start properly before returning
+  return new Promise((resolve) => {
+    let backendStarted = false;
+    
+    const handleOutput = (data) => {
+      const output = data.toString().trim();
+      if (output.includes('Server running on')) {
+        backendStarted = true;
+        log.info('✅ Backend server confirmed running');
+        // Remove listeners to prevent memory leaks
+        backendProcess.stdout.removeListener('data', handleOutput);
+        backendProcess.stderr.removeListener('data', handleOutput);
+        resolve(backendProcess);
+      }
+    };
+    
+    // Listen for startup confirmation
+    backendProcess.stdout.on('data', handleOutput);
+    backendProcess.stderr.on('data', handleOutput);
+    
+    // Timeout if backend doesn't start in 10 seconds
+    setTimeout(() => {
+      if (!backendStarted) {
+        log.warn('⚠️ Backend server startup timeout - continuing anyway');
+        resolve(backendProcess);
+      }
+    }, 10000);
+  });
 }
 
 let mainWindow;
@@ -566,6 +642,56 @@ function createTray() {
   log.info(`✅ System tray created with icon: ${iconPathUsed || 'default'}`);
 }
 
+// Function to check if backend is already running
+async function checkIfBackendIsRunning() {
+  return new Promise((resolve) => {
+    const http = require('http');
+    const options = {
+      hostname: '127.0.0.1', // Use IPv4 instead of localhost to avoid IPv6 issues
+      port: 5002,
+      path: '/health',
+      method: 'GET',
+      timeout: 3000
+    };
+    
+    const req = http.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        try {
+          const jsonData = JSON.parse(data);
+          if (res.statusCode === 200 && jsonData.status === 'OK') {
+            log.info('🔍 Backend health check successful - backend is already running');
+            resolve(true);
+          } else {
+            log.info(`🔍 Backend health check returned status ${res.statusCode} - backend may not be running`);
+            resolve(false);
+          }
+        } catch (parseError) {
+          log.info(`🔍 Backend health check failed to parse response - backend may not be running: ${parseError.message}`);
+          resolve(false);
+        }
+      });
+    });
+    
+    req.on('error', (error) => {
+      log.info(`🔍 Backend health check failed - backend is likely not running: ${error.message}`);
+      resolve(false);
+    });
+    
+    req.on('timeout', () => {
+      log.info('🔍 Backend health check timed out - backend may not be running');
+      req.destroy();
+      resolve(false);
+    });
+    
+    req.end();
+  });
+}
+
 // Auto-update event handlers
 autoUpdater.on('checking-for-update', () => {
   log.info('Checking for update...');
@@ -623,10 +749,20 @@ app.whenReady().then(async () => {
   log.info(`   User Data Path: ${app.getPath('userData')}`);
   
   try {
-    mainWindow = createWindow();
-    
-    // Create backend process asynchronously
+    // Create backend process first and wait for it to start
+    log.info('🔧 Initializing backend server...');
     backendProcess = await createBackendProcess();
+    
+    // Wait a bit for the backend to fully start
+    if (backendProcess) {
+      log.info('⏳ Waiting for backend server to initialize...');
+      // Wait for 3 seconds to allow backend to start
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      log.info('✅ Backend server initialization complete');
+    }
+    
+    // Now create the main window
+    mainWindow = createWindow();
     
     createTray();
 
@@ -804,3 +940,4 @@ ipcMain.handle('get-platform', () => {
     return 'unknown';
   }
 });
+})();

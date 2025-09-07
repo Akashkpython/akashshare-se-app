@@ -7,7 +7,13 @@ This document provides instructions for installing the Akash Share application o
 - Windows 7 or later (64-bit)
 - Administrator privileges for installation
 
+- **Operating System**: Windows 7 or later (64-bit).
+- **Node.js**: Version 14.x or later. You can download it from [nodejs.org](https://nodejs.org/).
+- **Administrator Privileges**: Required for installing the application system-wide.
+
 ## Installation Steps
+
+The recommended way to install Akash Share is by using the provided installer.
 
 ### Method 1: Using the NSIS Installer (Recommended)
 1. Once the build process completes, locate the installer file:
@@ -17,6 +23,7 @@ This document provides instructions for installing the Akash Share application o
 3. Follow the installation wizard prompts
 4. Accept the license agreement when prompted
 5. Choose installation location (or use default)
+5. Choose an installation location (or use the default).
 6. Click "Install" to begin installation
 7. Once completed, click "Finish" to launch the application
 
@@ -25,6 +32,7 @@ If the installer is not available, you can use the unpacked version:
 1. Copy the entire `dist\win-unpacked` folder to the target PC
 2. Navigate to the folder and double-click `Akash Share.exe` to run the application
 3. Note: This method does not create desktop shortcuts or start menu entries
+3. **Note**: This method does not create desktop shortcuts or start menu entries.
 
 ## Uninstallation
 To uninstall Akash Share from your system:
@@ -33,6 +41,7 @@ To uninstall Akash Share from your system:
 3. Click "Uninstall" and confirm
 4. During uninstallation, you will be prompted to type "AkAsH" to confirm removal
 5. The uninstallation process will remove all application files and shortcuts
+5. The uninstallation process will remove all application files and shortcuts.
 
 ### Alternative Uninstallation Methods
 If the standard uninstallation fails, you can use the provided uninstaller scripts:
@@ -44,11 +53,14 @@ To use any of these scripts:
 1. Run the script as Administrator
 2. When prompted, type "AkAsH" to confirm uninstallation
 3. The script will remove all application files and shortcuts
+2. When prompted, type "AkAsH" to confirm uninstallation.
+3. The script will remove all application files and shortcuts.
 
 ## System Requirements
 - Operating System: Windows 7 SP1 or later (64-bit)
 - Processor: 1 GHz or faster
 - Memory: 1 GB RAM (32-bit) or 2 GB RAM (64-bit)
+- Memory: 2 GB RAM
 - Storage: 200 MB available space
 - Display: 800 x 600 screen resolution
 
@@ -58,14 +70,23 @@ If you encounter issues during installation or running the application:
 1. **Installation fails with permissions error**
    - Ensure you're running the installer as Administrator
    - Check that you have write permissions to the installation directory
+1.  **Installation fails with permissions error**
+    - Ensure you are running the installer as an Administrator.
+    - Check that you have write permissions to the installation directory.
 
 2. **Application fails to start**
    - Ensure all required dependencies are installed
    - Check Windows Event Viewer for error details
+2.  **Application fails to start**
+    - Ensure all prerequisites, especially Node.js, are installed correctly.
+    - Check the Windows Event Viewer for any application-specific error details.
 
 3. **Uninstallation fails**
    - Try running the alternative uninstaller scripts as Administrator
    - Manually delete the installation folder if necessary
+3.  **Uninstallation fails**
+    - Try running one of the alternative uninstaller scripts as an Administrator.
+    - As a last resort, you can manually delete the installation folder.
 
 ## Security Note
 For security, the uninstallation process requires you to type "AkAsH" exactly to confirm removal of the application. This prevents accidental uninstallation.

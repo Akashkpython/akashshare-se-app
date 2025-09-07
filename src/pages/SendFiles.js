@@ -1,25 +1,9 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Upload, 
-  X, 
-  Copy, 
-  Check, 
-  File, 
-  Image, 
-  Video, 
-  Music, 
-  Archive,
-  Code,
-  Share2,
-  CheckCircle,
-  AlertCircle,
-  Wifi
-} from 'lucide-react';
-import useStore from '../store/useStore';
-import { formatFileSize, copyToClipboard } from '../lib/utils';
-import api from '../lib/api';
-import environment from '../config/environment';
+import { Upload, File as FileIcon, Copy, Check, AlertCircle, Link } from 'lucide-react';
+import useStore from '../store/useStore.js';
+import { api } from '../lib/api.js';
+import FilePreview from '../components/FilePreview.js';
 
 const SendFiles = () => {
   const { addTransfer, updateTransferProgress, completeTransfer, addNotification, addShareCode } = useStore();
@@ -30,7 +14,6 @@ const SendFiles = () => {
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'online', 'offline'
-  const fileInputRef = useRef(null);
 
   // Debounce function for backend status checks
   const debounce = useCallback((func, delay) => {
@@ -47,17 +30,17 @@ const SendFiles = () => {
       console.log('🔍 Checking backend status at:', `${environment.baseApiUrl}/health`);
       await api.healthCheck();
       setBackendStatus('online');
-      console.log('✅ Backend is online');
+      console.log('✅ Backend is online and ready to handle requests');
     } catch (error) {
       console.error('Backend health check failed:', error);
-      console.log('❌ Backend is offline');
+      console.log('❌ Backend is offline or unreachable');
       setBackendStatus('offline');
       
       // Add a more descriptive error notification
       addNotification({
         type: 'error',
         title: 'Backend Server Offline',
-        message: 'The backend server is not running. Please start the backend server on port 5002.'
+        message: 'The backend server is not running or not accessible. Please ensure the Akash Share application is fully started and the backend server is running on port 5002.'
       });
     }
   }, [addNotification]);

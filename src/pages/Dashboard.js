@@ -15,8 +15,8 @@ import {
   HardDrive
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import useStore from '../store/useStore';
-import { formatFileSize, getFileIcon } from '../lib/utils';
+import useStore from '../store/useStore.js';
+import { formatFileSize, getFileIcon } from '../lib/utils.js';
 
 // Custom colored versions of the original Lucide icons with colored backgrounds and white symbols
 const ColoredUploadIcon = () => (

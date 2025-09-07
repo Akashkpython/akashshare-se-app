@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GroupChat Component Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .connecting {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .chat-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            height: 300px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .message {
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            text-align: right;
+        }
+        .other-message {
+            background-color: #f1f1f1;
+        }
+        .system-message {
+            background-color: #fffde7;
+            font-style: italic;
+            text-align: center;
+        }
+        .controls {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .controls button {
+            margin-right: 10px;
+            padding: 8px 16px;
+        }
+        .message-form {
+            display: flex;
+        }
+        .message-form input {
+            flex-grow: 1;
+            padding: 8px;
+            margin-right: 10px;
+        }
+        .message-form button {
+            padding: 8px 16px;
+        }
+        .room-selector {
+            margin-bottom: 10px;
+        }
+        .user-list {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .user-list h3 {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>GroupChat Component Test</h1>
+    
+    <div id="status" class="status disconnected">Disconnected</div>
+    
+    <div class="controls">
+        <button id="connectBtn">Connect</button>
+        <button id="disconnectBtn" disabled>Disconnect</button>
+    </div>
+    
+    <div class="user-info">
+        <label for="username">Username:</label>
+        <input type="text" id="username" value="TestUser" />
+    </div>
+    
+    <div class="room-selector">
+        <label for="room">Room:</label>
+        <select id="room">
+            <option value="general">General</option>
+            <option value="help">Help</option>
+            <option value="announcements">Announcements</option>
+        </select>
+        <button id="switchRoomBtn" disabled>Switch Room</button>
+    </div>
+    
+    <div class="user-list">
+        <h3>Online Users (<span id="userCount">0</span>)</h3>
+        <ul id="users"></ul>
+    </div>
+    
+    <div id="chatMessages" class="chat-container"></div>
+    
+    <form id="messageForm" class="message-form">
+        <input type="text" id="messageInput" placeholder="Type a message..." disabled />
+        <button type="submit" disabled>Send</button>
+    </form>
+    
+    <script>
+        // DOM Elements
+        const statusEl = document.getElementById('status');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const usernameInput = document.getElementById('username');
+        const roomSelect = document.getElementById('room');
+        const switchRoomBtn = document.getElementById('switchRoomBtn');
+        const userCountEl = document.getElementById('userCount');
+        const usersListEl = document.getElementById('users');
+        const chatMessagesEl = document.getElementById('chatMessages');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        
+        // WebSocket connection
+        let socket = null;
+        let currentRoom = 'general';
+        
+        // Connect to WebSocket server
+        function connect() {
+            const username = usernameInput.value.trim() || 'TestUser';
+            currentRoom = roomSelect.value;
+            
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+            
+            updateStatus('connecting', 'Connecting...');
+            
+            // Close existing connection if any
+            if (socket) {
+                socket.close();
+            }
+            
+            // Create new WebSocket connection
+            socket = new WebSocket(`ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${encodeURIComponent(currentRoom)}`);
+            
+            // Connection opened
+            socket.addEventListener('open', (event) => {
+                updateStatus('connected', 'Connected');
+                enableControls(true);
+                addSystemMessage(`Connected to ${currentRoom} room as ${username}`);
+            });
+            
+            // Listen for messages
+            socket.addEventListener('message', (event) => {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            });
+            
+            // Connection closed
+            socket.addEventListener('close', (event) => {
+                updateStatus('disconnected', 'Disconnected');
+                enableControls(false);
+                addSystemMessage('Disconnected from server');
+            });
+            
+            // Connection error
+            socket.addEventListener('error', (event) => {
+                console.error('WebSocket error:', event);
+                updateStatus('disconnected', 'Connection error');
+                enableControls(false);
+                addSystemMessage('Connection error');
+            });
+        }
+        
+        // Disconnect from WebSocket server
+        function disconnect() {
+            if (socket) {
+                socket.close();
+                socket = null;
+            }
+        }
+        
+        // Switch to a different room
+        function switchRoom() {
+            const newRoom = roomSelect.value;
+            
+            if (newRoom === currentRoom) {
+                return;
+            }
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: 'switchRoom',
+                    room: newRoom
+                }));
+                
+                addSystemMessage(`Switching from ${currentRoom} to ${newRoom}`);
+                currentRoom = newRoom;
+                chatMessagesEl.innerHTML = ''; // Clear messages when switching rooms
+            }
+        }
+        
+        // Send a message
+        function sendMessage(message) {
+            if (!message || !socket || socket.readyState !== WebSocket.OPEN) {
+                return;
+            }
+            
+            socket.send(JSON.stringify({
+                type: 'message',
+                message: message,
+                room: currentRoom
+            }));
+            
+            // Clear input
+            messageInput.value = '';
+        }
+        
+        // Handle incoming messages
+        function handleMessage(data) {
+            console.log('Received message:', data);
+            
+            switch (data.type) {
+                case 'message':
+                    // Regular chat message
+                    const isOwnMessage = data.username === usernameInput.value;
+                    addMessage(data.username, data.message, isOwnMessage);
+                    break;
+                    
+                case 'userJoined':
+                    // User joined notification
+                    addSystemMessage(`${data.username} joined the ${currentRoom} room`);
+                    break;
+                    
+                case 'userLeft':
+                    // User left notification
+                    addSystemMessage(`${data.username} left the ${currentRoom} room`);
+                    break;
+                    
+                case 'userList':
+                    // Update user list
+                    updateUserList(data.users);
+                    break;
+                    
+                default:
+                    console.log('Unknown message type:', data.type);
+            }
+        }
+        
+        // Add a message to the chat
+        function addMessage(username, message, isOwnMessage) {
+            const messageEl = document.createElement('div');
+            messageEl.className = `message ${isOwnMessage ? 'user-message' : 'other-message'}`;
+            messageEl.textContent = `${username}: ${message}`;
+            chatMessagesEl.appendChild(messageEl);
+            scrollToBottom();
+        }
+        
+        // Add a system message
+        function addSystemMessage(message) {
+            const messageEl = document.createElement('div');
+            messageEl.className = 'message system-message';
+            messageEl.textContent = message;
+            chatMessagesEl.appendChild(messageEl);
+            scrollToBottom();
+        }
+        
+        // Update the user list
+        function updateUserList(users) {
+            userCountEl.textContent = users.length;
+            usersListEl.innerHTML = '';
+            
+            users.forEach(user => {
+                const userEl = document.createElement('li');
+                userEl.textContent = user;
+                usersListEl.appendChild(userEl);
+            });
+        }
+        
+        // Update connection status
+        function updateStatus(state, message) {
+            statusEl.className = `status ${state}`;
+            statusEl.textContent = message;
+        }
+        
+        // Enable/disable controls based on connection state
+        function enableControls(connected) {
+            connectBtn.disabled = connected;
+            disconnectBtn.disabled = !connected;
+            switchRoomBtn.disabled = !connected;
+            messageInput.disabled = !connected;
+            messageForm.querySelector('button').disabled = !connected;
+        }
+        
+        // Scroll chat to bottom
+        function scrollToBottom() {
+            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        }
+        
+        // Event Listeners
+        connectBtn.addEventListener('click', connect);
+        disconnectBtn.addEventListener('click', disconnect);
+        switchRoomBtn.addEventListener('click', switchRoom);
+        
+        messageForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            if (message) {
+                sendMessage(message);
+            }
+        });
+        
+        // Auto-connect on page load (optional)
+        // window.addEventListener('load', connect);
+    </script>
+</body>
+</html>
