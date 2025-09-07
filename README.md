@@ -370,6 +370,13 @@ akash-share/
 
 ## 🚀 Scripts
 
+### Development Setup
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up environment variables (see Environment Setup)
+4. Run Electron app: `npm run electron`
+5. The desktop app opens with integrated backend app for production
+
 ### Frontend Scripts
 - `npm start` - Start React development server
 - `npm run build` - Build React app for production
