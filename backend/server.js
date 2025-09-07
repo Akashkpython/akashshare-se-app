@@ -5,7 +5,7 @@ import express from "express";
 import multer from "multer";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
+import { rateLimit } from "express-rate-limit";
 import { body, validationResult, param } from "express-validator";
 import { WebSocketServer } from "ws";
 import http from "http";
