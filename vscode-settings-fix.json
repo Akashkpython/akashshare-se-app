@@ -1,0 +1,17 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["**/package.json"],
+      "url": "https://json.schemastore.org/package.json"
+    }
+  ],
+  "json.validate.enable": true,
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "files.associations": {
+    "*.json": "jsonc"
+  }
+}

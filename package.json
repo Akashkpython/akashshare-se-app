@@ -28,7 +28,7 @@
   },
   "resolutions": {
     "@mongodb-js/saslprep": "^1.1.0",
-    "mongoose": "^7.5.0"
+    "mongoose": "^6.12.0"
   },
   "dependencies": {
     "chai": "^6.0.1",
@@ -37,7 +37,7 @@
     "clsx": "^2.0.0",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.1.7",
-    "express-rate-limit": "^8.0.1",
+    "express-rate-limit": "^5.5.1",
     "framer-motion": "^11.0.3",
     "lucide-react": "^0.292.0",
     "mocha": "^11.7.2",
@@ -46,13 +46,13 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.8.2",
-    "react-scripts": "^0.0.0",
+    "react-scripts": "^5.0.1",
     "recharts": "^2.8.0",
     "sharp": "^0.34.3",
     "supertest": "^7.1.4",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
-    "ws": "^8.18.3",
+    "ws": "^8.14.2",
     "zustand": "^4.4.6"
   },
   "devDependencies": {
@@ -79,7 +79,7 @@
     "postcss": "^8.4.31",
     "prettier": "^3.2.5",
     "tailwindcss": "^3.3.5",
-    "typescript": "^5.9.2",
+    "typescript": "^4.9.5",
     "wait-on": "^7.0.1"
   },
   "build": {

@@ -9,7 +9,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: HOST
-        value: 0.0.0.0
+        value: 44.229.227.142
       - key: MONGO_URI
         sync: false
       - key: JWT_SECRET
