@@ -203,7 +203,7 @@ class BackendSecurityManager {
   /**
    * Sanitize against SQL injection
    */
-  sanitizeSQL(input, options = {}) {
+  sanitizeSQL(input, _options = {}) {
     let sanitized = input;
 
     // Escape quotes
@@ -230,7 +230,7 @@ class BackendSecurityManager {
   /**
    * Sanitize path traversal attempts
    */
-  sanitizePathTraversal(input, options = {}) {
+  sanitizePathTraversal(input, _options = {}) {
     let sanitized = input;
 
     // Remove path traversal attempts
@@ -256,7 +256,7 @@ class BackendSecurityManager {
   /**
    * Generic sanitization
    */
-  sanitizeGeneric(input, options = {}) {
+  sanitizeGeneric(input, _options = {}) {
     let sanitized = input;
 
     // Remove null bytes
@@ -265,8 +265,9 @@ class BackendSecurityManager {
     // Normalize whitespace
     sanitized = sanitized.replace(/\s+/g, ' ').trim();
 
-    // Remove control characters
-    sanitized = sanitized.replace(/[\x00-\x1F\x7F]/g, '');
+    // Remove control characters (excluding newlines and tabs)
+    // eslint-disable-next-line no-control-regex
+    sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
     return sanitized;
   }
@@ -313,7 +314,7 @@ class BackendSecurityManager {
     const threats = [];
     const patterns = this.threatDetection.get('xss') || [];
 
-    patterns.forEach((pattern, index) => {
+    patterns.forEach((pattern) => {
       if (pattern.test(input)) {
         threats.push({
           type: 'xss',
@@ -334,7 +335,7 @@ class BackendSecurityManager {
     const threats = [];
     const patterns = this.threatDetection.get('sql') || [];
 
-    patterns.forEach((pattern, index) => {
+    patterns.forEach((pattern) => {
       if (pattern.test(input)) {
         threats.push({
           type: 'sql',
@@ -355,7 +356,7 @@ class BackendSecurityManager {
     const threats = [];
     const patterns = this.threatDetection.get('pathTraversal') || [];
 
-    patterns.forEach((pattern, index) => {
+    patterns.forEach((pattern) => {
       if (pattern.test(input)) {
         threats.push({
           type: 'pathTraversal',
@@ -376,7 +377,7 @@ class BackendSecurityManager {
     const threats = [];
     const patterns = this.threatDetection.get('commandInjection') || [];
 
-    patterns.forEach((pattern, index) => {
+    patterns.forEach((pattern) => {
       if (pattern.test(input)) {
         threats.push({
           type: 'commandInjection',
