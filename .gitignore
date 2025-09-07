@@ -112,6 +112,15 @@ out/
 app/
 release/
 
+# Portable builds and large files
+AkashShare-Portable/
+*.asar
+*.exe
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+
 # Uploads directory
 backend/uploads/
 uploads/
