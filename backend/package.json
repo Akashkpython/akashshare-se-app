@@ -27,7 +27,7 @@
     "express-rate-limit": "^5.5.1",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
-    "mongoose": "^7.5.0",
+    "mongoose": "^6.12.0",
     "multer": "^2.0.2",
     "shortid": "^2.2.17",
     "ws": "^8.14.2"

@@ -3,7 +3,7 @@ services:
     name: akash-share-backend
     runtime: node
     plan: free
-    buildCommand: "cd backend && npm install"
+    buildCommand: "cd backend && rm -rf node_modules package-lock.json && npm install"
     startCommand: "cd backend && npm start"
     envVars:
       - key: NODE_ENV
