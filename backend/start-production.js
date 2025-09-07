@@ -11,27 +11,44 @@ import { join } from 'path';
 
 console.log('🚀 Starting Akash Share Backend in Production Mode...');
 
-// Check if express-rate-limit is available
+// Check if express-rate-limit is properly installed
 const rateLimitPath = join(process.cwd(), 'node_modules', 'express-rate-limit');
-if (!existsSync(rateLimitPath)) {
-  console.log('⚠️  express-rate-limit not found, installing...');
+const rateLimitPackageJson = join(rateLimitPath, 'package.json');
+const rateLimitIndex = join(rateLimitPath, 'index.js');
+
+const isPackageInstalled = existsSync(rateLimitPath) && 
+                          existsSync(rateLimitPackageJson) && 
+                          existsSync(rateLimitIndex);
+
+if (!isPackageInstalled) {
+  console.log('⚠️  express-rate-limit not properly installed, reinstalling...');
   
-  const install = spawn('npm', ['install', 'express-rate-limit@^5.5.1'], {
+  // First, try to remove and reinstall
+  const remove = spawn('npm', ['uninstall', 'express-rate-limit'], {
     stdio: 'inherit',
     shell: true
   });
   
-  install.on('close', (code) => {
-    if (code === 0) {
-      console.log('✅ express-rate-limit installed successfully');
-      startServer();
-    } else {
-      console.error('❌ Failed to install express-rate-limit');
-      process.exit(1);
-    }
+  remove.on('close', (removeCode) => {
+    console.log('🗑️  Removed existing express-rate-limit');
+    
+    const install = spawn('npm', ['install', 'express-rate-limit@^5.5.1', '--force'], {
+      stdio: 'inherit',
+      shell: true
+    });
+    
+    install.on('close', (installCode) => {
+      if (installCode === 0) {
+        console.log('✅ express-rate-limit reinstalled successfully');
+        startServer();
+      } else {
+        console.error('❌ Failed to reinstall express-rate-limit');
+        process.exit(1);
+      }
+    });
   });
 } else {
-  console.log('✅ express-rate-limit found');
+  console.log('✅ express-rate-limit properly installed');
   startServer();
 }
 

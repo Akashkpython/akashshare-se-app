@@ -7,7 +7,7 @@
     "node": "18.x"
   },
   "scripts": {
-    "preinstall": "npm install @mongodb-js/saslprep@1.1.0",
+    "preinstall": "npm install @mongodb-js/saslprep@1.1.0 && npm install express-rate-limit@^5.5.1",
     "postinstall": "npm install express-rate-limit@^5.5.1 && npm list express-rate-limit",
     "pretest": "node test-rate-limit.js",
     "start": "node start-production.js",
