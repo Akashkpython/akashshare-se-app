@@ -11,44 +11,49 @@ import { join } from 'path';
 
 console.log('🚀 Starting Akash Share Backend in Production Mode...');
 
-// Check if express-rate-limit is properly installed
+// Check if required packages are properly installed
 const rateLimitPath = join(process.cwd(), 'node_modules', 'express-rate-limit');
 const rateLimitPackageJson = join(rateLimitPath, 'package.json');
 const rateLimitIndex = join(rateLimitPath, 'index.js');
 
-const isPackageInstalled = existsSync(rateLimitPath) && 
-                          existsSync(rateLimitPackageJson) && 
-                          existsSync(rateLimitIndex);
+const debugPath = join(process.cwd(), 'node_modules', 'debug');
+const debugPackageJson = join(debugPath, 'package.json');
+const debugIndex = join(debugPath, 'index.js');
+
+const isRateLimitInstalled = existsSync(rateLimitPath) && 
+                            existsSync(rateLimitPackageJson) && 
+                            existsSync(rateLimitIndex);
+
+const isDebugInstalled = existsSync(debugPath) && 
+                        existsSync(debugPackageJson) && 
+                        existsSync(debugIndex);
+
+const isPackageInstalled = isRateLimitInstalled && isDebugInstalled;
 
 if (!isPackageInstalled) {
-  console.log('⚠️  express-rate-limit not properly installed, reinstalling...');
+  const missingPackages = [];
+  if (!isRateLimitInstalled) missingPackages.push('express-rate-limit');
+  if (!isDebugInstalled) missingPackages.push('debug');
   
-  // First, try to remove and reinstall
-  const remove = spawn('npm', ['uninstall', 'express-rate-limit'], {
+  console.log(`⚠️  Missing packages: ${missingPackages.join(', ')}, reinstalling...`);
+  
+  // Install missing packages
+  const install = spawn('npm', ['install', 'express-rate-limit@^5.5.1', 'debug@^4.3.4', '--force'], {
     stdio: 'inherit',
     shell: true
   });
   
-  remove.on('close', (removeCode) => {
-    console.log('🗑️  Removed existing express-rate-limit');
-    
-    const install = spawn('npm', ['install', 'express-rate-limit@^5.5.1', '--force'], {
-      stdio: 'inherit',
-      shell: true
-    });
-    
-    install.on('close', (installCode) => {
-      if (installCode === 0) {
-        console.log('✅ express-rate-limit reinstalled successfully');
-        startServer();
-      } else {
-        console.error('❌ Failed to reinstall express-rate-limit');
-        process.exit(1);
-      }
-    });
+  install.on('close', (installCode) => {
+    if (installCode === 0) {
+      console.log('✅ All packages reinstalled successfully');
+      startServer();
+    } else {
+      console.error('❌ Failed to reinstall packages');
+      process.exit(1);
+    }
   });
 } else {
-  console.log('✅ express-rate-limit properly installed');
+  console.log('✅ All required packages properly installed');
   startServer();
 }
 
