@@ -72,6 +72,12 @@ const Sidebar = () => {
       icon: Settings,
       label: 'Settings',
       description: 'App Configuration'
+    },
+    {
+      path: '/chat-interface-check',
+      icon: User,
+      label: 'Interface Check',
+      description: 'Verify Chat Interface'
     }
   ];
 

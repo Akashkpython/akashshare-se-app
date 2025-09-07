@@ -12,7 +12,7 @@ import {
   WifiOff
 } from 'lucide-react';
 import useStore from '../store/useStore.js';
-import environment from '../config/environment.js';
+import { environment } from '../config/environment.js';
 import { sanitizeString } from '../lib/utils.js';
 
 // Format time for chat messages
@@ -33,14 +33,11 @@ const GroupChat = () => {
   const wsRef = useRef(null);
   const connectionTimeoutRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const isMountedRef = useRef(true);
+  const visibilityChangeListenerRef = useRef(null);
 
-  const rooms = [
-    { id: 'general', name: 'General', icon: Hash },
-    { id: 'help', name: 'Help & Support', icon: MessageCircle },
-    { id: 'announcements', name: 'Announcements', icon: Users }
-  ];
-
+  // Define connectToChat function first to avoid hoisting issues
   const connectToChat = useCallback(() => {
     // Check if component is still mounted
     if (!isMountedRef.current) {
@@ -51,6 +48,14 @@ const GroupChat = () => {
     // Prevent multiple simultaneous connection attempts
     if (isConnecting || (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING)) {
       console.log('🚫 Connection already in progress, skipping');
+      return;
+    }
+
+    // If already connected, don't reconnect unless forced
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log('✅ Already connected to WebSocket server');
+      setIsConnected(true);
+      setIsConnecting(false);
       return;
     }
 
@@ -67,346 +72,396 @@ const GroupChat = () => {
       // Close existing connection if any
       if (wsRef.current) {
         console.log('🔌 Closing existing WebSocket connection');
+        // Remove event listeners to prevent memory leaks
         wsRef.current.onopen = null;
         wsRef.current.onmessage = null;
         wsRef.current.onclose = null;
         wsRef.current.onerror = null;
-        wsRef.current.close();
+        
+        // Only close if the connection is open or connecting
+        if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
+          try {
+            wsRef.current.close();
+            console.log('🔌 Existing WebSocket connection closed');
+          } catch (closeError) {
+            console.warn('⚠️ Error closing existing WebSocket:', closeError);
+          }
+        }
         wsRef.current = null;
       }
 
-      console.log('🔌 Starting fresh connection attempt');
-
-      // Use environment configuration for WebSocket URL
-      const wsUrl = environment.getWebSocketUrl(sanitizeString(username, 50), currentRoom);
-      console.log('🔗 Connecting to:', wsUrl);
-
-      // Add additional debugging for Electron environment
-      console.log('📍 Environment info:', {
-        protocol: window.location.protocol,
-        hostname: window.location.hostname,
-        port: window.location.port,
-        apiUrl: environment.apiUrl,
-        isProduction: environment.isProduction,
-        baseApiUrl: environment.baseApiUrl
-      });
-
-      // Additional debugging for WebSocket connection
-      console.log('🔧 WebSocket connection details:', {
-        username: sanitizeString(username, 50),
-        room: currentRoom,
-        timestamp: new Date().toISOString()
-      });
-
-      // Test if WebSocket constructor is available
-      if (typeof WebSocket === 'undefined') {
-        console.error('❌ WebSocket constructor is not available');
-        addNotification({
-          type: 'error',
-          title: 'Connection Failed',
-          message: 'WebSocket support is not available in this environment.'
-        });
-        setIsConnecting(false);
-        return;
-      }
-
-      // Test URL format
-      try {
-        new URL(wsUrl);
-      } catch (urlError) {
-        console.error('❌ Invalid WebSocket URL:', wsUrl, urlError);
-        addNotification({
-          type: 'error',
-          title: 'Connection Failed',
-          message: `Invalid WebSocket URL: ${wsUrl}`
-        });
-        setIsConnecting(false);
-        return;
-      }
-
+      // Get WebSocket URL from environment configuration
+      const wsUrl = environment.getWebSocketUrl(username, currentRoom);
+      console.log('🔗 Connecting to WebSocket:', wsUrl);
+      
+      // Create new WebSocket connection
       wsRef.current = new WebSocket(wsUrl);
-
-      // Set a reasonable connection timeout (increased for distributed app)
+      
+      // Set connection timeout
       connectionTimeoutRef.current = setTimeout(() => {
-        if (!isMountedRef.current) return;
-
         if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
-          console.log('⏰ Connection timeout - backend may be offline');
+          console.error('⏰ WebSocket connection timeout');
           wsRef.current.close();
           setIsConnecting(false);
           setIsConnected(false);
           addNotification({
             type: 'error',
             title: 'Connection Timeout',
-            message: 'Could not connect to chat server. Please ensure the Akash Share backend is running on port 5002 and try again.'
+            message: 'Failed to connect to chat server. Please check your connection and try again.'
           });
         }
-      }, 15000); // Increased timeout for distributed app
+      }, 10000); // 10 second timeout
 
+      // Handle connection open
       wsRef.current.onopen = () => {
-        if (!isMountedRef.current) return;
-
+        console.log('✅ WebSocket connection established');
+        setIsConnected(true);
+        setIsConnecting(false);
+        setReconnectAttempts(0); // Reset reconnect attempts on successful connection
+        
+        // Clear connection timeout
         if (connectionTimeoutRef.current) {
           clearTimeout(connectionTimeoutRef.current);
           connectionTimeoutRef.current = null;
         }
-
-        console.log('✅ WebSocket connected successfully to backend server');
-        setIsConnecting(false);
-        setIsConnected(true);
+        
         addNotification({
           type: 'success',
-          title: 'Connected!',
-          message: 'You are now connected to the group chat.'
+          title: 'Connected to Chat',
+          message: `Successfully connected to ${currentRoom} room`
         });
       };
 
+      // Handle incoming messages
       wsRef.current.onmessage = (event) => {
-        if (!isMountedRef.current) return;
-
         try {
-          const message = JSON.parse(event.data);
-          console.log('📥 Received message:', message);
-
-          switch (message.type) {
+          const data = JSON.parse(event.data);
+          console.log('📨 Received message:', data);
+          
+          switch (data.type) {
             case 'userList':
-              console.log('👥 Updating online users:', message.users);
-              setOnlineUsers(message.users || []);
+              setOnlineUsers(data.users || []);
               break;
-            case 'userJoined':
-              console.log('➕ User joined, updating users:', message.users);
-              setOnlineUsers(message.users || []);
-              setMessages(prev => [...prev, {
-                id: Date.now(),
-                type: 'system',
-                content: `${message.username} joined the chat`,
-                timestamp: message.timestamp
-              }]);
-              break;
-            case 'userLeft':
-              console.log('➖ User left, updating users:', message.users);
-              setOnlineUsers(message.users || []);
-              setMessages(prev => [...prev, {
-                id: Date.now(),
-                type: 'system',
-                content: `${message.username} left the chat`,
-                timestamp: message.timestamp
-              }]);
-              break;
+              
             case 'message':
-              console.log('💬 New chat message:', message.username, message.message);
               setMessages(prev => [...prev, {
-                id: Date.now(),
-                type: 'message',
-                username: message.username,
-                content: message.message,
-                timestamp: message.timestamp
+                id: Date.now() + Math.random(),
+                username: data.username,
+                message: data.message,
+                timestamp: data.timestamp || new Date().toISOString(),
+                type: 'message'
               }]);
               break;
+              
+            case 'userJoined':
+              setOnlineUsers(data.users || []);
+              setMessages(prev => [...prev, {
+                id: Date.now() + Math.random(),
+                username: 'System',
+                message: `${data.username} joined the chat`,
+                timestamp: data.timestamp || new Date().toISOString(),
+                type: 'system'
+              }]);
+              break;
+              
+            case 'userLeft':
+              setOnlineUsers(data.users || []);
+              setMessages(prev => [...prev, {
+                id: Date.now() + Math.random(),
+                username: 'System',
+                message: `${data.username} left the chat`,
+                timestamp: data.timestamp || new Date().toISOString(),
+                type: 'system'
+              }]);
+              break;
+              
+            case 'roomSwitched':
+              setOnlineUsers(data.users || []);
+              setMessages(prev => [...prev, {
+                id: Date.now() + Math.random(),
+                username: 'System',
+                message: `Switched to ${data.room} room`,
+                timestamp: data.timestamp || new Date().toISOString(),
+                type: 'system'
+              }]);
+              addNotification({
+                type: 'success',
+                title: 'Room Switched',
+                message: `Successfully switched to ${data.room} room`
+              });
+              break;
+              
             case 'error':
-              console.error('❌ Chat server error:', message.message);
+              console.error('❌ Server error:', data.message);
               addNotification({
                 type: 'error',
                 title: 'Chat Error',
-                message: message.message
+                message: data.message || 'An error occurred in the chat'
               });
               break;
+              
             default:
-              console.log('📥 Unknown message type:', message.type);
+              console.log('📨 Unknown message type:', data.type);
           }
-        } catch (parseError) {
-          console.error('❌ Error parsing message:', parseError, event.data);
-          addNotification({
-            type: 'error',
-            title: 'Message Error',
-            message: 'Failed to parse incoming message'
-          });
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error);
         }
       };
 
+      // Handle connection close
       wsRef.current.onclose = (event) => {
-        if (!isMountedRef.current) return;
-
         console.log('🔌 WebSocket connection closed:', event.code, event.reason);
         setIsConnected(false);
         setIsConnecting(false);
-
-        // Clear timeout
+        
+        // Clear connection timeout
         if (connectionTimeoutRef.current) {
           clearTimeout(connectionTimeoutRef.current);
           connectionTimeoutRef.current = null;
         }
-
-        // Show notification only for unexpected closures
-        if (event.code !== 1000) { // 1000 = Normal closure
+        
+        // Clear reconnect timeout if it exists
+        if (reconnectTimeoutRef && reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+          reconnectTimeoutRef.current = null;
+        }
+        
+        // Determine if we should attempt to reconnect
+        const shouldReconnect = event.code !== 1000 && // Not normal closure
+                               event.code !== 1001 && // Not going away
+                               reconnectAttempts < 10 && // Haven't exceeded max attempts
+                               isMountedRef.current; // Component is still mounted
+        
+        if (shouldReconnect) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff, max 30s
+          const jitter = Math.random() * 1000; // Add jitter to prevent thundering herd
+          const totalDelay = delay + jitter;
+          
+          console.log(`🔄 Attempting to reconnect in ${Math.round(totalDelay)}ms (attempt ${reconnectAttempts + 1}/10)`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              setReconnectAttempts(prev => prev + 1);
+              connectToChat();
+            }
+          }, totalDelay);
+          
+          // Provide user feedback based on close code
+          let errorMessage = 'Connection lost. Attempting to reconnect...';
+          if (event.code === 1006) {
+            errorMessage = 'Connection lost unexpectedly. Attempting to reconnect...';
+          } else if (event.code === 1011) {
+            errorMessage = 'Server error. Attempting to reconnect...';
+          }
+          
           addNotification({
             type: 'warning',
             title: 'Connection Lost',
-            message: 'Chat connection was lost. Attempting to reconnect...'
+            message: errorMessage
           });
-
-          // Attempt to reconnect after a delay (increased for distributed app)
-          if (reconnectTimeoutRef.current) {
-            clearTimeout(reconnectTimeoutRef.current);
+        } else {
+          // Max reconnection attempts reached or normal closure
+          if (reconnectAttempts >= 10) {
+            addNotification({
+              type: 'error',
+              title: 'Connection Failed',
+              message: 'Unable to reconnect to chat server. Please refresh the page.'
+            });
+          } else if (event.code === 1000) {
+            addNotification({
+              type: 'info',
+              title: 'Disconnected',
+              message: 'Chat connection closed normally'
+            });
           }
-
-          reconnectTimeoutRef.current = setTimeout(() => {
-            if (isMountedRef.current) {
-              console.log('🔁 Attempting to reconnect to chat server...');
-              connectToChat();
-            }
-          }, 8000); // Increased delay for distributed app
         }
       };
 
+      // Handle connection errors
       wsRef.current.onerror = (error) => {
-        if (!isMountedRef.current) return;
-
         console.error('❌ WebSocket error:', error);
-        if (error && error.message) {
-          console.error('Detailed WebSocket error message:', error.message);
-        }
-        setIsConnected(false);
         setIsConnecting(false);
-
-        // Clear timeout
+        setIsConnected(false);
+        
+        // Clear connection timeout
         if (connectionTimeoutRef.current) {
           clearTimeout(connectionTimeoutRef.current);
           connectionTimeoutRef.current = null;
         }
-
+        
+        // Provide user-friendly error messages
+        let errorMessage = 'Failed to connect to chat server.';
+        if (error.message) {
+          if (error.message.includes('ECONNREFUSED')) {
+            errorMessage = 'Chat server is not running. Please start the backend server.';
+          } else if (error.message.includes('ENOTFOUND')) {
+            errorMessage = 'Cannot find chat server. Please check your network connection.';
+          } else if (error.message.includes('ETIMEDOUT')) {
+            errorMessage = 'Connection to chat server timed out. Please try again.';
+          }
+        }
+        
         addNotification({
           type: 'error',
           title: 'Connection Error',
-          message: 'Failed to connect to chat server. Please ensure the backend is running on port 5002.'
+          message: errorMessage
         });
       };
 
     } catch (error) {
-      console.error('❌ Error establishing WebSocket connection:', error);
+      console.error('❌ Error creating WebSocket connection:', error);
       setIsConnecting(false);
-
-      // Clear timeout
-      if (connectionTimeoutRef.current) {
-        clearTimeout(connectionTimeoutRef.current);
-        connectionTimeoutRef.current = null;
-      }
-
+      setIsConnected(false);
+      
       addNotification({
         type: 'error',
-        title: 'Connection Failed',
-        message: `Failed to connect to chat server: ${error.message}`
+        title: 'Connection Error',
+        message: 'Failed to create chat connection. Please try again.'
       });
     }
-  }, [username, currentRoom, addNotification, isConnecting]);
+  }, [username, currentRoom, isConnecting, reconnectAttempts, addNotification]);
+
+  // Add debugging to confirm we're using the React component
+  useEffect(() => {
+    console.log('💬 React GroupChat component loaded - This is the correct chat interface for the Electron app');
+    console.log('📍 Current environment:', window.location.href);
+    console.log('📍 Protocol:', window.location.protocol);
+    
+    // Add a notification to inform the user they're using the correct component
+    addNotification({
+      type: 'info',
+      title: 'Correct Chat Interface',
+      message: 'You are using the React GroupChat component (correct for Electron app), not the standalone HTML test page.'
+    });
+    
+    // Also add a more prominent visual indicator
+    console.log('%c✅ You are using the CORRECT React GroupChat component in the Electron app', 'color: #4CAF50; font-weight: bold; font-size: 16px;');
+    
+    // Handle visibility change events (when window is hidden/shown)
+    const handleVisibilityChange = () => {
+      console.log('👁️ Document visibility changed:', document.visibilityState);
+      if (document.visibilityState === 'visible') {
+        // Window is now visible, check connection status
+        console.log('👁️ Window became visible, checking connection status...');
+        
+        // If not connected and not connecting, attempt to reconnect
+        if (!isConnected && !isConnecting) {
+          console.log('🔄 Window became visible, attempting to reconnect to chat...');
+          setTimeout(() => {
+            if (isMountedRef.current) {
+              connectToChat();
+            }
+          }, 1000); // Small delay to ensure component is fully ready
+        } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          // Connection is already open, just log it
+          console.log('✅ Connection is already active');
+        } else if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
+          // Connection is in progress, just log it
+          console.log('⏳ Connection is already in progress');
+        }
+      } else {
+        // Window is hidden, keep connection alive but reduce activity
+        console.log('🌙 Window is now hidden, keeping chat connection alive');
+        
+        // Don't close the connection, just reduce activity
+        // The connection will remain open for when the window becomes visible again
+      }
+    };
+    
+    // Add event listener for visibility changes
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    visibilityChangeListenerRef.current = handleVisibilityChange;
+    
+    return () => {
+      // Clean up visibility change listener
+      if (visibilityChangeListenerRef.current) {
+        document.removeEventListener('visibilitychange', visibilityChangeListenerRef.current);
+        visibilityChangeListenerRef.current = null;
+      }
+    };
+  }, [addNotification, isConnected, isConnecting, connectToChat]);
 
   // Auto-connect when component mounts
   useEffect(() => {
     // Add a small delay to ensure component is fully mounted
     const connectTimer = setTimeout(() => {
       if (isMountedRef.current) {
-        console.log('🚀 GroupChat component mounted, connecting to chat...');
         connectToChat();
       }
-    }, 100);
+    }, 1000);
 
     return () => {
-      console.log('🧹 GroupChat component unmount - cleaning up');
       clearTimeout(connectTimer);
-      isMountedRef.current = false;
-
-      // Clear all timeouts
-      if (connectionTimeoutRef.current) {
-        clearTimeout(connectionTimeoutRef.current);
-        connectionTimeoutRef.current = null;
-      }
-
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = null;
-      }
-
-      // Close WebSocket connection
-      if (wsRef.current) {
-        console.log('🧹 Closing WebSocket connection');
-        wsRef.current.onopen = null;
-        wsRef.current.onmessage = null;
-        wsRef.current.onclose = null;
-        wsRef.current.onerror = null;
-
-        if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
-          wsRef.current.close(1000, 'Component unmounting');
-        }
-
-        wsRef.current = null;
-      }
     };
   }, [connectToChat]);
 
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    // Auto-scroll to bottom when new messages arrive
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages]);
 
-  const leaveChat = () => {
-    // Clear all timeouts
-    if (connectionTimeoutRef.current) {
-      clearTimeout(connectionTimeoutRef.current);
-      connectionTimeoutRef.current = null;
-    }
-    
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    
-    // Close WebSocket connection properly
-    if (wsRef.current) {
-      console.log('🔌 Closing WebSocket connection on leave');
-      wsRef.current.onopen = null;
-      wsRef.current.onmessage = null;
-      wsRef.current.onclose = null;
-      wsRef.current.onerror = null;
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
       
-      if (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING) {
-        wsRef.current.close(1000, 'User left chat');
+      // Clear all timeouts
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+      }
+      if (reconnectTimeoutRef && reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
       }
       
-      wsRef.current = null;
-    }
-    
-    // Reset state
-    setIsConnected(false);
-    setIsConnecting(false);
-    setMessages([]);
-    setOnlineUsers([]);
-  };
+      // Close WebSocket connection
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
 
-  const reconnectToChat = () => {
-    // Prevent reconnection if already connected or connecting
-    if (isConnected || isConnecting || (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING)) {
-      console.log('🚫 Reconnect blocked - already connected or connecting');
+  // Switch room function
+  const switchRoom = useCallback((newRoom) => {
+    if (!newRoom || newRoom === currentRoom) {
+      console.log(`🚫 Room switch blocked: ${newRoom} is same as current room ${currentRoom}`);
       return;
     }
     
-    console.log('🔄 Attempting to reconnect...');
-    connectToChat();
-  };
-
-  // Handle room switching
-  const switchRoom = (roomId) => {
-    if (currentRoom === roomId) return;
+    console.log(`🔄 Switching from ${currentRoom} to ${newRoom}`);
     
-    // Clear messages immediately when switching rooms
+    // Add visual feedback
+    addNotification({
+      type: 'info',
+      title: 'Switching Room',
+      message: `Switching from ${currentRoom} to ${newRoom}...`
+    });
+    
+    // Clear messages for the new room
     setMessages([]);
     
+    // Update current room immediately for UI responsiveness
+    setCurrentRoom(newRoom);
+    
+    // If connected, send room switch message
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      // Send room switch message
+      const switchMessage = {
+        type: 'switchRoom',
+        room: newRoom,
+        timestamp: new Date().toISOString()
+      };
+      
       try {
-        wsRef.current.send(JSON.stringify({
-          type: 'switchRoom',
-          room: roomId
-        }));
+        wsRef.current.send(JSON.stringify(switchMessage));
+        console.log('📤 Sent room switch message:', switchMessage);
+        
+        // Add success feedback
+        addNotification({
+          type: 'success',
+          title: 'Room Switched',
+          message: `Successfully switched to ${newRoom} room`
+        });
       } catch (error) {
         console.error('❌ Error sending room switch message:', error);
         addNotification({
@@ -414,36 +469,51 @@ const GroupChat = () => {
           title: 'Room Switch Failed',
           message: 'Failed to switch rooms. Please try again.'
         });
-        return;
       }
+    } else {
+      // If not connected, attempt to reconnect with new room
+      console.log('🔄 Not connected, attempting to reconnect with new room');
+      addNotification({
+        type: 'warning',
+        title: 'Reconnecting',
+        message: 'Not connected to chat. Attempting to reconnect...'
+      });
+      
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          connectToChat();
+        }
+      }, 500);
     }
-    
-    setCurrentRoom(roomId);
-  };
+  }, [currentRoom, connectToChat, addNotification]);
 
-  const sendMessage = () => {
+  // Send message function
+  const sendMessage = useCallback(() => {
     if (!newMessage.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-      if (!isConnected) {
-        addNotification({
-          type: 'warning',
-          title: 'Not Connected',
-          message: 'Please connect to chat before sending messages'
-        });
-      }
       return;
     }
-    
-    const message = sanitizeString(newMessage, 500);
-    if (!message) return;
-    
+
+    const sanitizedMessage = sanitizeString(newMessage.trim());
+    if (!sanitizedMessage) {
+      addNotification({
+        type: 'error',
+        title: 'Invalid Message',
+        message: 'Message contains invalid characters'
+      });
+      return;
+    }
+
+    const message = {
+      type: 'message',
+      message: sanitizedMessage,
+      username,
+      timestamp: new Date().toISOString()
+    };
+
     try {
-      wsRef.current.send(JSON.stringify({
-        type: 'message',
-        message,
-        room: currentRoom
-      }));
-      
+      wsRef.current.send(JSON.stringify(message));
       setNewMessage('');
+      console.log('📤 Sent message:', message);
     } catch (error) {
       console.error('❌ Error sending message:', error);
       addNotification({
@@ -452,8 +522,9 @@ const GroupChat = () => {
         message: 'Failed to send message. Please try again.'
       });
     }
-  };
+  }, [newMessage, username, addNotification]);
 
+  // Handle Enter key press
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -461,210 +532,189 @@ const GroupChat = () => {
     }
   };
 
+  // Connection status indicator
+  const getConnectionStatus = () => {
+    if (isConnecting) {
+      return { icon: Circle, text: 'Connecting...', color: 'text-yellow-500' };
+    } else if (isConnected) {
+      return { icon: Wifi, text: 'Connected', color: 'text-green-500' };
+    } else {
+      return { icon: WifiOff, text: 'Disconnected', color: 'text-red-500' };
+    }
+  };
+
+  const connectionStatus = getConnectionStatus();
+  const StatusIcon = connectionStatus.icon;
+
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="h-full flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
-      >
-        <h1 className="mb-2 text-3xl font-bold gradient-text">Group Chat</h1>
-        <div className="flex items-center justify-center space-x-4 text-foreground/70">
-          <div className="flex items-center space-x-2">
-            {isConnected ? (
-              <Wifi className="w-4 h-4 text-green-400" />
-            ) : isConnecting ? (
-              <div className="w-4 h-4 border-2 rounded-full border-akash-400 border-t-transparent animate-spin"></div>
-            ) : (
-              <WifiOff className="w-4 h-4 text-red-400" />
-            )}
-            <span>{isConnected ? 'Connected' : isConnecting ? 'Connecting...' : 'Disconnected'}</span>
-            <span>•</span>
-            <span>{onlineUsers.length} online</span>
+      <div className="flex-shrink-0 p-6 border-b border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-akash-500/20 rounded-lg">
+              <MessageCircle className="w-6 h-6 text-akash-400" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white">Group Chat</h1>
+              <div className="flex items-center space-x-2 mt-1">
+                <StatusIcon className={`w-4 h-4 ${connectionStatus.color}`} />
+                <span className={`text-sm ${connectionStatus.color}`}>
+                  {connectionStatus.text}
+                </span>
+                <span className="text-gray-400">•</span>
+                <span className="text-sm text-gray-400">Room: {currentRoom}</span>
+              </div>
+            </div>
           </div>
-          <div className="flex space-x-2">
-            {!isConnected && !isConnecting && (
-              <motion.button
-                onClick={reconnectToChat}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="text-sm text-blue-400 underline hover:text-blue-300"
-              >
-                Reconnect
-              </motion.button>
-            )}
-            <motion.button
-              onClick={leaveChat}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="text-sm text-red-400 underline hover:text-red-300"
+          
+          {/* Room Selector */}
+          <div className="flex items-center space-x-2">
+            <Hash className="w-4 h-4 text-gray-400" />
+            <select
+              value={currentRoom}
+              onChange={(e) => switchRoom(e.target.value)}
+              className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-akash-500 hover:border-akash-400 transition-colors"
             >
-              Leave Chat
-            </motion.button>
+              <option value="general">💬 General</option>
+              <option value="help">🆘 Help & Support</option>
+              <option value="tech">💻 Tech Discussion</option>
+              <option value="random">🎲 Random Chat</option>
+              <option value="announcements">📢 Announcements</option>
+              <option value="offtopic">🗣️ Off Topic</option>
+            </select>
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      <div className="grid flex-1 min-h-0 grid-cols-1 gap-6 lg:grid-cols-4">
-        {/* Sidebar */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="space-y-4 lg:col-span-1"
-        >
-          {/* Rooms */}
-          <div className="p-4 border rounded-lg bg-card border-border">
-            <h3 className="flex items-center mb-3 font-semibold text-foreground">
-              <Hash className="w-4 h-4 mr-2 text-white" />
-              Rooms
-            </h3>
-            <div className="space-y-2">
-              {rooms.map((room) => (
-                <button
-                  key={room.id}
-                  onClick={() => switchRoom(room.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    currentRoom === room.id
-                      ? 'bg-akash-400/20 text-akash-400'
-                      : 'text-foreground/70 hover:bg-foreground/10 hover:text-foreground'
-                  }`}
-                >
-                  <room.icon className="inline w-4 h-4 mr-2 text-white" />
-                  {room.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Online Users */}
-          <div className="p-4 border rounded-lg bg-card border-border">
-            <h3 className="flex items-center mb-3 font-semibold text-foreground">
-              <Users className="w-4 h-4 mr-2 text-white" />
-              Online ({onlineUsers.length})
-            </h3>
-            <div className="space-y-2">
-              {onlineUsers.map((user, _index) => (
-                <div key={_index} className="flex items-center space-x-2 text-foreground/70">
-                  <Circle className="w-2 h-2 text-green-400 fill-current" />
-                  <span className="text-sm">{user}</span>
+      <div className="flex-1 flex overflow-hidden">
+        {/* Chat Messages */}
+        <div className="flex-1 flex flex-col">
+          {/* Room Header */}
+          <div className="flex-shrink-0 p-4 border-b border-gray-700 bg-gray-800/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-akash-500/20 rounded-lg">
+                  <Hash className="w-4 h-4 text-akash-400" />
                 </div>
-              ))}
+                <div>
+                  <h2 className="text-lg font-semibold text-white">
+                    {currentRoom === 'general' && '💬 General Chat'}
+                    {currentRoom === 'help' && '🆘 Help & Support'}
+                    {currentRoom === 'tech' && '💻 Tech Discussion'}
+                    {currentRoom === 'random' && '🎲 Random Chat'}
+                    {currentRoom === 'announcements' && '📢 Announcements'}
+                    {currentRoom === 'offtopic' && '🗣️ Off Topic'}
+                    {!['general', 'help', 'tech', 'random', 'announcements', 'offtopic'].includes(currentRoom) && `# ${currentRoom}`}
+                  </h2>
+                  <p className="text-sm text-gray-400">
+                    {onlineUsers.length} {onlineUsers.length === 1 ? 'user' : 'users'} online
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span className="text-sm text-gray-400">
+                  {isConnected ? 'Connected' : 'Disconnected'}
+                </span>
+              </div>
             </div>
           </div>
-        </motion.div>
-
-        {/* Chat Area */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col border rounded-lg lg:col-span-3 bg-card border-border"
-        >
-          {/* Chat Header */}
-          <div className="p-4 border-b border-foreground/10">
-            <h2 className="flex items-center font-semibold text-foreground">
-              {rooms.find(r => r.id === currentRoom)?.icon && 
-                React.createElement(rooms.find(r => r.id === currentRoom).icon, { className: "w-5 h-5 mr-2 text-white" })
-              }
-              {rooms.find(r => r.id === currentRoom)?.name}
-            </h2>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 p-4 overflow-y-auto">
+          
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <AnimatePresence>
-              {messages.length === 0 ? (
-                <div className="py-8 text-center text-foreground/50">
-                  <MessageCircle className="w-12 h-12 mx-auto mb-4 text-white opacity-50" />
-                  <p>No messages yet. Start the conversation!</p>
-                  {!isConnected && !isConnecting && (
-                    <motion.button
-                      onClick={reconnectToChat}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="px-4 py-2 mt-4 rounded-lg btn-primary"
-                    >
-                      Connect to Chat
-                    </motion.button>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`flex ${message.username === username ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.username === username
-                          ? 'bg-akash-500 text-foreground'
-                          : 'bg-foreground/10 text-foreground'
-                      }`}>
-                        {message.username !== username && (
-                          <div className="flex items-center mb-1 space-x-2">
-                            <User className="w-3 h-3 text-akash-400" />
-                            <span className="text-xs font-medium text-akash-400">{message.username}</span>
-                          </div>
-                        )}
-                        <p className="break-words">{message.message}</p>
-                        <div className="flex items-center justify-end mt-1">
-                          <Clock className="w-3 h-3 mr-1 opacity-50" />
-                          <span className="text-xs opacity-50">{formatTime(message.timestamp)}</span>
-                        </div>
+              {messages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className={`flex ${message.username === username ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                    message.type === 'system' 
+                      ? 'bg-gray-700 text-gray-300 text-center mx-auto'
+                      : message.username === username
+                        ? 'bg-akash-500 text-white'
+                        : 'bg-gray-700 text-white'
+                  }`}>
+                    {message.type !== 'system' && (
+                      <div className="text-xs opacity-75 mb-1">
+                        {message.username}
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+                    )}
+                    <div className="text-sm">{message.message}</div>
+                    <div className="text-xs opacity-75 mt-1 flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {formatTime(message.timestamp)}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
             </AnimatePresence>
             <div ref={messagesEndRef} />
           </div>
 
           {/* Message Input */}
-          <div className="p-4 border-t border-foreground/10">
-            {!isConnected && !isConnecting && (
-              <div className="p-3 mb-3 border rounded-lg bg-yellow-500/20 border-yellow-500/30">
-                <p className="mb-2 text-sm text-yellow-400">⚠️ Not connected to chat server</p>
-                <motion.button
-                  onClick={reconnectToChat}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="px-4 py-1 text-sm btn-primary"
-                >
-                  Connect to Chat
-                </motion.button>
-              </div>
-            )}
-            <div className="flex space-x-2">
+          <div className="flex-shrink-0 p-6 border-t border-gray-700">
+            <div className="flex space-x-3">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={isConnected ? "Type your message..." : "Connect to chat to send messages..."}
-                className="flex-1 px-4 py-2 border rounded-lg bg-foreground/10 border-foreground/20 text-foreground placeholder-foreground/50 focus:outline-none focus:border-akash-400"
-                maxLength={500}
+                placeholder="Type your message..."
                 disabled={!isConnected}
+                className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-akash-500 disabled:opacity-50 disabled:cursor-not-allowed"
               />
-              <motion.button
+              <button
                 onClick={sendMessage}
-                disabled={!newMessage.trim() || !isConnected}
-                whileHover={{ scale: isConnected ? 1.05 : 1 }}
-                whileTap={{ scale: isConnected ? 0.95 : 1 }}
-                className="px-4 btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!isConnected || !newMessage.trim()}
+                className="px-6 py-3 bg-akash-500 hover:bg-akash-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors duration-200 flex items-center space-x-2"
               >
                 <Send className="w-4 h-4" />
-              </motion.button>
+                <span>Send</span>
+              </button>
             </div>
-            {!isConnected && (
-              <p className="mt-2 text-xs text-foreground/50">
-                💡 Tip: You can type your message, but you need to connect to send it
-              </p>
-            )}
           </div>
-        </motion.div>
+        </div>
+
+        {/* Online Users Sidebar */}
+        <div className="w-64 bg-gray-800/50 border-l border-gray-700 p-6">
+          <div className="flex items-center space-x-2 mb-4">
+            <Users className="w-5 h-5 text-akash-400" />
+            <h3 className="text-lg font-semibold text-white">Online Users</h3>
+            <span className="bg-akash-500 text-white text-xs px-2 py-1 rounded-full">
+              {onlineUsers.length}
+            </span>
+          </div>
+          
+          <div className="space-y-2">
+            {onlineUsers.map((user, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700/50 transition-colors"
+              >
+                <div className="w-8 h-8 bg-akash-500 rounded-full flex items-center justify-center">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-white text-sm">{user}</span>
+                {user === username && (
+                  <span className="text-xs text-akash-400">(You)</span>
+                )}
+              </motion.div>
+            ))}
+          </div>
+          
+          {onlineUsers.length === 0 && (
+            <div className="text-center text-gray-400 text-sm mt-8">
+              No users online
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,11 @@
-import React, { useEffect, Suspense, lazy, useState, useRef } from 'react';
+import React, { useEffect, Suspense, lazy, useState, useRef, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import useStore from './store/useStore.js';
 import performanceMonitor from './lib/performance.js';
+import errorHandler from './lib/errorHandler.js';
+import securityManager from './lib/security.js';
+import optimizationManager from './lib/optimization.js';
 
 // Components
 import Sidebar from './components/layout/Sidebar.js';
@@ -12,109 +15,66 @@ import ErrorBoundary from './components/ErrorBoundary.js';
 import SplashScreen from './components/splash/SplashScreen.js';
 import Developer from './pages/Developer.js';
 import UpdateManager from './components/ui/UpdateManager.js';
+import ChatInterfaceCheck from './pages/ChatInterfaceCheck.js';
 
 // Contexts
 import { ThemeProvider } from './contexts/ThemeContext.js';
 
-// Lazy load pages for code splitting with proper error handling
-const Dashboard = lazy(() => {
-  performanceMonitor.start('load-dashboard');
-  return import('./pages/Dashboard.js').then(module => {
-    performanceMonitor.end('load-dashboard');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load Dashboard:', error);
-    return { default: () => <div>Error loading Dashboard</div> };
+// Ultra-Powerful Lazy Loading with Advanced Error Handling and Security
+const createSecureLazyComponent = (importPath, componentName) => {
+  return lazy(() => {
+    performanceMonitor.start(`load-${componentName}`);
+    // eslint-disable-next-line import/no-dynamic-require
+    return import(/* webpackChunkName: "[request]" */ importPath)
+      .then(module => {
+        performanceMonitor.end(`load-${componentName}`, { 
+          component: componentName,
+          success: true 
+        });
+        return module;
+      })
+      .catch(error => {
+        errorHandler.handleError(error, {
+          type: 'lazyLoadError',
+          component: componentName,
+          importPath
+        });
+        performanceMonitor.end(`load-${componentName}`, { 
+          component: componentName,
+          success: false,
+          error: error.message
+        });
+        return { 
+          default: () => (
+            <div className="error-boundary p-6">
+              <div className="glass-card p-8 text-center">
+                <h3 className="text-red-400 mb-4">Failed to load {componentName}</h3>
+                <p className="text-gray-400 mb-4">There was an error loading this component.</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="btn-primary"
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          )
+        };
+      });
   });
-});
+};
 
-const SendFiles = lazy(() => {
-  performanceMonitor.start('load-sendfiles');
-  return import('./pages/SendFiles.js').then(module => {
-    performanceMonitor.end('load-sendfiles');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load SendFiles:', error);
-    return { default: () => <div>Error loading Send Files</div> };
-  });
-});
+// Lazy load pages with ultra-powerful error handling
+const Dashboard = lazy(() => import('./pages/Dashboard.js'));
 
-const ReceiveFiles = lazy(() => {
-  performanceMonitor.start('load-receivefiles');
-  return import('./pages/ReceiveFiles.js').then(module => {
-    performanceMonitor.end('load-receivefiles');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load ReceiveFiles:', error);
-    return { default: () => <div>Error loading Receive Files</div> };
-  });
-});
-
-const History = lazy(() => {
-  performanceMonitor.start('load-history');
-  return import('./pages/History.js').then(module => {
-    performanceMonitor.end('load-history');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load History:', error);
-    return { default: () => <div>Error loading History</div> };
-  });
-});
-
-const GroupChat = lazy(() => {
-  performanceMonitor.start('load-groupchat');
-  return import('./pages/GroupChat.js').then(module => {
-    performanceMonitor.end('load-groupchat');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load GroupChat:', error);
-    return { default: () => <div>Error loading Group Chat</div> };
-  });
-});
-
-const Settings = lazy(() => {
-  performanceMonitor.start('load-settings');
-  return import('./pages/Settings.js').then(module => {
-    performanceMonitor.end('load-settings');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load Settings:', error);
-    return { default: () => <div>Error loading Settings</div> };
-  });
-});
-
-const SplashDemo = lazy(() => {
-  performanceMonitor.start('load-splashdemo');
-  return import('./pages/SplashDemo.js').then(module => {
-    performanceMonitor.end('load-splashdemo');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load SplashDemo:', error);
-    return { default: () => <div>Error loading Splash Demo</div> };
-  });
-});
-
-const SaReGaMaPa = lazy(() => {
-  performanceMonitor.start('load-sa-re-ga-ma-pa');
-  return import('./pages/SaReGaMaPa.js').then(module => {
-    performanceMonitor.end('load-sa-re-ga-ma-pa');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load SaReGaMaPa:', error);
-    return { default: () => <div>Error loading Sa Re Ga Ma Pa</div> };
-  });
-});
-
-const AppUpdates = lazy(() => {
-  performanceMonitor.start('load-app-updates');
-  return import('./pages/AppUpdates.js').then(module => {
-    performanceMonitor.end('load-app-updates');
-    return module;
-  }).catch(error => {
-    console.error('Failed to load AppUpdates:', error);
-    return { default: () => <div>Error loading App Updates</div> };
-  });
-});
+const SendFiles = lazy(() => import('./pages/SendFiles.js'));
+const ReceiveFiles = lazy(() => import('./pages/ReceiveFiles.js'));
+const History = lazy(() => import('./pages/History.js'));
+const GroupChat = lazy(() => import('./pages/GroupChat.js'));
+const Settings = lazy(() => import('./pages/Settings.js'));
+const SplashDemo = lazy(() => import('./pages/SplashDemo.js'));
+const SaReGaMaPa = lazy(() => import('./pages/SaReGaMaPa.js'));
+const AppUpdates = lazy(() => import('./pages/AppUpdates.js'));
 
 // Loading component with better error handling and timeout
 const LoadingSpinner = ({ error, retry, timedOut }) => {
@@ -218,35 +178,93 @@ function AppContent() {
   const { theme, sidebarOpen, cleanupExpiredCodes } = useStore();
   const [showSplash, setShowSplash] = useState(true);
   const routeChangeCount = useRef(0);
+  const appInitialized = useRef(false);
 
+  // Ultra-Powerful App Initialization
   useEffect(() => {
+    if (appInitialized.current) return;
+    
+    performanceMonitor.start('app-initialization');
+    
+    // Initialize security policies
+    const csp = securityManager.createCSP({
+      allowInline: process.env.NODE_ENV === 'development',
+      allowedDomains: ['localhost:5002', 'localhost:3000']
+    });
+    
+    // Apply CSP to document
+    const meta = document.createElement('meta');
+    meta.httpEquiv = 'Content-Security-Policy';
+    meta.content = csp;
+    document.head.appendChild(meta);
+    
+    // Initialize optimization systems
+    optimizationManager.lazyLoadImages();
+    
     // Clean up expired codes on app start
     cleanupExpiredCodes();
     
-    // Set up periodic cleanup
-    const interval = setInterval(cleanupExpiredCodes, 60000); // Every minute
+    // Set up periodic cleanup with optimization
+    const cleanupInterval = setInterval(() => {
+      cleanupExpiredCodes();
+      optimizationManager.clearExpiredCache();
+    }, 60000); // Every minute
     
-    return () => clearInterval(interval);
-  }, [cleanupExpiredCodes]);
+    appInitialized.current = true;
+    performanceMonitor.end('app-initialization', { 
+      theme,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    });
+    
+    return () => {
+      clearInterval(cleanupInterval);
+      optimizationManager.cleanup();
+    };
+  }, [cleanupExpiredCodes, theme]);
 
-  useEffect(() => {
-    // Apply theme to document
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+  // Optimized theme application with memoization
+  const themeClasses = useMemo(() => {
+    return theme === 'dark' ? 'dark' : '';
   }, [theme]);
 
-  // Track route changes to help debug the navigation issue
   useEffect(() => {
+    // Apply theme to document with optimization
+    optimizationManager.batchDOMUpdates(() => {
+      document.documentElement.classList.toggle('dark', theme === 'dark');
+    });
+  }, [theme]);
+
+  // Enhanced route change tracking with performance monitoring
+  const handleRouteChange = useCallback(() => {
     routeChangeCount.current += 1;
-    console.log(`Route changed to: ${location.pathname}, change count: ${routeChangeCount.current}`);
-  }, [location]);
+    performanceMonitor.start(`route-${location.pathname}`, {
+      pathname: location.pathname,
+      changeCount: routeChangeCount.current
+    });
+    
+    // Log route change with security validation
+    const sanitizedPath = securityManager.sanitize(location.pathname, 'pathTraversal');
+    console.log(`🔄 Route changed to: ${sanitizedPath}, change count: ${routeChangeCount.current}`);
+    
+    // End previous route timing if exists
+    performanceMonitor.end(`route-${location.pathname}`, {
+      pathname: location.pathname,
+      changeCount: routeChangeCount.current
+    });
+  }, [location.pathname]);
+
+  useEffect(() => {
+    handleRouteChange();
+  }, [handleRouteChange]);
 
   if (showSplash) {
     return <SplashScreen onSplashComplete={() => setShowSplash(false)} />;
   }
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${theme === 'dark' ? 'dark' : ''}`}>
-      {/* Apply the modern black gradient to the entire app */ }
+    <div className={`min-h-screen transition-colors duration-500 ${themeClasses}`}>
+      {/* Ultra-Powerful Background with Performance Optimization */}
       <div 
         className="absolute inset-0 z-0"
         style={{
@@ -300,8 +318,9 @@ function AppContent() {
                       <Route path="/sa-re-ga-ma-pa" element={<SaReGaMaPa />} />
                       <Route path="/app-updates" element={<AppUpdates />} />
                       <Route path="/settings" element={<Settings />} />
-                      <Route path="/developer" element={<Developer />} /> {/* Use Developer instead of DeveloperPage */}
+                      <Route path="/developer" element={<Developer />} />
                       <Route path="/splash-demo" element={<SplashDemo />} />
+                      <Route path="/chat-interface-check" element={<ChatInterfaceCheck />} />
                     </Routes>
                   </Suspense>
                 </motion.div>

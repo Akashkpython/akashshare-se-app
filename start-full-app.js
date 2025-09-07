@@ -1,165 +1,156 @@
-#!/usr/bin/env node
-
-// Script to start both backend and frontend for easier development
+// Script to start the full application with proper port management
 import { spawn } from 'child_process';
-import path from 'path';
-import http from 'http';
-import net from 'net';
-import { fileURLToPath } from 'url';
+import { promisify } from 'util';
+import { exec as execCallback } from 'child_process';
 
-// For ES modules __dirname equivalent
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const exec = promisify(execCallback);
 
 console.log('🚀 Starting Akash Share Full Application...');
-console.log('========================================');
 
-// Function to check if a port is in use
-function checkPortInUse(port) {
-  return new Promise((resolve) => {
-    const tester = net.createServer()
-      .once('error', () => {
-        resolve(true); // Port is in use
-      })
-      .once('listening', () => {
-        tester.once('close', () => {
-          resolve(false); // Port is available
-        }).close();
-      })
-      .listen(port, '127.0.0.1');
-  });
-}
-
-// Function to wait for a service to be ready
-function waitForService(url, timeout = 30000) {
-  return new Promise((resolve, reject) => {
-    const startTime = Date.now();
-    
-    const check = () => {
-      if (Date.now() - startTime > timeout) {
-        reject(new Error('Service timeout'));
-        return;
-      }
+// Function to kill processes on specific ports
+async function killPortProcess(port) {
+  try {
+    if (process.platform === 'win32') {
+      // Find and kill processes using the port on Windows
+      const { stdout } = await exec(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
+      const lines = stdout.split('\n');
       
-      http.get(url, (res) => {
-        if (res.statusCode === 200) {
-          resolve();
-        } else {
-          setTimeout(check, 1000);
+      for (const line of lines) {
+        if (line.includes(`:${port}`)) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && !isNaN(pid)) {
+            console.log(`🔧 Killing process ${pid} using port ${port}`);
+            try {
+              await exec(`taskkill /PID ${pid} /F`);
+              console.log(`✅ Successfully killed process ${pid}`);
+            } catch (killError) {
+              console.warn(`⚠️ Failed to kill process ${pid}:`, killError.message);
+            }
+          }
         }
-      }).on('error', () => {
-        setTimeout(check, 1000);
-      });
-    };
-    
-    check();
-  });
+      }
+    } else {
+      // For Unix-like systems
+      const { stdout } = await exec(`lsof -i :${port} -t`);
+      const pids = stdout.trim().split('\n').filter(pid => pid);
+      
+      for (const pid of pids) {
+        if (pid) {
+          console.log(`🔧 Killing process ${pid} using port ${port}`);
+          try {
+            await exec(`kill -9 ${pid}`);
+            console.log(`✅ Successfully killed process ${pid}`);
+          } catch (killError) {
+            console.warn(`⚠️ Failed to kill process ${pid}:`, killError.message);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.warn(`⚠️ No processes found using port ${port} or error occurred:`, error.message);
+  }
 }
 
-// Start backend server
-async function startBackend() {
+// Function to start the backend server
+function startBackend() {
   console.log('🔧 Starting backend server...');
   
-  // Check if port 5002 is already in use
-  const portInUse = await checkPortInUse(5002);
-  if (portInUse) {
-    console.error('❌ Port 5002 is already in use. Please terminate the process using this port.');
-    console.error('   You can find the process with: netstat -ano | findstr :5002');
-    console.error('   Then terminate it with: taskkill /F /PID <process_id>');
-    process.exit(1);
-  }
-  
-  const backendProcess = spawn('node', ['server.js'], {
-    cwd: path.join(__dirname, 'backend'),
-    stdio: 'inherit',
-    env: { ...process.env }
+  const backend = spawn('node', ['run-backend.js'], {
+    stdio: 'inherit'
   });
-
-  backendProcess.on('error', (error) => {
+  
+  backend.on('error', (error) => {
     console.error('❌ Failed to start backend server:', error.message);
-    process.exit(1);
-  });
-
-  backendProcess.on('close', (code) => {
-    console.log(`🔧 Backend server exited with code ${code}`);
-    if (code !== 0) {
-      console.error('❌ Backend server failed to start properly');
-      process.exit(code);
-    }
   });
   
-  // Wait for backend to be ready
-  try {
-    await waitForService('http://localhost:5002/health', 30000);
-    console.log('✅ Backend server is ready');
-    return backendProcess;
-  } catch (error) {
-    console.error('❌ Backend server failed to start within timeout period');
-    backendProcess.kill();
-    process.exit(1);
-  }
-}
-
-// Start frontend application
-function startFrontend() {
-  console.log('🖥️  Starting frontend application...');
-  // Use npx instead of npm to avoid PATH issues
-  const frontendProcess = spawn('npx', ['react-scripts', 'start'], {
-    cwd: __dirname,
-    stdio: 'inherit',
-    shell: true // Use shell to ensure proper command execution
-  });
-
-  frontendProcess.on('error', (error) => {
-    console.error('❌ Failed to start frontend application:', error.message);
-  });
-
-  frontendProcess.on('close', (code) => {
-    console.log(`🖥️  Frontend application exited with code ${code}`);
+  backend.on('close', (code) => {
+    console.log(`🔧 Backend server process exited with code ${code}`);
   });
   
-  return frontendProcess;
+  return backend;
 }
 
-// Main execution
-async function main() {
+// Function to start the React development server
+function startReact() {
+  console.log('🔧 Starting React development server...');
+  
+  // Set environment variable to use a different port
+  const env = {
+    ...process.env,
+    PORT: '3001' // Use port 3001 instead of 3000
+  };
+  
+  const react = spawn('npm', ['start'], {
+    env,
+    stdio: 'inherit'
+  });
+  
+  react.on('error', (error) => {
+    console.error('❌ Failed to start React development server:', error.message);
+  });
+  
+  react.on('close', (code) => {
+    console.log(`🔧 React development server process exited with code ${code}`);
+  });
+  
+  return react;
+}
+
+// Function to start Electron
+function startElectron() {
+  console.log('🔧 Starting Electron app...');
+  
+  const electron = spawn('electron', ['.'], {
+    stdio: 'inherit'
+  });
+  
+  electron.on('error', (error) => {
+    console.error('❌ Failed to start Electron app:', error.message);
+  });
+  
+  electron.on('close', (code) => {
+    console.log(`🔧 Electron app process exited with code ${code}`);
+  });
+  
+  return electron;
+}
+
+// Main function to start everything
+async function startApp() {
   try {
-    // Check if ports are available before starting
-    const backendPortInUse = await checkPortInUse(5002);
-    if (backendPortInUse) {
-      console.error('❌ Port 5002 is already in use. Please terminate the process using this port.');
-      console.error('   You can find the process with: netstat -ano | findstr :5002');
-      console.error('   Then terminate it with: taskkill /F /PID <process_id>');
-      process.exit(1);
-    }
+    // Kill any processes using our required ports
+    console.log('🔧 Checking for processes using required ports...');
+    await killPortProcess(3000);
+    await killPortProcess(3001);
+    await killPortProcess(5002);
     
-    const frontendPortInUse = await checkPortInUse(3000);
-    if (frontendPortInUse) {
-      console.error('❌ Port 3000 is already in use. Please terminate the process using this port.');
-      console.error('   You can find the process with: netstat -ano | findstr :3000');
-      console.error('   Then terminate it with: taskkill /F /PID <process_id>');
-      process.exit(1);
-    }
+    // Wait a moment for ports to be freed
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Start backend first
-    const backendProcess = await startBackend();
+    // Start backend server
+    const backend = startBackend();
     
-    // Wait a bit for backend to fully initialize
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Wait a few seconds for backend to start
+    await new Promise(resolve => setTimeout(resolve, 5000));
     
-    // Start frontend
-    const frontendProcess = startFrontend();
+    // Start React development server
+    const react = startReact();
     
-    // Handle process termination
-    const cleanup = () => {
-      console.log('\n🛑 Shutting down applications...');
-      backendProcess.kill();
-      frontendProcess.kill();
+    // Wait for React to start
+    await new Promise(resolve => setTimeout(resolve, 10000));
+    
+    // Start Electron app
+    const electron = startElectron();
+    
+    // Handle graceful shutdown
+    process.on('SIGINT', () => {
+      console.log('🛑 Received SIGINT. Shutting down...');
+      backend.kill();
+      react.kill();
+      electron.kill();
       process.exit(0);
-    };
-    
-    process.on('SIGINT', cleanup);
-    process.on('SIGTERM', cleanup);
+    });
     
   } catch (error) {
     console.error('❌ Error starting application:', error.message);
@@ -167,4 +158,5 @@ async function main() {
   }
 }
 
-main();
+// Start the application
+startApp();

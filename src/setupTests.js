@@ -4,79 +4,66 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-// Mock window.matchMedia for tests
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
-
-// Mock window.location for tests
-delete window.location;
-window.location = {
-  href: '/',
-  search: '',
-  pathname: '/',
-  hash: '',
-  assign: jest.fn(),
-  replace: jest.fn(),
-  reload: jest.fn(),
+// Mock WebSocket for tests
+global.WebSocket = class WebSocket {
+  constructor(url) {
+    this.url = url;
+    this.readyState = 1; // OPEN
+    this.onopen = null;
+    this.onclose = null;
+    this.onmessage = null;
+    this.onerror = null;
+    
+    // Simulate connection
+    setTimeout(() => {
+      if (this.onopen) this.onopen();
+    }, 0);
+  }
+  
+  send(data) {
+    // Mock send
+  }
+  
+  close() {
+    this.readyState = 3; // CLOSED
+    if (this.onclose) this.onclose();
+  }
 };
 
-// Mock console methods to reduce noise in tests
-const originalError = console.error;
+// Mock electron API
+global.window = global.window || {};
+global.window.electronAPI = {
+  selectFiles: () => Promise.resolve([]),
+  selectSaveDirectory: () => Promise.resolve(null),
+  showNotification: () => Promise.resolve(),
+  platform: 'win32',
+  appVersion: '1.0.0',
+  minimize: () => Promise.resolve(),
+  maximize: () => Promise.resolve(),
+  close: () => Promise.resolve(),
+  checkForUpdates: () => Promise.resolve(),
+  downloadUpdate: () => Promise.resolve(),
+  quitAndInstall: () => Promise.resolve(),
+  onUpdateStatus: () => {},
+  removeUpdateStatusListener: () => {},
+  onWindowStateChange: () => {}
+};
+
+// Mock fetch for tests
+global.fetch = global.fetch || (() => Promise.resolve({
+  ok: true,
+  json: () => Promise.resolve({}),
+  text: () => Promise.resolve('')
+}));
+
+// Suppress console warnings in tests
 const originalWarn = console.warn;
-
-// Suppress React warnings in tests unless explicitly needed
-beforeAll(() => {
-  console.error = (...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning:') &&
-      (args[0].includes('ReactDOM.render is no longer supported') ||
-       args[0].includes('componentWillReceiveProps') ||
-       args[0].includes('componentWillMount') ||
-       args[0].includes('componentWillUpdate'))
-    ) {
-      return;
-    }
-    originalError.call(console, ...args);
-  };
-
-  console.warn = (...args) => {
-    if (
-      typeof args[0] === 'string' &&
-      args[0].includes('Warning:')
-    ) {
-      return;
-    }
-    originalWarn.call(console, ...args);
-  };
-});
-
-afterAll(() => {
-  console.error = originalError;
-  console.warn = originalWarn;
-});
-
-// Mock ResizeObserver for tests
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
-
-// Mock IntersectionObserver for tests
-global.IntersectionObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
+console.warn = (...args) => {
+  if (
+    typeof args[0] === 'string' &&
+    (args[0].includes('Warning:') || args[0].includes('DeprecationWarning'))
+  ) {
+    return;
+  }
+  originalWarn.apply(console, args);
+};

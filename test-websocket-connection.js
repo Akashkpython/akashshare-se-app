@@ -1,48 +1,64 @@
-// Simple WebSocket connection test
+// Test script to verify WebSocket connections work correctly
 const WebSocket = require('ws');
 
-console.log('🧪 Testing WebSocket connection to backend...');
+console.log('🚀 Testing WebSocket connection to backend...');
 
-const ws = new WebSocket('ws://localhost:5002/chat?username=TestUser&room=general');
-
-ws.on('open', () => {
-  console.log('✅ WebSocket connection established successfully!');
-  console.log('📤 Sending test message...');
-
-  ws.send(JSON.stringify({
-    type: 'message',
-    message: 'Hello from test script!',
-    room: 'general'
-  }));
-
-  // Close after 2 seconds
+// Test WebSocket connection
+const testWebSocketConnection = () => {
+  const username = `TestUser${Math.floor(Math.random() * 1000)}`;
+  const wsUrl = `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=general`;
+  
+  console.log(`🔗 Connecting to: ${wsUrl}`);
+  
+  const ws = new WebSocket(wsUrl);
+  
+  ws.on('open', () => {
+    console.log('✅ WebSocket connection established successfully');
+    
+    // Send a test message
+    const testMessage = {
+      type: 'message',
+      message: 'Hello from test script!',
+      room: 'general'
+    };
+    
+    ws.send(JSON.stringify(testMessage));
+    console.log('📤 Sent test message');
+  });
+  
+  ws.on('message', (data) => {
+    try {
+      const message = JSON.parse(data);
+      console.log('📥 Received message:', message);
+      
+      if (message.type === 'userList') {
+        console.log('👥 Current users in room:', message.users);
+      } else if (message.type === 'message') {
+        console.log('💬 Chat message:', message.username, '-', message.message);
+      }
+    } catch (error) {
+      console.error('❌ Error parsing message:', error);
+    }
+  });
+  
+  ws.on('close', (code, reason) => {
+    console.log(`🔌 WebSocket connection closed: ${code} - ${reason || 'No reason'}`);
+    process.exit(0);
+  });
+  
+  ws.on('error', (error) => {
+    console.error('❌ WebSocket error:', error);
+    process.exit(1);
+  });
+  
+  // Keep the connection alive for testing
   setTimeout(() => {
-    ws.close(1000, 'Test completed');
-  }, 2000);
-});
+    if (ws.readyState === WebSocket.OPEN) {
+      console.log('✅ Test completed successfully - connection remained open');
+      ws.close(1000, 'Test completed');
+    }
+  }, 10000); // Keep open for 10 seconds
+};
 
-ws.on('message', (data) => {
-  try {
-    const message = JSON.parse(data);
-    console.log('📥 Received message:', message);
-  } catch (error) {
-    console.log('📥 Received raw data:', data.toString());
-  }
-});
-
-ws.on('close', (code, reason) => {
-  console.log(`🔌 WebSocket closed (code: ${code}, reason: ${reason})`);
-  process.exit(0);
-});
-
-ws.on('error', (error) => {
-  console.error('❌ WebSocket error:', error);
-  process.exit(1);
-});
-
-// Timeout after 10 seconds
-setTimeout(() => {
-  console.error('⏰ Connection timeout - backend may not be responding');
-  ws.close();
-  process.exit(1);
-}, 10000);
+// Run the test
+testWebSocketConnection();

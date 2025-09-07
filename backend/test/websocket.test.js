@@ -75,7 +75,7 @@ describe('WebSocket Chat Tests', function() {
         
         console.log('Received message in test 3:', message);
         
-        if (message.type === 'message' && message.text === testMessage) {
+        if (message.type === 'message' && message.message === testMessage) {
           messageReceived = true;
           clientSocket.removeEventListener('message', messageHandler);
           done();

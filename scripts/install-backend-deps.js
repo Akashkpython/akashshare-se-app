@@ -50,10 +50,10 @@ try {
       
       // Create a minimal .env file with required variables
       const minimalEnv = `# Auto-generated .env file
-MONGO_URI=mongodb://localhost:27017/akashshare
+MONGO_URI=mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
 PORT=5002
 HOST=localhost
-JWT_SECRET=your-jwt-secret-here
+JWT_SECRET=f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09
 NODE_ENV=production
 `;
       fs.writeFileSync(envPath, minimalEnv);

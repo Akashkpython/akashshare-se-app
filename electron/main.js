@@ -442,6 +442,148 @@ NODE_ENV=production
   }
 }
 
+async function checkIfBackendIsRunning() {
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'localhost',
+      port: 5002,
+      path: '/health',
+      method: 'GET',
+      timeout: 3000
+    };
+
+    const req = http.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => {
+        data += chunk;
+      });
+      
+      res.on('end', () => {
+        try {
+          const jsonData = JSON.parse(data);
+          if (res.statusCode === 200 && jsonData.status === 'OK') {
+            log.info('🔍 Backend health check successful - backend is already running');
+            resolve(true);
+          } else {
+            log.info(`🔍 Backend health check returned status ${res.statusCode} - backend may not be running`);
+            resolve(false);
+          }
+        } catch (parseError) {
+          log.info(`🔍 Backend health check failed to parse response - backend may not be running: ${parseError.message}`);
+          resolve(false);
+        }
+      });
+    });
+    
+    req.on('error', (error) => {
+      log.info(`🔍 Backend health check failed - backend is likely not running: ${error.message}`);
+      resolve(false);
+    });
+    
+    req.on('timeout', () => {
+      log.info('🔍 Backend health check timed out - backend may not be running');
+      req.destroy();
+      resolve(false);
+    });
+    
+    req.end();
+  });
+}
+
+// Enhanced function to kill processes on port 5002 with better error handling
+async function killPortProcess(port) {
+  log.info(`🔧 Checking for processes using port ${port}...`);
+  
+  if (process.platform === 'win32') {
+    try {
+      // Find processes using the port
+      const { execSync } = require('child_process');
+      const cmd = `netstat -ano | findstr :${port}`;
+      const result = execSync(cmd, { encoding: 'utf8', timeout: 5000 });
+      
+      const lines = result.split('\n').filter(line => line.trim());
+      let processesKilled = 0;
+      
+      for (const line of lines) {
+        if (line.includes(`:${port}`) && line.includes('LISTENING')) {
+          const parts = line.trim().split(/\s+/);
+          const pid = parts[parts.length - 1];
+          if (pid && !isNaN(pid) && pid !== '0') {
+            log.info(`🔧 Found process ${pid} using port ${port}`);
+            try {
+              // Try graceful termination first
+              execSync(`taskkill /PID ${pid}`, { timeout: 3000 });
+              log.info(`✅ Gracefully terminated process ${pid}`);
+              processesKilled++;
+            } catch (gracefulError) {
+              // If graceful termination fails, force kill
+              try {
+                execSync(`taskkill /PID ${pid} /F`, { timeout: 3000 });
+                log.info(`✅ Force killed process ${pid}`);
+                processesKilled++;
+              } catch (forceError) {
+                log.warn(`⚠️ Failed to kill process ${pid}:`, forceError.message);
+              }
+            }
+          }
+        }
+      }
+      
+      if (processesKilled > 0) {
+        log.info(`✅ Killed ${processesKilled} process(es) using port ${port}`);
+        // Wait a moment for the port to be freed
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        log.info(`✅ Port ${port} is already free.`);
+      }
+    } catch (error) {
+      // This error is expected if no process is using the port
+      log.info(`✅ Port ${port} is already free or no processes found.`);
+    }
+  } else {
+    // Add support for macOS and Linux
+    try {
+      const { execSync } = require('child_process');
+      const cmd = `lsof -i :${port} -t`;
+      const result = execSync(cmd, { encoding: 'utf8', timeout: 5000 });
+      const pids = result.split('\n').filter(pid => pid && !isNaN(pid));
+      
+      if (pids.length > 0) {
+        log.info(`🔧 Found ${pids.length} process(es) using port ${port}`);
+        
+        for (const pid of pids) {
+          log.info(`🔧 Killing process ${pid} using port ${port}`);
+          try {
+            // Try graceful termination first
+            process.kill(pid, 'SIGTERM');
+            // Wait a moment for graceful termination
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check if process is still running
+            try {
+              process.kill(pid, 0); // This will throw if process doesn't exist
+              // Process still exists, force kill
+              process.kill(pid, 'SIGKILL');
+              log.info(`✅ Force killed process ${pid}`);
+            } catch (checkError) {
+              log.info(`✅ Gracefully terminated process ${pid}`);
+            }
+          } catch (killError) {
+            log.warn(`⚠️ Failed to kill process ${pid}:`, killError.message);
+          }
+        }
+        
+        // Wait a moment for the port to be freed
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        log.info(`✅ Port ${port} is already free.`);
+      }
+    } catch (error) {
+      log.info(`✅ Port ${port} is already free or no processes found.`);
+    }
+  }
+}
+
 // Function to create the backend server process
 async function createBackendProcess() {
   log.info('🔧 Starting backend server process...');
@@ -451,6 +593,20 @@ async function createBackendProcess() {
   const isBackendRunning = await checkIfBackendIsRunning();
   if (isBackendRunning) {
     log.info('✅ Backend server is already running on port 5002, skipping startup');
+    return Promise.resolve(null);
+  }
+  
+  // Try to kill any process using port 5002
+  log.info('🔧 Ensuring port 5002 is available...');
+  await killPortProcess(5002);
+  
+  // Wait a moment for the port to be freed
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Double-check that the port is now free
+  const isStillRunning = await checkIfBackendIsRunning();
+  if (isStillRunning) {
+    log.warn('⚠️ Backend is still running after port cleanup attempt');
     return Promise.resolve(null);
   }
   
@@ -515,6 +671,10 @@ async function createBackendProcess() {
   log.info(`🔧 MONGO_URI: ${process.env.MONGO_URI ? 'set' : 'not set'}`);
   
   // Spawn the backend process with enhanced error handling
+  log.info('🚀 Spawning backend process...');
+  log.info(`📁 Working directory: ${backendDir}`);
+  log.info(`📄 Script path: ${backendPath}`);
+  
   const backendProcess = spawn('node', [backendPath], {
     cwd: backendDir,
     env: {
@@ -524,9 +684,15 @@ async function createBackendProcess() {
       // Ensure these are set explicitly
       NODE_ENV: isDev ? 'development' : 'production',
       PORT: backendEnvCache.PORT || process.env.PORT || '5002',
-      HOST: backendEnvCache.HOST || '0.0.0.0'
+      HOST: backendEnvCache.HOST || '0.0.0.0',
+      // Add additional environment variables for better debugging
+      DEBUG: isDev ? '*' : undefined,
+      LOG_LEVEL: isDev ? 'debug' : 'info'
     },
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    // Add process options for better stability
+    detached: false,
+    windowsHide: true
   });
 
   // Performance tracking
@@ -575,16 +741,36 @@ async function createBackendProcess() {
       log.error('❌ Node.js not found. Please ensure Node.js is installed.');
     } else if (error.code === 'EACCES') {
       log.error('❌ Permission denied. Please check file permissions.');
+    } else if (error.code === 'EADDRINUSE') {
+      log.error('❌ Port 5002 is already in use. Please check for conflicting processes.');
     } else {
       log.error(`❌ Unexpected error starting backend: ${error.message}`);
     }
+    
+    // Note: backend process failed to start
+    log.error('❌ Backend process startup failed');
   });
 
-  backendProcess.on('close', (code) => {
-    log.info(`🔧 Backend process exited with code ${code}`);
+  backendProcess.on('close', (code, signal) => {
+    log.info(`🔧 Backend process exited with code ${code} and signal ${signal}`);
     if (code !== 0 && code !== null) {
       log.warn(`⚠️ Backend process exited unexpectedly with code ${code}`);
+      
+      // Provide specific guidance based on exit code
+      if (code === 1) {
+        log.error('❌ Backend process exited due to a general error. Check the logs above for details.');
+      } else if (code === 2) {
+        log.error('❌ Backend process exited due to incorrect usage. Check configuration.');
+      } else if (code === 3) {
+        log.error('❌ Backend process exited due to internal error. Check dependencies and configuration.');
+      }
+    } else {
+      log.info('✅ Backend process exited normally');
     }
+  });
+
+  backendProcess.on('exit', (code, signal) => {
+    log.info(`🔧 Backend process exit event: code ${code}, signal ${signal}`);
   });
 
   // Wait for backend to start properly before returning
@@ -593,9 +779,16 @@ async function createBackendProcess() {
     
     const handleOutput = (data) => {
       const output = data.toString().trim();
-      if (output.includes('Server running on')) {
+      log.info(`[Backend Output] ${output}`);
+      
+      // Check for various startup success indicators
+      if (output.includes('Server running on') || 
+          output.includes('Server started') || 
+          output.includes('Listening on port') ||
+          output.includes('WebSocket server is listening')) {
         backendStarted = true;
         log.info('✅ Backend server confirmed running');
+        
         // Remove listeners to prevent memory leaks
         backendProcess.stdout.removeListener('data', handleOutput);
         backendProcess.stderr.removeListener('data', handleOutput);
@@ -607,13 +800,26 @@ async function createBackendProcess() {
     backendProcess.stdout.on('data', handleOutput);
     backendProcess.stderr.on('data', handleOutput);
     
-    // Timeout if backend doesn't start in 10 seconds
-    setTimeout(() => {
+    // Timeout if backend doesn't start in 30 seconds (increased for better reliability)
+    const startupTimeout = setTimeout(() => {
       if (!backendStarted) {
-        log.warn('⚠️ Backend server startup timeout - continuing anyway');
-        resolve(backendProcess);
+        log.error('❌ Backend server startup timeout. The backend process did not start in time.');
+        log.error('❌ This could be due to:');
+        log.error('   - Missing dependencies (run npm install in backend directory)');
+        log.error('   - Port 5002 already in use');
+        log.error('   - MongoDB connection issues');
+        log.error('   - Invalid environment configuration');
+        
+        // Remove listeners
+        backendProcess.stdout.removeListener('data', handleOutput);
+        backendProcess.stderr.removeListener('data', handleOutput);
+        
+        resolve(null);
       }
-    }, 10000);
+    }, 30000);
+    
+    // Store timeout reference for potential cleanup
+    backendProcess.startupTimeout = startupTimeout;
   });
 }
 
@@ -691,54 +897,6 @@ function createTray() {
   });
   
   log.info(`✅ System tray created with icon: ${iconPathUsed || 'default'}`);
-}
-
-async function checkIfBackendIsRunning() {
-  return new Promise((resolve) => {
-    const options = {
-      hostname: '127.0.0.1', // Use IPv4 instead of localhost to avoid IPv6 issues
-      port: 5002,
-      path: '/health',
-      method: 'GET',
-      timeout: 3000
-    };
-
-    const req = http.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => {
-        data += chunk;
-      });
-      
-      res.on('end', () => {
-        try {
-          const jsonData = JSON.parse(data);
-          if (res.statusCode === 200 && jsonData.status === 'OK') {
-            log.info('🔍 Backend health check successful - backend is already running');
-            resolve(true);
-          } else {
-            log.info(`🔍 Backend health check returned status ${res.statusCode} - backend may not be running`);
-            resolve(false);
-          }
-        } catch (parseError) {
-          log.info(`🔍 Backend health check failed to parse response - backend may not be running: ${parseError.message}`);
-          resolve(false);
-        }
-      });
-    });
-    
-    req.on('error', (error) => {
-      log.info(`🔍 Backend health check failed - backend is likely not running: ${error.message}`);
-      resolve(false);
-    });
-    
-    req.on('timeout', () => {
-      log.info('🔍 Backend health check timed out - backend may not be running');
-      req.destroy();
-      resolve(false);
-    });
-    
-    req.end();
-  });
 }
 
 // Auto-update event handlers
@@ -856,7 +1014,35 @@ app.on('before-quit', () => {
   // Kill backend process if it exists
   if (backendProcess) {
     log.info('🛑 Terminating backend process...');
-    backendProcess.kill();
+    try {
+      // Try graceful termination first
+      backendProcess.kill('SIGTERM');
+      
+      // Wait a moment for graceful shutdown
+      setTimeout(() => {
+        if (backendProcess && !backendProcess.killed) {
+          log.info('🛑 Force killing backend process...');
+          backendProcess.kill('SIGKILL');
+        }
+      }, 3000);
+    } catch (error) {
+      log.error('❌ Error terminating backend process:', error);
+    }
+  }
+});
+
+// Handle app termination on Windows
+app.on('will-quit', (_event) => {
+  log.info('🛑 App will quit...');
+  
+  // Kill backend process if it exists
+  if (backendProcess) {
+    log.info('🛑 Terminating backend process...');
+    try {
+      backendProcess.kill('SIGTERM');
+    } catch (error) {
+      log.error('❌ Error terminating backend process:', error);
+    }
   }
 });
 

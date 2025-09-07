@@ -6,27 +6,23 @@ import multer from "multer";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import { body, validationResult, param } from "express-validator";
-import { WebSocketServer, WebSocket } from "ws";
+import { validationResult, param } from "express-validator";
+import { WebSocketServer } from "ws";
 import http from "http";
-import shortid from "shortid";
+// shortid import removed as it is not used
 import mongoose from "mongoose";
 import connectToMongoDB from "./mongo-connection.js";
 import { validateFile, sanitizeFilename } from "./utils/fileValidation.js";
+// Rate limiting functions are now used in group.js module
+import { initializeGroupChat, getChatClients, getRooms } from "./utils/group.js";
 import { 
-  isRateLimited, 
-  recordConnectionAttempt, 
-  hasExceededConnectionLimit, 
-  incrementConnectionCount, 
-  decrementConnectionCount 
-} from "./utils/websocketRateLimit.js";
-import { 
-  logError, 
   asyncErrorHandler, 
   globalErrorHandler, 
   setupGlobalErrorHandlers, 
   validateEnvironment 
 } from "./utils/errorHandler.js";
+import backendSecurityManager from "./utils/security.js";
+import backendPerformanceManager from "./utils/performance.js";
 import { URL } from "url";
 import dotenv from "dotenv";
 
@@ -60,313 +56,55 @@ const server = http.createServer({ family: 4 }, app);
 // WebSocket Server
 const wss = new WebSocketServer({ server, path: '/chat' });
 
-// Store connected clients
-const chatClients = new Map();
-const rooms = new Map();
+// Initialize group chat functionality
+initializeGroupChat(wss);
 
-// WebSocket chat functionality
-wss.on('connection', (ws, req) => {
-  try {
-    const parsedUrl = new URL(req.url, 'http://localhost');
-    const username = parsedUrl.searchParams.get('username') || 'Anonymous';
-    const room = parsedUrl.searchParams.get('room') || 'general';
-    const clientIP = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
-    
-    // Rate limiting checks
-    recordConnectionAttempt(clientIP);
-    
-    if (isRateLimited(clientIP)) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Rate limit exceeded. Too many connection attempts.'
-      }));
-      ws.close(1008, 'Rate limit exceeded');
-      return;
+// Add WebSocket server event listeners for debugging
+wss.on('listening', () => {
+  // Get the actual address the server is listening on
+  const address = server.address();
+  if (address) {
+    if (typeof address === 'string') {
+      console.log('💬 WebSocket server is listening on', address);
+    } else {
+      console.log('💬 WebSocket server is listening on', `${address.address}:${address.port}`);
     }
-    
-    if (hasExceededConnectionLimit(clientIP)) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Connection limit exceeded for this IP.'
-      }));
-      ws.close(1008, 'Connection limit exceeded');
-      return;
-    }
-    
-    // Increment connection count
-    incrementConnectionCount(clientIP);
-    
-    // Validate username and room
-    if (username.length > 50) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Username too long (max 50 characters)'
-      }));
-      ws.close();
-      return;
-    }
-    
-    if (room.length > 50) {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Room name too long (max 50 characters)'
-      }));
-      ws.close();
-      return;
-    }
-    
-    console.log(`🔗 WebSocket Connection:`);
-    console.log(`  👤 User: ${username}`);
-    console.log(`  🏠 Room: ${room}`);
-    console.log(`  🌐 IP: ${clientIP}`);
-    console.log(`  📍 URL: ${req.url}`);
-    
-    // Store client info
-    const clientInfo = { username, room, ws, connectedAt: new Date() };
-    chatClients.set(ws, clientInfo);
-    
-    // Add to room
-    if (!rooms.has(room)) {
-      rooms.set(room, new Set());
-      console.log(`  🆕 Created new room: ${room}`);
-    }
-    rooms.get(room).add(ws);
-    
-    const roomUserCount = rooms.get(room).size;
-    console.log(`  📊 Room ${room} now has ${roomUserCount} users`);
-    
-    // Broadcast user joined
-    const userList = Array.from(rooms.get(room)).map(client => chatClients.get(client).username);
-    broadcastToRoom(room, {
-      type: 'userJoined',
-      username,
-      users: userList,
-      timestamp: new Date().toISOString()
-    });
-    
-    console.log(`  👥 Broadcasting user list:`, userList);
-    
-    // Send current user list
-    const welcomeMessage = {
-      type: 'userList',
-      users: userList
-    };
-    
-    try {
-      ws.send(JSON.stringify(welcomeMessage));
-      console.log(`  ✅ Welcome message sent to ${username}`);
-    } catch (error) {
-      console.error(`  ❌ Failed to send welcome message:`, error);
-    }
-    
-    ws.on('message', (data) => {
-      try {
-        const message = JSON.parse(data);
-        
-        switch (message.type) {
-          case 'message':
-            broadcastToRoom(room, {
-              type: 'message',
-              username,
-              message: message.message,
-              room: message.room || room,
-              timestamp: new Date().toISOString()
-            });
-            break;
-              
-            case 'switchRoom': {
-              try {
-                // Validate new room name
-                const newRoom = message.room;
-                if (!newRoom || typeof newRoom !== 'string') {
-                  ws.send(JSON.stringify({
-                    type: 'error',
-                    message: 'Invalid room name'
-                  }));
-                  break;
-                }
-
-                // Remove from old room
-                const oldRoom = clientInfo.room;
-                if (rooms.has(oldRoom)) {
-                  rooms.get(oldRoom).delete(ws);
-                  // Notify others in old room
-                  broadcastToRoom(oldRoom, {
-                    type: 'userLeft',
-                    username,
-                    users: Array.from(rooms.get(oldRoom)).map(client => chatClients.get(client).username)
-                  });
-                }
-
-                // Add to new room
-                clientInfo.room = newRoom;
-                if (!rooms.has(newRoom)) {
-                  rooms.set(newRoom, new Set());
-                }
-                rooms.get(newRoom).add(ws);
-
-                // Notify others in new room
-                broadcastToRoom(newRoom, {
-                  type: 'userJoined',
-                  username,
-                  users: Array.from(rooms.get(newRoom)).map(client => chatClients.get(client).username)
-                });
-
-                // Send confirmation to the client that initiated the switch
-                const userList = Array.from(rooms.get(newRoom)).map(client => chatClients.get(client).username);
-                ws.send(JSON.stringify({
-                  type: 'roomSwitched',
-                  room: newRoom,
-                  users: userList
-                }));
-
-                console.log(`  🔄 ${username} switched from room ${oldRoom} to ${newRoom}`);
-              } catch (error) {
-                console.error('Error switching rooms:', error);
-                ws.send(JSON.stringify({
-                  type: 'error',
-                  message: 'Failed to switch rooms'
-                }));
-              }
-              break;
-            }
-          }
-        } catch (error) {
-          console.error('Error processing message:', error);
-          // Send error message to client
-          try {
-            ws.send(JSON.stringify({
-              type: 'error',
-              message: 'Failed to process message'
-            }));
-          } catch (sendErr) {
-            console.error('Failed to send error to client:', sendErr);
-          }
-        }
-      });
-    
-    ws.on('close', (code, reason) => {
-      const clientData = chatClients.get(ws);
-      if (clientData) {
-        const { username, room: currentRoom, connectedAt } = clientData;
-        const connectionDuration = new Date() - connectedAt;
-        
-        console.log(`🔌 WebSocket Disconnection:`);
-        console.log(`  👤 User: ${username}`);
-        console.log(`  🏠 Room: ${currentRoom}`);
-        console.log(`  🗑️ Code: ${code}`);
-        console.log(`  📝 Reason: ${reason || 'No reason provided'}`);
-        console.log(`  ⏱️ Duration: ${Math.round(connectionDuration / 1000)}s`);
-        
-        // Decrement connection count for IP
-        decrementConnectionCount(clientIP);
-        
-        // Remove from room
-        if (rooms.has(currentRoom)) {
-          rooms.get(currentRoom).delete(ws);
-          const remainingUsers = Array.from(rooms.get(currentRoom)).map(client => chatClients.get(client).username);
-          
-          console.log(`  📊 Room ${currentRoom} now has ${remainingUsers.length} users`);
-          
-          broadcastToRoom(currentRoom, {
-            type: 'userLeft',
-            username,
-            users: remainingUsers
-          });
-        }
-        
-        // Remove client
-        chatClients.delete(ws);
-      } else {
-        console.log(`❌ Unknown WebSocket disconnected (code: ${code}, reason: ${reason || 'none'})`);
-        // Still decrement connection count even for unknown clients
-        decrementConnectionCount(clientIP);
-      }
-    });
-    
-    ws.on('error', (error) => {
-      const clientData = chatClients.get(ws);
-      const username = clientData?.username || 'Unknown';
-      console.error(`🚨 WebSocket Error for user ${username}:`, error);
-      
-      // Clean up on error
-      if (clientData) {
-        const { room: currentRoom } = clientData;
-        
-        // Decrement connection count
-        decrementConnectionCount(clientIP);
-        
-        // Remove from room
-        if (rooms.has(currentRoom)) {
-          rooms.get(currentRoom).delete(ws);
-          broadcastToRoom(currentRoom, {
-            type: 'userLeft',
-            username,
-            users: Array.from(rooms.get(currentRoom)).map(client => chatClients.get(client).username)
-          });
-        }
-        
-        // Remove client
-        chatClients.delete(ws);
-      }
-    });
-  } catch (error) {
-    console.error('Error in WebSocket connection handler:', error);
-    try {
-      ws.send(JSON.stringify({
-        type: 'error',
-        message: 'Connection initialization failed'
-      }));
-    } catch (sendErr) {
-      console.error('Failed to send error to client:', sendErr);
-    }
-    ws.close();
+  } else {
+    console.log('💬 WebSocket server is listening');
   }
 });
 
-function broadcastToRoom(room, message) {
-  if (rooms.has(room)) {
-    rooms.get(room).forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(message));
-      }
-    });
-  }
-}
+wss.on('error', (error) => {
+  console.error('❌ WebSocket server error:', error);
+});
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-  crossOriginEmbedderPolicy: false,
-}));
+wss.on('headers', (headers, request) => {
+  console.log('📋 WebSocket headers:', headers);
+});
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / 1000)
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  handler: (req, res) => {
-    // Add logging for rate limiting in test mode
-    if (process.env.NODE_ENV === 'test') {
-      console.log(`🚫 Rate limit exceeded for IP: ${req.ip}, URL: ${req.url}`);
-    }
-    res.status(429).json({
-      error: 'Too many requests from this IP, please try again later.',
-      retryAfter: Math.ceil((parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / 1000)
-    });
-  }
+console.log('🔧 WebSocket server initialized with path /chat');
+
+// Store connected clients (moved from direct implementation to using group.js)
+// These are now exported from group.js for access in other parts of the application
+// const chatClients = new Map();
+// const rooms = new Map();
+
+// WebSocket chat functionality (moved to group.js)
+// The previous implementation has been moved to the group.js module for better organization
+
+// broadcastToRoom function moved to group.js module
+
+// Ultra-Powerful Security Middleware
+app.use(backendSecurityManager.createSecurityHeaders());
+
+// Performance monitoring middleware
+app.use(backendPerformanceManager.createPerformanceMiddleware());
+
+// Ultra-Powerful Rate Limiting with Security Integration
+const limiter = backendSecurityManager.createRateLimiter({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+  message: 'Too many requests from this IP, please try again later.'
 });
 
 if (process.env.NODE_ENV !== 'test' || process.env.ENABLE_RATE_LIMIT_TEST === 'true') {
@@ -375,12 +113,17 @@ if (process.env.NODE_ENV !== 'test' || process.env.ENABLE_RATE_LIMIT_TEST === 't
 
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] // Replace with your actual domain
+    ? [
+        'https://akashshare-se.onrender.com', // Your Render frontend domain
+        'https://akashshare-se-backend.onrender.com', // Your Render backend domain
+        'https://44.229.227.142:5002', // Your production IP
+        process.env.CORS_ORIGIN || 'https://akashshare-se.onrender.com'
+      ]
     : function (origin, callback) {
         // Allow requests with no origin (like mobile apps or curl requests)
         if (!origin) return callback(null, true);
         
-        // List of allowed origins
+        // List of allowed origins for development
         const allowedOrigins = [
           'http://localhost:3000', 'http://localhost:3001', 'http://localhost:5002', 'http://localhost:5003', 'http://localhost:5004', 'http://localhost:59489',
           'http://127.0.0.1:3000', 'http://127.0.0.1:5002', 'http://127.0.0.1:5003', 'http://127.0.0.1:5004', 'http://127.0.0.1:59489',
@@ -392,14 +135,13 @@ app.use(cors({
           return callback(null, true);
         }
         
-        // Removed overly permissive private network access for security
-        // Only allow explicitly listed origins above
-        
         // For development, log the origin for debugging
         console.log('🚫 CORS blocked origin:', origin);
         callback(new Error('Not allowed by CORS'));
       },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -564,24 +306,28 @@ const File = mongoose.model("File", FileSchema);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
-  const totalClients = chatClients.size;
-  const totalRooms = rooms.size;
-  const roomStats = {};
+  const chatStats = getChatClients && getRooms ? {
+    totalClients: getChatClients().size,
+    totalRooms: getRooms().size,
+    roomStats: {}
+  } : {
+    totalClients: 0,
+    totalRooms: 0,
+    roomStats: {}
+  };
 
-  // Get stats for each room
-  rooms.forEach((clients, roomName) => {
-    roomStats[roomName] = clients.size;
-  });
+  // Get stats for each room if functions are available
+  if (getRooms) {
+    getRooms().forEach((clients, roomName) => {
+      chatStats.roomStats[roomName] = clients.size;
+    });
+  }
 
   res.status(200).json({
     status: "OK",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    websocket: {
-      totalClients,
-      totalRooms,
-      roomStats
-    },
+    websocket: chatStats,
     system: {
       memory: process.memoryUsage(),
       platform: process.platform,
@@ -614,13 +360,30 @@ app.get("/debug/files", async (req, res) => {
   }
 });
 
-// Upload Route with enhanced error handling
+// Ultra-Powerful Upload Route with Advanced Security and Performance Monitoring
 app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
+  const uploadStartTime = performance.now();
+  
   try {
+    // Security validation
+    const securityValidation = backendSecurityManager.validateFileUpload(req.file);
+    if (!securityValidation.isValid) {
+      return res.status(400).json({ 
+        error: "File validation failed", 
+        details: securityValidation.errors 
+      });
+    }
+
+    // Sanitize filename
+    const sanitizedFilename = securityValidation.sanitizedFilename;
+    
     console.log('Upload request received:', {
-      filename: req.file?.originalname,
+      filename: sanitizedFilename,
+      originalName: req.file?.originalname,
       size: req.file?.size,
-      mimetype: req.file?.mimetype
+      mimetype: req.file?.mimetype,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
     });
 
     // Check if file was actually saved to disk
@@ -628,14 +391,14 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
       return res.status(500).json({ error: "File not saved to disk" });
     }
 
-    // Generate a 4-digit random code with retry logic to avoid duplicates
+    // Generate a secure random code with retry logic to avoid duplicates
     let randomCode;
     let newFile;
     let attempts = 0;
     const maxAttempts = 5;
     
     while (attempts < maxAttempts) {
-      randomCode = Math.floor(1000 + Math.random() * 9000).toString();
+      randomCode = backendSecurityManager.generateSecureRandom(4, 'numeric');
       
       try {
         newFile = new File({
@@ -670,11 +433,26 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
       }
     }
     
-    console.log('File saved successfully with code:', randomCode);
+    const uploadDuration = performance.now() - uploadStartTime;
+    console.log(`File saved successfully with code: ${randomCode} (${uploadDuration.toFixed(2)}ms)`);
+    
+    // Performance monitoring
+    backendPerformanceManager.addPerformanceEntry({
+      name: 'file-upload',
+      duration: Math.round(uploadDuration * 100) / 100,
+      memoryDelta: 0,
+      metadata: {
+        filename: sanitizedFilename,
+        size: req.file.size,
+        code: randomCode,
+        ip: req.ip
+      },
+      timestamp: new Date().toISOString()
+    });
     
     res.status(201).json({ 
       code: randomCode,
-      filename: req.file.originalname,
+      filename: sanitizedFilename,
       size: req.file.size,
       message: "File uploaded successfully"
     });
@@ -777,11 +555,20 @@ mongoose.connection.on('reconnect', () => {
 
 
 // Start server only when this file is run directly (not when imported for testing)
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Simple approach: always start unless explicitly disabled
+const shouldStartServer = process.env.START_SERVER !== 'false';
+
+console.log('🔧 Server start check:', {
+  shouldStartServer: shouldStartServer,
+  startServerEnv: process.env.START_SERVER
+});
+
+if (shouldStartServer) {
   (async () => {
+    console.log('🔧 Starting server initialization...');
     let dbConnected = false;
     try {
-      await connectToMongoDB(process.env.MONGO_URI);
+      await connectToMongoDB();
       dbConnected = true;
     } catch (error) {
       console.error("❌ MongoDB connection failed:", error.message);
@@ -791,11 +578,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
     // Start server regardless of DB status so Electron app can function (chat/UI)
     const PORT = process.env.PORT || 5002;
-    const HOST = process.env.HOST || '0.0.0.0';
+    const HOST = process.env.HOST || 'localhost';
     console.log(`🔧 Configuring server to bind to ${HOST}:${PORT}`);
 
     server.listen(PORT, HOST, () => {
-      console.log(`Server running on http://${HOST}:${PORT}`);
+      console.log(`🚀 Server running on http://${HOST}:${PORT}`);
       console.log(`📁 File size limit: ${maxFileSize / (1024 * 1024)}MB`);
       console.log(`🔒 Allowed file types: ${allowedFileTypes.join(', ')}`);
       console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
@@ -819,16 +606,25 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       } else {
         console.error(`   Error details:`, err);
       }
-      // In non-production we previously exited; keep the process up to let Electron manage.
     });
+    
+    // Keep the process alive
+    console.log('🔧 Server process will remain active...');
+    
+    // Add a keep-alive mechanism
+    setInterval(() => {
+      // This will keep the event loop active
+    }, 1000);
   })();
+} else {
+  console.log('📦 server.js imported as module, not starting server directly');
 }
 
 // Export app and WebSocket data structures for testing
 export {
   app,
-  chatClients,
-  rooms
+  getChatClients as chatClients,
+  getRooms as rooms
 };
 
 

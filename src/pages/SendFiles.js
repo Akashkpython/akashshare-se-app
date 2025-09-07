@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, File as FileIcon, Copy, Check, AlertCircle, Link } from 'lucide-react';
+import { Upload, File, Copy, Check, AlertCircle, Image, Video, Music, Archive, Code, Wifi, Share2, CheckCircle, X } from 'lucide-react';
 import useStore from '../store/useStore.js';
 import { api } from '../lib/api.js';
-import FilePreview from '../components/FilePreview.js';
+import { environment } from '../config/environment.js';
+import { formatFileSize, copyToClipboard } from '../lib/utils.js';
 
 const SendFiles = () => {
   const { addTransfer, updateTransferProgress, completeTransfer, addNotification, addShareCode } = useStore();
@@ -14,6 +15,7 @@ const SendFiles = () => {
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'online', 'offline'
+  const fileInputRef = useRef(null);
 
   // Debounce function for backend status checks
   const debounce = useCallback((func, delay) => {

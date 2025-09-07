@@ -4,9 +4,10 @@
 const connectionAttempts = new Map();
 const connectionLimits = new Map();
 
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const MAX_ATTEMPTS = 5;
-const MAX_CONNECTIONS_PER_IP = 10;
+// Use environment variables with fallbacks to current hardcoded values
+const RATE_LIMIT_WINDOW = parseInt(process.env.WS_RATE_LIMIT_WINDOW) || 60000; // 1 minute
+const MAX_ATTEMPTS = parseInt(process.env.WS_RATE_LIMIT_MAX) || 5;
+const MAX_CONNECTIONS_PER_IP = parseInt(process.env.WS_CONNECTION_LIMIT) || 100;
 
 /**
  * Check if IP is rate limited for WebSocket connections

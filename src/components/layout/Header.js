@@ -1,20 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Menu, 
   X, 
   Sun, 
   Moon, 
-  Home, 
-  Upload, 
-  Download, 
-  History, 
-  MessageCircle,
-  Settings,
-  User,
-  Code,
-  Wifi,
-  WifiOff,
   Search,
   Bell,
   Minimize2,

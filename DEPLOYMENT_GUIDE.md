@@ -51,7 +51,8 @@ ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp,text/plain,applicat
 # Security settings
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
-WS_CONNECTION_LIMIT=10
+# WebSocket Configuration
+WS_CONNECTION_LIMIT=100
 WS_RATE_LIMIT_WINDOW=60000
 WS_RATE_LIMIT_MAX=5
 ```

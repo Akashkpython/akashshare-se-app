@@ -1,0 +1,107 @@
+akashshare-se/
+├── 📁 backend/
+│   ├── 📁 test/
+│   │   ├── websocket.test.js
+│   │   └── test-server.js
+│   ├── 📁 utils/
+│   │   ├── errorHandler.js
+│   │   ├── fileValidation.js
+│   │   ├── group.js
+│   │   └── websocketRateLimit.js
+│   ├── server.js
+│   ├── mongo-connection.js
+│   ├── package.json
+│   └── test-rate-limit.js
+├── 📁 build/
+│   └── [React production build files]
+├── 📁 dist/
+│   └── [Electron distribution files]
+├── 📁 electron/
+│   ├── main.js
+│   └── preload.js
+├── 📁 node_modules/
+│   └── [Dependencies - auto-generated]
+├── 📁 public/
+│   ├── index.html
+│   ├── manifest.json
+│   ├── robots.txt
+│   ├── Akashshareicon.png
+│   ├── akash.jpg
+│   ├── chat-test.html
+│   ├── websocket-test.html
+│   ├── chat-interface-check.html
+│   └── music1.mp3
+├── 📁 scripts/
+│   ├── copy-electron.js
+│   └── install-backend-deps.js
+├── 📁 src/
+│   ├── 📁 components/
+│   │   ├── 📁 layout/
+│   │   │   ├── Header.js
+│   │   │   └── Sidebar.js
+│   │   ├── 📁 splash/
+│   │   │   ├── SplashScreen.js
+│   │   │   ├── splash.css
+│   │   │   └── SplashScreen.test.js
+│   │   ├── 📁 ui/
+│   │   │   ├── NotificationContainer.js
+│   │   │   ├── UpdateManager.js
+│   │   │   ├── MouseLightingEffect.js
+│   │   │   ├── NeonDraggableCard.js
+│   │   │   └── SimpleNeonCard.js
+│   │   ├── 📁 __tests__/
+│   │   │   ├── ErrorBoundary.test.tsx
+│   │   │   ├── FilePreview.test.js
+│   │   │   └── SmokeTest.test.js
+│   │   ├── ErrorBoundary.js
+│   │   ├── FilePreview.js
+│   │   └── LazyWrapper.js
+│   ├── 📁 pages/
+│   │   ├── Dashboard.js
+│   │   ├── SendFiles.js
+│   │   ├── ReceiveFiles.js
+│   │   ├── GroupChat.js
+│   │   ├── History.js
+│   │   ├── Settings.js
+│   │   ├── Developer.js
+│   │   ├── AppUpdates.js
+│   │   ├── ChatInterfaceCheck.js
+│   │   ├── SaReGaMaPa.js
+│   │   └── SplashDemo.js
+│   ├── 📁 lib/
+│   │   ├── api.js
+│   │   ├── performance.js
+│   │   ├── utils.js
+│   │   └── utils.ts
+│   ├── 📁 config/
+│   │   ├── environment.js
+│   │   └── environment.ts
+│   ├── 📁 contexts/
+│   │   └── ThemeContext.js
+│   ├── 📁 store/
+│   │   └── useStore.js
+│   ├── 📁 types/
+│   │   ├── index.ts
+│   │   └── jest.d.ts
+│   ├── 📁 utils/
+│   │   └── testUtils.tsx
+│   ├── App.js
+│   ├── App.test.js
+│   ├── index.js
+│   ├── index.css
+│   ├── setupTests.js
+│   └── reportWebVitals.js
+├── 📁 uploads/
+│   └── [Uploaded files]
+├── 📁 trash_review/
+│   └── [Old files - can be cleaned]
+├── 📄 package.json
+├── 📄 package-lock.json
+├── 📄 tailwind.config.js
+├── 📄 postcss.config.js
+├── 📄 README.md
+├── 📄 PROJECT_STRUCTURE.md
+├── 📄 PROJECT_AUDIT_REPORT.md
+├── 📄 WEBSOCKET_TESTING_GUIDE.md
+├── 📄 test-websocket.js
+└── 📄 [Other documentation and config files]

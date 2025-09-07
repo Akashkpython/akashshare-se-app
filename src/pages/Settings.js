@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Palette, Monitor, Download, Upload, Shield, Info, Moon, Sun, MonitorSpeaker } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Palette, Upload, Shield, Info, Moon, Sun, MonitorSpeaker, Settings as SettingsIcon, RotateCcw, Zap } from 'lucide-react';
 import useStore from '../store/useStore.js';
-import { ThemeProvider, useTheme } from '../contexts/ThemeContext.js';
-import { AnimatePresence } from 'framer-motion';
+import { useTheme } from '../contexts/ThemeContext.js';
 
 const Settings = () => {
   const { theme, setTheme } = useTheme();
