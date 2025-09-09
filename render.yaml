@@ -11,14 +11,14 @@ services:
       cd backend
       npm install --production
       npm list express-rate-limit
-    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=${PORT:-5002} node server.js
+    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=${PORT:-5003} node server.js
     envVars:
       - key: NODE_ENV
         value: production
       - key: HOST
         value: 0.0.0.0
       - key: PORT
-        value: 5002
+        value: 5003
       - key: MONGO_URI
         value: mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
       - key: JWT_SECRET
