@@ -88,11 +88,11 @@ const environment = {
 
     // In Electron/Production mode, use localhost for the backend
     if (this.isProduction || (typeof window !== 'undefined' && window.location.protocol === 'file:')) {
-      return 'http://localhost:5002';
+      return 'http://localhost:5003';
     }
 
-    // Development fallback - use localhost:5002
-    return 'http://localhost:5002';
+    // Development fallback - use localhost:5003
+    return 'http://localhost:5003';
   },
 
   // Get dynamic WebSocket URL based on current context
@@ -103,26 +103,47 @@ const environment = {
       return `${wsUrl}/chat?username=${encodeURIComponent(username)}&room=${room}`;
     }
 
-    // In Electron or production (distributed app), use localhost:5002
+    // In Electron or production (distributed app), use localhost:5003
     if (environment.isProduction || (typeof window !== 'undefined' && window.location.protocol === 'file:')) {
       // For Electron apps, we need to ensure we're using the correct localhost address
-      // Always use localhost:5002 for Electron apps
+      // Always use localhost:5003 for Electron apps
       // Add additional debugging for distributed app
-      console.log('🔧 Using WebSocket URL for distributed app:', `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`);
-      return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
+      console.log('🔧 Using WebSocket URL for distributed app:', `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`);
+      return `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`;
     }
 
-    // Development mode - use localhost:5002
+    // Development mode - use localhost:5003
     // Explicitly handle development mode to ensure correct URL
     if (environment.isDevelopment) {
-      console.log('🔧 Using WebSocket URL for development:', `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`);
-      return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
+      console.log('🔧 Using WebSocket URL for development:', `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`);
+      return `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`;
     }
 
     // Fallback to localhost with additional logging
-    console.log('🔧 Using fallback WebSocket URL:', `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`);
-    return `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    console.log('🔧 Using fallback WebSocket URL:', `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`);
+    return `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`;
   }
+};
+
+// Add a helper function to get the correct API base URL
+environment.getApiBaseUrl = () => {
+  // If we have an explicit API URL, use it
+  if (environment.apiUrl) {
+    return environment.apiUrl;
+  }
+  
+  // For Electron apps, always use localhost:5003
+  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+    return 'http://localhost:5003';
+  }
+  
+  // In development, use localhost:5003
+  if (environment.isDevelopment) {
+    return 'http://localhost:5003';
+  }
+  
+  // Production fallback
+  return 'http://localhost:5003';
 };
 
 export { environment };

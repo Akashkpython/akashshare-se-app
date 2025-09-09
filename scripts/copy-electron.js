@@ -1,8 +1,18 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { fileURLToPath } from 'url';
 
-// Create build directory if it doesn't exist
-const buildDir = path.join(__dirname, '..', 'build');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Cross-platform path utilities
+const normalizePath = (inputPath) => path.normalize(inputPath);
+const joinPath = (...paths) => path.join(...paths);
+const isWindows = () => os.platform() === 'win32';
+
+// Create build directory if it doesn't exist using cross-platform paths
+const buildDir = joinPath(__dirname, '..', 'build');
 if (!fs.existsSync(buildDir)) {
   fs.mkdirSync(buildDir, { recursive: true });
 }
@@ -98,6 +108,30 @@ try {
       console.log(`✅ Copied ${item} to build/backend/`);
     }
   });
+
+  // Copy backend node_modules to ensure packaged backend can run offline
+  const backendNodeModulesSrc = path.join(backendSourceDir, 'node_modules');
+  const backendNodeModulesDest = path.join(buildBackendDir, 'node_modules');
+  if (fs.existsSync(backendNodeModulesSrc)) {
+    console.log('📦 Copying backend node_modules (this may take a while)...');
+    const copyDir = (src, dest) => {
+      const stats = fs.statSync(src);
+      if (stats.isDirectory()) {
+        if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+        for (const entry of fs.readdirSync(src)) {
+          // Skip npm cache and locks to reduce size
+          if (entry === '.cache' || entry === '.bin') continue;
+          copyDir(path.join(src, entry), path.join(dest, entry));
+        }
+      } else {
+        fs.copyFileSync(src, dest);
+      }
+    };
+    copyDir(backendNodeModulesSrc, backendNodeModulesDest);
+    console.log('✅ Copied backend node_modules to build/backend/node_modules');
+  } else {
+    console.log('⚠️ backend/node_modules not found. Packaged backend may require online install.');
+  }
   
   console.log('🎉 Required files copied successfully!');
   console.log('📝 Note: Using electron/main.js directly (no build/electron.js needed)');

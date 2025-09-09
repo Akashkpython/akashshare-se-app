@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 echo Starting AkashShare Electron Application...
 echo.
 

@@ -40,12 +40,12 @@ Write-Host "    Application is starting up..." -ForegroundColor Green
 Write-Host "===============================================" -ForegroundColor Green
 Write-Host ""
 Write-Host "Backend API: " -NoNewline; Write-Host "http://localhost:5002" -ForegroundColor Cyan
-Write-Host "Frontend UI: " -NoNewline; Write-Host "http://localhost:3000" -ForegroundColor Cyan
+Write-Host "Frontend UI: " -NoNewline; Write-Host "http://localhost:5002" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "INSTRUCTIONS:" -ForegroundColor Yellow
 Write-Host "1. Wait for both server windows to show 'running' status"
 Write-Host "2. Open your web browser"
-Write-Host "3. Go to: http://localhost:3000"  
+Write-Host "3. Go to: http://localhost:5002"  
 Write-Host "4. Start sharing files with 4-digit codes!"
 Write-Host ""
 Write-Host "Features:" -ForegroundColor Magenta

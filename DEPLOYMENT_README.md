@@ -18,7 +18,7 @@ Your Akash Share application is ready for deployment to student PCs! Since the E
 **What Students Need:**
 1. Copy the project folder to their PC
 2. Double-click `start-app.bat` (Windows) or `start-app.ps1` (PowerShell)
-3. Open browser to `http://localhost:3000`
+3. Open browser to `http://localhost:5002`
 
 ## 📋 **Deployment Files Created:**
 
@@ -44,7 +44,7 @@ Your Akash Share application is ready for deployment to student PCs! Since the E
 # On teacher/server PC:
 1. Set up application as above
 2. Configure backend HOST=0.0.0.0 (already set)
-3. Students access via: http://TEACHER_IP:3000
+3. Students access via: http://TEACHER_IP:5002
 ```
 
 ## 🌟 **Features Working:**

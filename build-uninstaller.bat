@@ -5,7 +5,7 @@ setlocal
 
 :: Check if .NET is installed
 dotnet --version >nul 2>&1
-if %errorlevel% neq 0 (
+if not %errorlevel%==0 (
     echo .NET SDK is not installed. Please install .NET SDK to compile the uninstaller.
     echo Download from: https://dotnet.microsoft.com/download
     echo.
@@ -13,7 +13,7 @@ if %errorlevel% neq 0 (
     
     :: Check if csc is available
     where csc >nul 2>&1
-    if %errorlevel% neq 0 (
+    if not %errorlevel%==0 (
         echo C# compiler (csc) not found. Please install Visual Studio or .NET SDK.
         pause
         exit /b
@@ -22,7 +22,7 @@ if %errorlevel% neq 0 (
     :: Build with csc
     echo Building uninstaller with csc...
     csc /target:exe /out:Uninstaller.exe Uninstaller.cs
-    if %errorlevel% equ 0 (
+    if %errorlevel%==0 (
         echo.
         echo Build successful!
         echo Uninstaller.exe has been created.
@@ -65,7 +65,7 @@ echo Building uninstaller...
 dotnet publish -c Release -o "%~dp0dist"
 
 :: Check if build was successful
-if %errorlevel% equ 0 (
+if %errorlevel%==0 (
     echo.
     echo Build successful!
     echo Uninstaller executable created in dist folder.

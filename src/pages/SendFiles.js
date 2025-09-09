@@ -265,34 +265,34 @@ const SendFiles = () => {
     return (
       <div className="p-6 space-y-6">
         <div className="text-center mb-8">
-          <div className="h-10 bg-foreground/10 rounded-xl animate-pulse mx-auto mb-4 w-1/4"></div>
-          <div className="h-6 bg-foreground/10 rounded-lg animate-pulse mx-auto w-1/3"></div>
+          <div className="h-10 bg-gray-800 rounded-xl animate-pulse mx-auto mb-4 w-1/4"></div>
+          <div className="h-6 bg-gray-800 rounded-lg animate-pulse mx-auto w-1/3"></div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-96 bg-foreground/10 rounded-2xl animate-pulse"></div>
-          <div className="h-96 bg-foreground/10 rounded-2xl animate-pulse"></div>
+          <div className="h-96 bg-gray-900 rounded-2xl animate-pulse"></div>
+          <div className="h-96 bg-gray-900 rounded-2xl animate-pulse"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-black text-white min-h-screen">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-8"
       >
-        <h1 className="text-3xl font-bold gradient-text mb-2">Send Files</h1>
-        <p className="text-foreground/70">Upload files and share them with a unique code</p>
+        <h1 className="text-3xl font-bold mb-2 text-white">Send Files</h1>
+        <p className="text-gray-400">Upload files and share them with a unique code</p>
         
         {/* Backend Status Indicator */}
         <div className="mt-4 flex items-center justify-center">
           {backendStatus === 'checking' ? (
-            <div className="flex items-center text-foreground/70">
-              <div className="w-4 h-4 border-2 border-akash-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+            <div className="flex items-center text-gray-400">
+              <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin mr-2"></div>
               <span>Checking backend status...</span>
             </div>
           ) : backendStatus === 'online' ? (
@@ -314,10 +314,10 @@ const SendFiles = () => {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-card p-6 rounded-lg border border-border"
+          className="bg-gray-900 p-6 rounded-lg border border-gray-800"
         >
           <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Upload className="w-5 h-5 mr-2 text-akash-400" />
+            <Upload className="w-5 h-5 mr-2 text-gray-400" />
             Select Files
           </h2>
           
@@ -325,8 +325,8 @@ const SendFiles = () => {
           <div 
             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
               isDragOver 
-                ? 'border-akash-400 bg-akash-400/10' 
-                : 'border-foreground/30 hover:border-akash-400 hover:bg-foreground/5'
+                ? 'border-gray-600 bg-gray-800/50' 
+                : 'border-gray-700 hover:border-gray-600 hover:bg-gray-800/30'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -341,11 +341,11 @@ const SendFiles = () => {
               className="hidden"
             />
             
-            <Upload className="w-12 h-12 mx-auto text-foreground/50 mb-4" />
-            <p className="text-foreground/70 mb-2">
-              <span className="text-akash-400 font-medium">Click to browse</span> or drag & drop files here
+            <Upload className="w-12 h-12 mx-auto text-gray-500 mb-4" />
+            <p className="text-gray-400 mb-2">
+              <span className="text-gray-300 font-medium">Click to browse</span> or drag & drop files here
             </p>
-            <p className="text-sm text-foreground/50">Supports all file types up to 10MB</p>
+            <p className="text-sm text-gray-500">Supports all file types up to 10MB</p>
           </div>
           
           {/* Selected Files */}
@@ -354,19 +354,19 @@ const SendFiles = () => {
               <h3 className="font-medium mb-3">Selected Files ({files.length})</h3>
               <div className="space-y-2 max-h-60 overflow-y-auto">
                 {files.map((fileItem) => (
-                  <div key={fileItem.id} className="flex items-center justify-between p-3 bg-foreground/5 rounded-lg">
+                  <div key={fileItem.id} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                     <div className="flex items-center">
-                      <div className="w-10 h-10 rounded-lg bg-akash-400/20 flex items-center justify-center mr-3">
+                      <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center mr-3">
                         {getFileIconComponent(fileItem.type)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{fileItem.name}</p>
-                        <p className="text-xs text-foreground/50">{formatFileSize(fileItem.size)}</p>
+                        <p className="text-sm font-medium truncate text-white">{fileItem.name}</p>
+                        <p className="text-xs text-gray-400">{formatFileSize(fileItem.size)}</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => removeFile(fileItem.id)}
-                      className="p-1 rounded-full hover:bg-foreground/10 text-foreground/50 hover:text-foreground"
+                      className="p-1 rounded-full hover:bg-gray-700 text-gray-400 hover:text-white"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -382,8 +382,8 @@ const SendFiles = () => {
             disabled={files.length === 0 || uploading || backendStatus !== 'online'}
             className={`w-full mt-6 py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center ${
               files.length === 0 || uploading || backendStatus !== 'online'
-                ? 'bg-foreground/10 text-foreground/50 cursor-not-allowed'
-                : 'bg-akash-500 hover:bg-akash-400 text-white hover:shadow-lg'
+                ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-700 hover:bg-gray-600 text-white hover:shadow-lg'
             }`}
           >
             {uploading ? (
@@ -404,28 +404,28 @@ const SendFiles = () => {
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-card p-6 rounded-lg border border-border"
+          className="bg-gray-900 p-6 rounded-lg border border-gray-800"
         >
           <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Share2 className="w-5 h-5 mr-2 text-akash-400" />
+            <Share2 className="w-5 h-5 mr-2 text-gray-400" />
             Share Code
           </h2>
           
           {shareCode ? (
             <div className="text-center">
-              <div className="inline-block p-6 bg-foreground/5 rounded-2xl mb-6">
-                <div className="text-4xl font-bold text-akash-400 tracking-widest">
+              <div className="inline-block p-6 bg-gray-800 rounded-2xl mb-6">
+                <div className="text-4xl font-bold text-gray-300 tracking-widest">
                   {shareCode}
                 </div>
               </div>
               
-              <p className="text-foreground/70 mb-6">
+              <p className="text-gray-400 mb-6">
                 Share this 4-digit code with others to download your files
               </p>
               
               <button
                 onClick={handleCopyCode}
-                className="w-full py-3 bg-akash-500 hover:bg-akash-400 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center"
+                className="w-full py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-all duration-300 flex items-center justify-center"
               >
                 {copied ? (
                   <>
@@ -440,20 +440,20 @@ const SendFiles = () => {
                 )}
               </button>
               
-              <div className="mt-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
+              <div className="mt-6 p-4 bg-green-900/20 border border-green-800/30 rounded-lg">
                 <div className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-green-400 mr-2" />
                   <span className="text-green-400 font-medium">Upload Successful!</span>
                 </div>
-                <p className="text-sm text-foreground/70 mt-2">
+                <p className="text-sm text-gray-400 mt-2">
                   Files are available for download for 24 hours
                 </p>
               </div>
             </div>
           ) : (
             <div className="text-center py-12">
-              <Share2 className="w-12 h-12 mx-auto text-foreground/30 mb-4" />
-              <p className="text-foreground/50">
+              <Share2 className="w-12 h-12 mx-auto text-gray-700 mb-4" />
+              <p className="text-gray-500">
                 Upload files to generate a share code
               </p>
             </div>

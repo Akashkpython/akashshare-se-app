@@ -215,34 +215,34 @@ const ReceiveFiles = () => {
     return (
       <div className="p-6 space-y-6">
         <div className="text-center mb-8">
-          <div className="h-10 bg-foreground/10 rounded-xl animate-pulse mx-auto mb-4 w-1/4"></div>
-          <div className="h-6 bg-foreground/10 rounded-lg animate-pulse mx-auto w-1/3"></div>
+          <div className="h-10 bg-gray-800 rounded-xl animate-pulse mx-auto mb-4 w-1/4"></div>
+          <div className="h-6 bg-gray-800 rounded-lg animate-pulse mx-auto w-1/3"></div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="h-96 bg-foreground/10 rounded-2xl animate-pulse"></div>
-          <div className="h-96 bg-foreground/10 rounded-2xl animate-pulse"></div>
+          <div className="h-96 bg-gray-900 rounded-2xl animate-pulse"></div>
+          <div className="h-96 bg-gray-900 rounded-2xl animate-pulse"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-black text-white min-h-screen">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-8"
       >
-        <h1 className="text-3xl font-bold gradient-text mb-2">Receive Files</h1>
-        <p className="text-foreground/70">Enter a share code to download files</p>
+        <h1 className="text-3xl font-bold mb-2 text-white">Receive Files</h1>
+        <p className="text-gray-400">Enter a share code to download files</p>
         
         {/* Backend Status Indicator */}
         <div className="mt-4 flex items-center justify-center">
           {backendStatus === 'checking' ? (
-            <div className="flex items-center text-foreground/70">
-              <div className="w-4 h-4 border-2 border-akash-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+            <div className="flex items-center text-gray-400">
+              <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin mr-2"></div>
               <span>Checking backend status...</span>
             </div>
           ) : backendStatus === 'online' ? (
@@ -264,47 +264,47 @@ const ReceiveFiles = () => {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-card p-6 rounded-lg border border-border"
+          className="bg-gray-900 p-6 rounded-lg border border-gray-800"
         >
           <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Search className="w-5 h-5 mr-2 text-akash-400" />
+            <Search className="w-5 h-5 mr-2 text-gray-400" />
             Enter Share Code
           </h2>
           
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Share Code</label>
+              <label className="block text-sm font-medium mb-2 text-gray-300">Share Code</label>
               <div className="relative">
                 <input
                   type="text"
                   value={code}
                   onChange={handleCodeChange}
                   placeholder="Enter 4-digit code"
-                  className="w-full p-4 text-2xl text-center bg-background border border-foreground/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-akash-400"
+                  className="w-full p-4 text-2xl text-center bg-gray-800 border border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-600 text-white"
                   maxLength={4}
                 />
                 {isValidating && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="w-4 h-4 border-2 border-akash-400 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 )}
               </div>
-              <p className="text-sm text-foreground/50 mt-2">Ask the sender for the 4-digit share code</p>
+              <p className="text-sm text-gray-500 mt-2">Ask the sender for the 4-digit share code</p>
             </div>
             
             {fileInfo && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-4 bg-foreground/5 rounded-xl"
+                className="p-4 bg-gray-800 rounded-xl"
               >
                 <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-lg bg-akash-400/20 flex items-center justify-center mr-3">
+                  <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center mr-3">
                     {getFileIconComponent(fileInfo.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{fileInfo.name}</p>
-                    <p className="text-sm text-foreground/50">{formatFileSize(fileInfo.size)}</p>
+                    <p className="font-medium truncate text-white">{fileInfo.name}</p>
+                    <p className="text-sm text-gray-400">{formatFileSize(fileInfo.size)}</p>
                   </div>
                 </div>
               </motion.div>
@@ -315,8 +315,8 @@ const ReceiveFiles = () => {
               disabled={!code || code.length !== 4 || downloading || !fileInfo || backendStatus !== 'online'}
               className={`w-full py-3 rounded-xl font-medium transition-all duration-300 flex items-center justify-center ${
                 !code || code.length !== 4 || downloading || !fileInfo || backendStatus !== 'online'
-                  ? 'bg-foreground/10 text-foreground/50 cursor-not-allowed'
-                  : 'bg-akash-500 hover:bg-akash-400 text-white hover:shadow-lg'
+                  ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-700 hover:bg-gray-600 text-white hover:shadow-lg'
               }`}
             >
               {downloading ? (
@@ -338,50 +338,50 @@ const ReceiveFiles = () => {
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-card p-6 rounded-lg border border-border"
+          className="bg-gray-900 p-6 rounded-lg border border-gray-800"
         >
           <h2 className="text-xl font-semibold mb-4 flex items-center">
-            <Share2 className="w-5 h-5 mr-2 text-akash-400" />
+            <Share2 className="w-5 h-5 mr-2 text-gray-400" />
             How It Works
           </h2>
           
           <div className="space-y-4">
             <div className="flex items-start">
-              <div className="w-8 h-8 rounded-full bg-akash-400/20 flex items-center justify-center mr-3 flex-shrink-0">
-                <span className="text-akash-400 font-bold">1</span>
+              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center mr-3 flex-shrink-0">
+                <span className="text-gray-300 font-bold">1</span>
               </div>
               <div>
-                <h3 className="font-medium">Get Share Code</h3>
-                <p className="text-sm text-foreground/70 mt-1">Ask the sender for the 4-digit share code</p>
+                <h3 className="font-medium text-white">Get Share Code</h3>
+                <p className="text-sm text-gray-400 mt-1">Ask the sender for the 4-digit share code</p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="w-8 h-8 rounded-full bg-akash-400/20 flex items-center justify-center mr-3 flex-shrink-0">
-                <span className="text-akash-400 font-bold">2</span>
+              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center mr-3 flex-shrink-0">
+                <span className="text-gray-300 font-bold">2</span>
               </div>
               <div>
-                <h3 className="font-medium">Enter Code</h3>
-                <p className="text-sm text-foreground/70 mt-1">Type the code in the input field above</p>
+                <h3 className="font-medium text-white">Enter Code</h3>
+                <p className="text-sm text-gray-400 mt-1">Type the code in the input field above</p>
               </div>
             </div>
             
             <div className="flex items-start">
-              <div className="w-8 h-8 rounded-full bg-akash-400/20 flex items-center justify-center mr-3 flex-shrink-0">
-                <span className="text-akash-400 font-bold">3</span>
+              <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center mr-3 flex-shrink-0">
+                <span className="text-gray-300 font-bold">3</span>
               </div>
               <div>
-                <h3 className="font-medium">Download File</h3>
-                <p className="text-sm text-foreground/70 mt-1">Click download to save the file to your device</p>
+                <h3 className="font-medium text-white">Download File</h3>
+                <p className="text-sm text-gray-400 mt-1">Click download to save the file to your device</p>
               </div>
             </div>
             
-            <div className="mt-6 p-4 bg-foreground/5 rounded-lg">
+            <div className="mt-6 p-4 bg-gray-800 rounded-lg">
               <div className="flex items-center">
-                <CheckCircle className="w-5 h-5 text-akash-400 mr-2" />
-                <span className="font-medium">Files expire after 24 hours</span>
+                <CheckCircle className="w-5 h-5 text-green-400 mr-2" />
+                <span className="font-medium text-white">Files expire after 24 hours</span>
               </div>
-              <p className="text-sm text-foreground/70 mt-2">
+              <p className="text-sm text-gray-400 mt-2">
                 For security, all files are automatically deleted 24 hours after upload
               </p>
             </div>

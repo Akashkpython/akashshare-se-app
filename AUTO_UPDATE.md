@@ -31,7 +31,7 @@ The update configuration is set in the `build` section of `package.json`:
     "publish": [
       {
         "provider": "generic",
-        "url": "http://192.168.0.185:3000/"
+        "url": "http://192.168.0.185:5002/"
       }
     ]
   }
@@ -45,7 +45,7 @@ The application expects updates to be served from a simple HTTP server. You can 
 npm run serve-updates
 ```
 
-This command starts an HTTP server on port 3000 serving the `dist/` directory.
+This command starts an HTTP server on port 5002 serving the `dist/` directory.
 
 ## File Structure for Updates
 
@@ -150,7 +150,7 @@ Located at `src/components/ui/UpdateManager.js`, this component provides:
      "publish": [
        {
          "provider": "generic",
-         "url": "http://YOUR_SERVER_IP:3000/"
+         "url": "http://YOUR_SERVER_IP:5002/"
        }
      ]
    }

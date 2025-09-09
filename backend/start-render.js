@@ -32,7 +32,7 @@ if (missingVars.length > 0) {
 // Production-specific configurations
 process.env.NODE_ENV = 'production';
 process.env.HOST = process.env.HOST || '0.0.0.0';
-process.env.PORT = process.env.PORT || '5003';
+process.env.PORT = process.env.PORT || '5003'; // Changed to 5003 for consistency
 
 // Log production startup
 console.log('🚀 Starting Akash Share Backend in Production Mode');

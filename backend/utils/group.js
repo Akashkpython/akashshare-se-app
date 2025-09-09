@@ -2,10 +2,12 @@
 // Handles room management, user tracking, and message broadcasting
 
 import { WebSocket } from "ws";
+import { moderateMessage } from "../services/ai/moderation.js";
 
 // Store connected clients and rooms
 const chatClients = new Map();
 const rooms = new Map();
+const roomHistories = new Map(); // Map<string, Array<{username:string,message:string,timestamp:string}>>
 
 /**
  * Initialize group chat functionality
@@ -103,14 +105,54 @@ export function initializeGroupChat(wss) {
                 }));
                 return;
               }
-              
-              broadcastToRoom(room, {
-                type: 'message',
-                username,
-                message: sanitizedMessage,
-                room: message.room || room,
-                timestamp: new Date().toISOString()
-              });
+
+              // AI moderation (fail-open on errors)
+              (async () => {
+                try {
+                  const mod = await moderateMessage(sanitizedMessage);
+                  if (mod && mod.allowed === false) {
+                    console.warn(`🚫 Message blocked by moderation from ${username}: ${mod.reason}`);
+                    try {
+                      ws.send(JSON.stringify({ type: 'moderation', action: 'blocked', reason: mod.reason, categories: mod.categories || [] }));
+                    } catch {}
+                    return;
+                  }
+
+                  // Append to room history
+                  const roomName = message.room || room;
+                  if (!roomHistories.has(roomName)) roomHistories.set(roomName, []);
+                  const history = roomHistories.get(roomName);
+                  history.push({ username, message: sanitizedMessage, timestamp: new Date().toISOString() });
+                  // Cap history length
+                  if (history.length > 300) history.splice(0, history.length - 300);
+
+                  // Broadcast
+                  broadcastToRoom(room, {
+                    type: 'message',
+                    username,
+                    message: sanitizedMessage,
+                    room: roomName,
+                    timestamp: new Date().toISOString()
+                  });
+                } catch (e) {
+                  // On moderation failure, allow message and continue
+                  console.warn('Moderation error, allowing message:', e?.message);
+                  // Append to history
+                  const roomName = message.room || room;
+                  if (!roomHistories.has(roomName)) roomHistories.set(roomName, []);
+                  const history = roomHistories.get(roomName);
+                  history.push({ username, message: sanitizedMessage, timestamp: new Date().toISOString() });
+                  if (history.length > 300) history.splice(0, history.length - 300);
+                  // Broadcast
+                  broadcastToRoom(room, {
+                    type: 'message',
+                    username,
+                    message: sanitizedMessage,
+                    room: roomName,
+                    timestamp: new Date().toISOString()
+                  });
+                }
+              })();
               break;
               
             case 'switchRoom': {
@@ -370,4 +412,17 @@ export function getChatClients() {
  */
 export function getRooms() {
   return rooms;
+}
+
+/**
+ * Get recent messages for a room
+ * @param {string} room
+ * @param {number} limit
+ */
+export function getRoomHistory(room, limit = 100) {
+  const key = (room || '').toLowerCase();
+  if (!roomHistories.has(key)) return [];
+  const arr = roomHistories.get(key) || [];
+  if (arr.length <= limit) return arr.slice();
+  return arr.slice(arr.length - limit);
 }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="status">Testing...</div>
+    <div id="logs"></div>
+
+    <script>
+        const logs = document.getElementById('logs');
+        const status = document.getElementById('status');
+        
+        function log(message) {
+            const div = document.createElement('div');
+            div.textContent = message;
+            logs.appendChild(div);
+            console.log(message);
+        }
+        
+        log('Testing WebSocket connection...');
+        
+        try {
+            log('Creating WebSocket connection to ws://localhost:5002/chat?username=TestUser&room=general');
+            const ws = new WebSocket('ws://localhost:5002/chat?username=TestUser&room=general');
+            
+            ws.onopen = () => {
+                log('✅ WebSocket connected successfully');
+                status.textContent = 'Connected';
+                status.style.color = 'green';
+                ws.close();
+            };
+            
+            ws.onerror = (error) => {
+                log('❌ WebSocket connection error:');
+                log('  Error type: ' + error.constructor.name);
+                log('  Error message: ' + error.message);
+                status.textContent = 'Connection Failed';
+                status.style.color = 'red';
+            };
+            
+            ws.onclose = () => {
+                log('🔌 WebSocket connection closed');
+            };
+        } catch (error) {
+            log('Exception during WebSocket creation:');
+            log('  Error type: ' + error.constructor.name);
+            log('  Error message: ' + error.message);
+            status.textContent = 'Exception';
+            status.style.color = 'red';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; font-size: 14px; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🔗 AkAsH Share WebSocket Connection Test</h1>
+    
+    <div id="status" class="status info">Ready to test...</div>
+    
+    <button onclick="testConnection()">Test WebSocket Connection</button>
+    <button onclick="clearLog()">Clear Log</button>
+    
+    <h3>Connection Log:</h3>
+    <div id="messages"></div>
+
+    <script>
+        let ws = null;
+        
+        function log(message, type = 'info') {
+            const messages = document.getElementById('messages');
+            const timestamp = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.innerHTML = `[${timestamp}] ${message}`;
+            div.style.color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        function testConnection() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            
+            const username = 'TestUser' + Math.floor(Math.random() * 1000);
+            const room = 'general';
+            const wsUrl = `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
+            
+            log(`🔗 Attempting to connect to: ${wsUrl}`);
+            updateStatus('Connecting...', 'info');
+            
+            try {
+                ws = new WebSocket(wsUrl);
+                
+                ws.onopen = function(event) {
+                    log('✅ WebSocket connection opened successfully!', 'success');
+                    updateStatus('Connected to chat server', 'success');
+                };
+                
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        log(`📨 Received: ${JSON.stringify(data, null, 2)}`, 'success');
+                    } catch (e) {
+                        log(`📨 Received raw: ${event.data}`, 'info');
+                    }
+                };
+                
+                ws.onerror = function(error) {
+                    log(`❌ WebSocket error: ${error}`, 'error');
+                    updateStatus('Connection error', 'error');
+                };
+                
+                ws.onclose = function(event) {
+                    log(`🔌 WebSocket closed. Code: ${event.code}, Reason: ${event.reason}`, 'info');
+                    updateStatus('Connection closed', 'info');
+                };
+                
+                // Test timeout
+                setTimeout(() => {
+                    if (ws && ws.readyState === WebSocket.CONNECTING) {
+                        log('⏰ Connection timeout (10 seconds)', 'error');
+                        updateStatus('Connection timeout', 'error');
+                        ws.close();
+                    }
+                }, 10000);
+                
+            } catch (error) {
+                log(`❌ Failed to create WebSocket: ${error.message}`, 'error');
+                updateStatus('Failed to create connection', 'error');
+            }
+        }
+        
+        function clearLog() {
+            document.getElementById('messages').innerHTML = '';
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            log('🔧 Browser WebSocket test loaded');
+            log('📍 Current page URL: ' + window.location.href);
+            log('📍 Testing connection to ws://localhost:5002/chat');
+        };
+    </script>
+</body>
+</html>

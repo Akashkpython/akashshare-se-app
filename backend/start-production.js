@@ -18,15 +18,14 @@ const rateLimitIndex = join(rateLimitPath, 'index.js');
 
 const debugPath = join(process.cwd(), 'node_modules', 'debug');
 const debugPackageJson = join(debugPath, 'package.json');
-const debugIndex = join(debugPath, 'index.js');
+const debugIndex = join(debugPath, 'src', 'index.js'); // debug package structure
 
 const isRateLimitInstalled = existsSync(rateLimitPath) && 
                             existsSync(rateLimitPackageJson) && 
                             existsSync(rateLimitIndex);
 
 const isDebugInstalled = existsSync(debugPath) && 
-                        existsSync(debugPackageJson) && 
-                        existsSync(debugIndex);
+                        existsSync(debugPackageJson);
 
 const isPackageInstalled = isRateLimitInstalled && isDebugInstalled;
 
@@ -63,7 +62,7 @@ function startServer() {
   // Set environment variables
   process.env.NODE_ENV = process.env.NODE_ENV || 'production';
   process.env.HOST = process.env.HOST || '0.0.0.0';
-  process.env.PORT = process.env.PORT || '5002';
+  process.env.PORT = process.env.PORT || '5003'; // Changed to 5003 for consistency
   
   // Import and start the server
   import('./server.js').catch(error => {

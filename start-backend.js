@@ -19,8 +19,8 @@ const backend = spawn('node', ['server.js'], {
   env: {
     ...process.env,
     NODE_ENV: 'development',
-    PORT: '5002',
-    HOST: 'localhost'
+    PORT: '5003',
+    HOST: '0.0.0.0'  // Changed from 'localhost' to '0.0.0.0' for better network compatibility
   }
 });
 

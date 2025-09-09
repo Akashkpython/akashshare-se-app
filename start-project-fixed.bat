@@ -67,7 +67,7 @@ echo    🎉 ALL SERVICES STARTED!
 echo ========================================
 echo.
 echo ✅ Backend Server: http://localhost:5002
-echo ✅ React Dev Server: http://localhost:3000
+echo ✅ React Dev Server: http://localhost:5002
 echo ✅ Electron App: Starting...
 echo ✅ WebSocket Chat: ws://localhost:5002/chat
 echo.

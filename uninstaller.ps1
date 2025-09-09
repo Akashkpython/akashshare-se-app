@@ -80,18 +80,18 @@ function Remove-ApplicationFiles {
     
     foreach ($path in $Paths) {
         if (Test-Path $path) {
-            Write-Host "Removing application files from $path..."
+            Write-Host "Removing application files from ${path}..."
             try {
                 Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
                 if (-not (Test-Path $path)) {
-                    Write-Host "Successfully removed $path" -ForegroundColor Green
+                    Write-Host "Successfully removed ${path}" -ForegroundColor Green
                     $removedCount++
                 } else {
-                    Write-Host "Warning: Could not remove all files from $path" -ForegroundColor Yellow
+                    Write-Host "Warning: Could not remove all files from ${path}" -ForegroundColor Yellow
                 }
             }
             catch {
-                Write-Host "Error removing $path: $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "Error removing ${path}: $($_.Exception.Message)" -ForegroundColor Red
             }
         }
     }
@@ -136,14 +136,14 @@ function Remove-ApplicationFiles {
         foreach ($path in $additionalPaths) {
             $pathStr = $path.FullName
             if (Test-Path $pathStr) {
-                Write-Host "Removing additional installation files from $pathStr..."
+                Write-Host "Removing additional installation files from ${pathStr}..."
                 try {
                     Remove-Item -Path $pathStr -Recurse -Force -ErrorAction SilentlyContinue
-                    Write-Host "Successfully removed files from $pathStr" -ForegroundColor Green
+                    Write-Host "Successfully removed files from ${pathStr}" -ForegroundColor Green
                     $removedCount++
                 }
                 catch {
-                    Write-Host "Warning: Could not remove files from $pathStr" -ForegroundColor Yellow
+                    Write-Host "Warning: Could not remove files from ${pathStr}" -ForegroundColor Yellow
                 }
             }
         }
@@ -182,7 +182,7 @@ do {
         if ($installPaths.Count -gt 0) {
             Write-Host "Found $($installPaths.Count) installation location(s):"
             foreach ($path in $installPaths) {
-                Write-Host "  - $path"
+                Write-Host "  - ${path}"
             }
             Write-Host ""
             
@@ -213,7 +213,7 @@ do {
         
         Write-Host ""
         Write-Host "Incorrect name. Uninstall cancelled." -ForegroundColor Red
-        Write-Host "You have $remaining attempts remaining." -ForegroundColor Red
+        Write-Host "You have ${remaining} attempts remaining." -ForegroundColor Red
         Write-Host ""
     }
 } while ($attempts -lt $maxAttempts)

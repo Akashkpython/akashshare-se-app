@@ -1,0 +1,56 @@
+directories:
+  output: setup-output
+  buildResources: assets
+files:
+  - filter:
+      - build/**/*
+      - build/**/*
+      - electron/**/*
+      - backend/**/*
+      - node_modules/**/*
+      - '!backend/node_modules'
+      - '!backend/uploads/*'
+extraMetadata:
+  main: electron/main.js
+appId: com.akashshare.app
+productName: Akash Share
+icon: public/Akashshareicon.png
+nsis:
+  uninstallDisplayName: Akash Share
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  allowToChangeInstallationDirectory: true
+  oneClick: false
+  allowElevation: true
+  perMachine: true
+  installerIcon: public/Akashshareicon.png
+  uninstallerIcon: public/Akashshareicon.png
+  installerHeaderIcon: public/Akashshareicon.png
+  deleteAppDataOnUninstall: false
+  runAfterFinish: true
+  menuCategory: Utilities
+  shortcutName: Akash Share
+mac:
+  category: public.app-category.utilities
+  icon: public/Akashshareicon.png
+win:
+  target: nsis
+  icon: public/Akashshareicon.png
+linux:
+  target:
+    - AppImage
+    - deb
+    - rpm
+  icon: public/Akashshareicon.png
+extraResources:
+  - from: backend/
+    to: backend/
+    filter:
+      - '**/*'
+      - '!node_modules'
+      - '!uploads/*'
+publish:
+  - provider: generic
+    url: http://192.168.0.185:3000/
+extends: react-cra
+electronVersion: 38.0.0

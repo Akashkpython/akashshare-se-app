@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import useStore from './store/useStore.js';
 import performanceMonitor from './lib/performance.js';
-import errorHandler from './lib/errorHandler.js';
+// import errorHandler from './lib/errorHandler.js'; // Commented out as not currently used
 import securityManager from './lib/security.js';
 import optimizationManager from './lib/optimization.js';
 
@@ -21,48 +21,48 @@ import ChatInterfaceCheck from './pages/ChatInterfaceCheck.js';
 import { ThemeProvider } from './contexts/ThemeContext.js';
 
 // Ultra-Powerful Lazy Loading with Advanced Error Handling and Security
-const createSecureLazyComponent = (importPath, componentName) => {
-  return lazy(() => {
-    performanceMonitor.start(`load-${componentName}`);
-    // eslint-disable-next-line import/no-dynamic-require
-    return import(/* webpackChunkName: "[request]" */ importPath)
-      .then(module => {
-        performanceMonitor.end(`load-${componentName}`, { 
-          component: componentName,
-          success: true 
-        });
-        return module;
-      })
-      .catch(error => {
-        errorHandler.handleError(error, {
-          type: 'lazyLoadError',
-          component: componentName,
-          importPath
-        });
-        performanceMonitor.end(`load-${componentName}`, { 
-          component: componentName,
-          success: false,
-          error: error.message
-        });
-        return { 
-          default: () => (
-            <div className="error-boundary p-6">
-              <div className="glass-card p-8 text-center">
-                <h3 className="text-red-400 mb-4">Failed to load {componentName}</h3>
-                <p className="text-gray-400 mb-4">There was an error loading this component.</p>
-                <button 
-                  onClick={() => window.location.reload()} 
-                  className="btn-primary"
-                >
-                  Reload Page
-                </button>
-              </div>
-            </div>
-          )
-        };
-      });
-  });
-};
+// Note: This function is kept for future use but not currently used to avoid webpack warnings
+// const createSecureLazyComponent = (importPath, componentName) => {
+//   return lazy(() => {
+//     performanceMonitor.start(`load-${componentName}`);
+//     return import(importPath)
+//       .then(module => {
+//         performanceMonitor.end(`load-${componentName}`, { 
+//           component: componentName,
+//           success: true 
+//         });
+//         return module;
+//       })
+//       .catch(error => {
+//         errorHandler.handleError(error, {
+//           type: 'lazyLoadError',
+//           component: componentName,
+//           importPath
+//         });
+//         performanceMonitor.end(`load-${componentName}`, { 
+//           component: componentName,
+//           success: false,
+//           error: error.message
+//         });
+//         return { 
+//           default: () => (
+//             <div className="p-6 error-boundary">
+//               <div className="p-8 text-center glass-card">
+//                 <h3 className="mb-4 text-red-400">Failed to load {componentName}</h3>
+//                 <p className="mb-4 text-gray-400">There was an error loading this component.</p>
+//                 <button 
+//                   onClick={() => window.location.reload()} 
+//                   className="btn-primary"
+//                 >
+//                   Reload Page
+//                 </button>
+//               </div>
+//             </div>
+//           )
+//         };
+//       });
+//   });
+// };
 
 // Lazy load pages with ultra-powerful error handling
 const Dashboard = lazy(() => import('./pages/Dashboard.js'));
@@ -70,7 +70,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard.js'));
 const SendFiles = lazy(() => import('./pages/SendFiles.js'));
 const ReceiveFiles = lazy(() => import('./pages/ReceiveFiles.js'));
 const History = lazy(() => import('./pages/History.js'));
-const GroupChat = lazy(() => import('./pages/GroupChat.js'));
+const GroupChat = lazy(() => import('./pages/GroupChatWhatsApp.js'));
+const ScientificCalculator = lazy(() => import('./pages/ScientificCalculator.js'));
 const Settings = lazy(() => import('./pages/Settings.js'));
 const SplashDemo = lazy(() => import('./pages/SplashDemo.js'));
 const SaReGaMaPa = lazy(() => import('./pages/SaReGaMaPa.js'));
@@ -81,11 +82,11 @@ const LoadingSpinner = ({ error, retry, timedOut }) => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="glass-card p-8 flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center p-8 space-y-4 glass-card">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center"
+            className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-orange-600"
           >
             <motion.div
               animate={{ rotate: [0, 10, -10, 0] }}
@@ -99,12 +100,12 @@ const LoadingSpinner = ({ error, retry, timedOut }) => {
             animate={{ opacity: 1 }}
             className="text-center"
           >
-            <p className="text-foreground font-medium mb-2">Failed to load page</p>
-            <p className="text-foreground/60 text-sm mb-4">There was an error loading this page</p>
+            <p className="mb-2 font-medium text-foreground">Failed to load page</p>
+            <p className="mb-4 text-sm text-foreground/60">There was an error loading this page</p>
             {retry && (
               <button
                 onClick={retry}
-                className="btn-primary text-sm"
+                className="text-sm btn-primary"
               >
                 Try Again
               </button>
@@ -118,9 +119,9 @@ const LoadingSpinner = ({ error, retry, timedOut }) => {
   if (timedOut) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px]">
-        <div className="glass-card p-8 flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center p-8 space-y-4 glass-card">
           <motion.div
-            className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center"
+            className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-600"
           >
             ⏱️
           </motion.div>
@@ -129,12 +130,12 @@ const LoadingSpinner = ({ error, retry, timedOut }) => {
             animate={{ opacity: 1 }}
             className="text-center"
           >
-            <p className="text-foreground font-medium mb-2">Loading timeout</p>
-            <p className="text-foreground/60 text-sm mb-4">The page is taking longer than expected to load</p>
+            <p className="mb-2 font-medium text-foreground">Loading timeout</p>
+            <p className="mb-4 text-sm text-foreground/60">The page is taking longer than expected to load</p>
             {retry && (
               <button
                 onClick={retry}
-                className="btn-primary text-sm"
+                className="text-sm btn-primary"
               >
                 Retry
               </button>
@@ -147,21 +148,21 @@ const LoadingSpinner = ({ error, retry, timedOut }) => {
   
   return (
     <div className="flex items-center justify-center h-full min-h-[400px]">
-      <div className="glass-card p-8 flex flex-col items-center space-y-4">
+      <div className="flex flex-col items-center p-8 space-y-4 glass-card">
         <motion.div
-          className="w-12 h-12 border-2 border-akash-400/30 border-t-akash-400 rounded-full"
+          className="w-12 h-12 border-2 rounded-full border-akash-400/30 border-t-akash-400"
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
         />
         <motion.p
-          className="text-foreground/70 text-sm"
+          className="text-sm text-foreground/70"
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
           Loading...
         </motion.p>
         <motion.p
-          className="text-foreground/50 text-xs mt-2"
+          className="mt-2 text-xs text-foreground/50"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 3 }}
@@ -189,7 +190,7 @@ function AppContent() {
     // Initialize security policies
     const csp = securityManager.createCSP({
       allowInline: process.env.NODE_ENV === 'development',
-      allowedDomains: ['localhost:5002', 'localhost:3000']
+      allowedDomains: ['localhost:5002']
     });
     
     // Apply CSP to document
@@ -315,6 +316,7 @@ function AppContent() {
                       <Route path="/receive" element={<ReceiveFiles />} />
                       <Route path="/history" element={<History />} />
                       <Route path="/chat" element={<GroupChat />} />
+                      <Route path="/scientific-calculator" element={<ScientificCalculator />} />
                       <Route path="/sa-re-ga-ma-pa" element={<SaReGaMaPa />} />
                       <Route path="/app-updates" element={<AppUpdates />} />
                       <Route path="/settings" element={<Settings />} />

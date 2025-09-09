@@ -63,7 +63,7 @@ When you open the chat in the Electron app, look for these indicators:
    - Don't navigate to file:// paths in the Electron app
 
 3. **Check the URL in the address bar:**
-   - Correct: `http://localhost:3000/chat` (in development) or file:// path to build/index.html with #/chat
+   - Correct: `http://localhost:5002/chat` (in development) or file:// path to build/index.html with #/chat
    - Incorrect: file:// path directly to public/group-chat-test.html
 
 ## Troubleshooting

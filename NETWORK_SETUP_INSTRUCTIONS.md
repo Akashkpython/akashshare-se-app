@@ -119,13 +119,13 @@ npm start
 
 On other devices connected to the same network, access the application using:
 
-- Frontend: `http://YOUR_LOCAL_IP:3000`
+- Frontend: `http://YOUR_LOCAL_IP:5002`
 - Backend API: `http://YOUR_LOCAL_IP:5002`
 
 Replace `YOUR_LOCAL_IP` with the IP address you found in step 1.
 
 For example, if your local IP is `192.168.1.100`:
-- Frontend: `http://192.168.1.100:3000`
+- Frontend: `http://192.168.1.100:5002`
 - Backend API: `http://192.168.1.100:5002`
 
 ### 8. For Production/Electron Builds
@@ -184,5 +184,5 @@ To access the application from mobile devices:
 3. Make sure the firewall allows connections from mobile devices
 
 Example for mobile access:
-- Frontend: `http://192.168.1.100:3000`
+- Frontend: `http://192.168.1.100:5002`
 - Backend API: `http://192.168.1.100:5002`

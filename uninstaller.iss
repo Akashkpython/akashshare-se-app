@@ -55,7 +55,7 @@ begin
   // Show the page and check the result
   if NamePage.ShowModal() = mrOk then
   begin
-    if Uppercase(NamePage.Values[0]) <> 'AKASH' then
+    if NamePage.Values[0] <> 'AkAsH' then
     begin
       MsgBox('Incorrect name. Uninstall cancelled.', mbError, MB_OK);
       Result := False;

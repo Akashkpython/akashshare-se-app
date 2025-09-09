@@ -28,7 +28,7 @@ Akash Share is a modern file sharing application that allows students to easily 
    npm start
    ```
 4. **Access the application:**
-   - Open browser and go to: `http://localhost:3000`
+   - Open browser and go to: `http://localhost:5002`
    - Backend API runs on: `http://localhost:5002`
 
 ## 🖥️ **Method 2: Desktop Application (Electron)**
@@ -56,7 +56,7 @@ Akash Share is a modern file sharing application that allows students to easily 
    
 2. **Students access via browser:**
    - Backend: `http://TEACHER_IP:5002`
-   - Frontend: `http://TEACHER_IP:3000`
+   - Frontend: `http://TEACHER_IP:5002`
 
 ## 🔧 **Configuration for Student PCs**
 
@@ -127,7 +127,7 @@ start "Frontend Server" cmd /k "npm start"
 echo.
 echo Application is starting...
 echo Backend: http://localhost:5002
-echo Frontend: http://localhost:3000
+echo Frontend: http://localhost:5002
 echo.
 echo Wait for both servers to start, then open your browser!
 pause
@@ -149,7 +149,7 @@ Start-Process PowerShell -ArgumentList "-NoExit", "-Command", "npm start"
 
 Write-Host "Application servers are starting..." -ForegroundColor Yellow
 Write-Host "Backend: http://localhost:5002" -ForegroundColor Cyan
-Write-Host "Frontend: http://localhost:3000" -ForegroundColor Cyan
+Write-Host "Frontend: http://localhost:5002" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Wait for both servers to start, then open your browser!" -ForegroundColor Green
 ```
@@ -159,7 +159,7 @@ Write-Host "Wait for both servers to start, then open your browser!" -Foreground
 ### Common Issues:
 
 1. **Port Already in Use:**
-   - Check if another application is using ports 3000 or 5002
+   - Check if another application is using port 5002
    - Use different ports if needed
 
 2. **MongoDB Connection Error:**

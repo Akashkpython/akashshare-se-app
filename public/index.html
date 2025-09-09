@@ -10,6 +10,8 @@
       name="description"
       content="Akash Share - Next-generation desktop application for fast and secure file sharing"
     />
+    <!-- CSP enabled for WebSocket connections -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:* ws: wss:;" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/Akashshareicon.png" />
     <!--
       manifest.json provides metadata used when your web app is installed on a

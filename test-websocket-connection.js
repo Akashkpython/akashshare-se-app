@@ -1,64 +1,41 @@
-// Test script to verify WebSocket connections work correctly
-const WebSocket = require('ws');
+// Test WebSocket connections to both BCA (general) and BCOM rooms
+console.log('Testing WebSocket connections...');
 
-console.log('🚀 Testing WebSocket connection to backend...');
+// Test BCA (general) room connection
+console.log('\n1. Testing BCA (general) room connection...');
+const ws1 = new WebSocket('ws://127.0.0.1:5002/chat?username=TestUser&room=general');
 
-// Test WebSocket connection
-const testWebSocketConnection = () => {
-  const username = `TestUser${Math.floor(Math.random() * 1000)}`;
-  const wsUrl = `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=general`;
-  
-  console.log(`🔗 Connecting to: ${wsUrl}`);
-  
-  const ws = new WebSocket(wsUrl);
-  
-  ws.on('open', () => {
-    console.log('✅ WebSocket connection established successfully');
-    
-    // Send a test message
-    const testMessage = {
-      type: 'message',
-      message: 'Hello from test script!',
-      room: 'general'
-    };
-    
-    ws.send(JSON.stringify(testMessage));
-    console.log('📤 Sent test message');
-  });
-  
-  ws.on('message', (data) => {
-    try {
-      const message = JSON.parse(data);
-      console.log('📥 Received message:', message);
-      
-      if (message.type === 'userList') {
-        console.log('👥 Current users in room:', message.users);
-      } else if (message.type === 'message') {
-        console.log('💬 Chat message:', message.username, '-', message.message);
-      }
-    } catch (error) {
-      console.error('❌ Error parsing message:', error);
-    }
-  });
-  
-  ws.on('close', (code, reason) => {
-    console.log(`🔌 WebSocket connection closed: ${code} - ${reason || 'No reason'}`);
-    process.exit(0);
-  });
-  
-  ws.on('error', (error) => {
-    console.error('❌ WebSocket error:', error);
-    process.exit(1);
-  });
-  
-  // Keep the connection alive for testing
-  setTimeout(() => {
-    if (ws.readyState === WebSocket.OPEN) {
-      console.log('✅ Test completed successfully - connection remained open');
-      ws.close(1000, 'Test completed');
-    }
-  }, 10000); // Keep open for 10 seconds
+ws1.onopen = () => {
+  console.log('✅ BCA (general) room connected successfully');
+  ws1.close();
 };
 
-// Run the test
-testWebSocketConnection();
+ws1.onerror = (error) => {
+  console.log('❌ BCA (general) room connection failed:', error.message);
+};
+
+ws1.onclose = () => {
+  console.log('🔌 BCA (general) room connection closed');
+};
+
+// Test BCOM room connection
+console.log('\n2. Testing BCOM room connection...');
+const ws2 = new WebSocket('ws://127.0.0.1:5002/chat?username=TestUser&room=bcom');
+
+ws2.onopen = () => {
+  console.log('✅ BCOM room connected successfully');
+  ws2.close();
+};
+
+ws2.onerror = (error) => {
+  console.log('❌ BCOM room connection failed:', error.message);
+};
+
+ws2.onclose = () => {
+  console.log('🔌 BCOM room connection closed');
+};
+
+// Keep the process alive for a few seconds to see results
+setTimeout(() => {
+  console.log('\nTest completed.');
+}, 5000);

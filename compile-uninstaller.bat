@@ -8,7 +8,7 @@ echo.
 
 :: Check if csc is available
 where csc >nul 2>&1
-if %errorlevel% neq 0 (
+if not %errorlevel%==0 (
     echo Error: C# compiler (csc) not found.
     echo.
     echo Please install one of the following:
@@ -22,7 +22,7 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: Create dist directory if it doesn't exist
+:: Create dist directory if it does not exist
 if not exist "dist" mkdir "dist"
 
 :: Compile the uninstaller
@@ -30,7 +30,7 @@ echo Compiling Uninstaller.cs to Uninstaller.exe...
 csc /target:exe /out:dist\Uninstaller.exe Uninstaller.cs
 
 :: Check if compilation was successful
-if %errorlevel% equ 0 (
+if %errorlevel%==0 (
     echo.
     echo ==================================================
     echo Compilation successful!

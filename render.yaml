@@ -11,7 +11,7 @@ services:
       cd backend
       npm install --production
       npm list express-rate-limit
-    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=${PORT:-5003} node server.js
+    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5003 node start-production.js
     envVars:
       - key: NODE_ENV
         value: production

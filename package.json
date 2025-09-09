@@ -1,198 +1,65 @@
 {
   "name": "akash-share",
   "version": "1.0.5",
-  "description": "Next-generation desktop application for fast and secure file sharing",
+  "description": "Akash Share - Professional File Sharing Application",
   "main": "electron/main.js",
-  "homepage": ".",
+  "author": "Akash Share Team",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "18.x"
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.6.2",
+    "clsx": "^2.1.1",
+    "concurrently": "^9.2.1",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
+    "eslint-config-prettier": "^10.1.8",
+    "framer-motion": "^6.5.1",
+    "lucide-react": "^0.263.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.1",
+    "react-scripts": "^5.0.1",
+    "recharts": "^3.1.2",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7",
+    "wait-on": "^8.0.4",
+    "web-vitals": "^2.1.4",
+    "ws": "^8.14.2",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.6",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/preset-env": "^7.23.6",
+    "@babel/preset-react": "^7.23.3",
+    "@babel/preset-typescript": "^7.23.3",
+    "cross-env": "^7.0.3",
+    "electron": "^38.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.1",
+    "tailwindcss": "^3.4.17"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "cross-env PORT=5002 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "electron": "cross-env NODE_ENV=development electron .",
-    "electron-dev": "concurrently \"npm start\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
-    "electron-pack": "npm run build && npm run electron:copy && electron-builder",
-    "dist": "npm run build && npm run electron:copy && electron-builder --publish=never",
-    "electron:copy": "node scripts/copy-electron.js",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
-    "format": "prettier --write src/**/*.{js,jsx,ts,tsx,css,md}",
-    "serve-updates": "npx http-server dist/ -p 3000",
-    "postinstall": "cd backend && npm install",
-    "start-full": "node start-full-app.js --experimental-modules",
-    "verify-chat": "node verify-chat-interface.js",
-    "start-backend": "node start-backend.js",
-    "dev": "node start-dev.js"
+    "electron-dev": "concurrently --kill-others-on-fail \"wait-on http://localhost:5003/health && cross-env PORT=5002 react-scripts start\" \"cross-env PORT=5003 node backend/server.js\"",
+    "electron-build": "electron-builder build -mwl",
+    "dist": "npm run build && electron-builder",
+    "pack": "electron-builder --dir",
+    "build-electron": "npm run build && npm run electron-build",
+    "preinstall": "npx npm-force-resolutions",
+    "postinstall": "electron-builder install-app-deps"
   },
-  "resolutions": {
-    "@mongodb-js/saslprep": "^1.1.0",
-    "mongoose": "^6.12.0"
-  },
-  "dependencies": {
-    "chai": "^6.0.1",
-    "chai-http": "^5.1.2",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.0.0",
-    "electron-log": "^5.4.3",
-    "electron-updater": "^6.6.2",
-    "express-rate-limit": "^5.5.1",
-    "framer-motion": "^11.0.3",
-    "lucide-react": "^0.292.0",
-    "mocha": "^11.7.2",
-    "png-to-ico": "^3.0.1",
-    "puppeteer": "^24.19.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^7.8.2",
-    "recharts": "^2.8.0",
-    "sharp": "^0.34.3",
-    "supertest": "^7.1.4",
-    "tailwind-merge": "^2.0.0",
-    "tailwindcss-animate": "^1.0.7",
-    "ws": "^8.14.2",
-    "zustand": "^4.4.6"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.28.4",
-    "@babel/plugin-proposal-class-properties": "^7.18.6",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
-    "@babel/preset-env": "^7.28.3",
-    "@babel/preset-react": "^7.27.1",
-    "@babel/preset-typescript": "^7.27.1",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/jest": "^29.5.14",
-    "@types/node": "^24.3.0",
-    "@types/react": "^18.2.37",
-    "@types/react-dom": "^18.2.15",
-    "@typescript-eslint/eslint-plugin": "^8.42.0",
-    "@typescript-eslint/parser": "^8.42.0",
-    "autoprefixer": "^10.4.16",
-    "babel-jest": "^30.1.2",
-    "concurrently": "^8.2.2",
-    "cross-env": "^7.0.3",
-    "electron": "^38.0.0",
-    "electron-builder": "^24.6.4",
-    "electron-packager": "^17.1.2",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "http-server": "^14.1.1",
-    "identity-obj-proxy": "^3.0.0",
-    "postcss": "^8.4.31",
-    "prettier": "^3.2.5",
-    "react-scripts": "^5.0.1",
-    "tailwindcss": "^3.3.5",
-    "typescript": "^4.9.5",
-    "wait-on": "^7.0.1"
-  },
-  "build": {
-    "appId": "com.akashshare.app",
-    "productName": "Akash Share",
-    "directories": {
-      "output": "dist"
-    },
-    "files": [
-      "build/**/*",
-      "electron/**/*",
-      "backend/**/*",
-      "node_modules/**/*",
-      "!backend/node_modules",
-      "!backend/uploads/*"
-    ],
-    "extraMetadata": {
-      "main": "electron/main.js"
-    },
-    "icon": "public/Akashshareicon.png",
-    "nsis": {
-      "uninstallDisplayName": "AkAsH Share",
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "allowToChangeInstallationDirectory": true,
-      "oneClick": false,
-      "allowElevation": true
-    },
-    "mac": {
-      "category": "public.app-category.utilities",
-      "icon": "public/Akashshareicon.png"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ],
-      "icon": "public/Akashshareicon.png"
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb",
-        "rpm"
-      ],
-      "icon": "public/Akashshareicon.png"
-    },
-    "extraResources": [
-      {
-        "from": "backend/",
-        "to": "backend/",
-        "filter": [
-          "**/*",
-          "!node_modules",
-          "!uploads/*"
-        ]
-      }
-    ],
-    "publish": [
-      {
-        "provider": "generic",
-        "url": "http://192.168.0.185:3000/"
-      }
-    ]
-  },
-  "jest": {
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": [
-      "<rootDir>/src/setupTests.js"
-    ],
-    "moduleNameMapper": {
-      "\\.(css|less|scss|sass)$": "identity-obj-proxy",
-      "\\.(gif|ttf|eot|svg|png)$": "<rootDir>/src/__mocks__/fileMock.js"
-    },
-    "transform": {
-      "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
-    },
-    "transformIgnorePatterns": [
-      "node_modules/(?!(.*\\.mjs$|@testing-library|@types))"
-    ],
-    "moduleFileExtensions": [
-      "js",
-      "jsx",
-      "ts",
-      "tsx",
-      "json"
-    ],
-    "testMatch": [
-      "<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}",
-      "<rootDir>/src/**/?(*.)(spec|test).{js,jsx,ts,tsx}"
-    ],
-    "collectCoverageFrom": [
-      "src/**/*.{js,jsx,ts,tsx}",
-      "!src/**/*.d.ts",
-      "!src/index.js",
-      "!src/reportWebVitals.js"
-    ],
-    "coverageDirectory": "coverage",
-    "coverageReporters": [
-      "text",
-      "lcov",
-      "html"
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
     ]
   },
   "browserslist": {
@@ -206,5 +73,38 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "build": {
+    "appId": "com.akashshare.app",
+    "productName": "Akash Share",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "!node_modules/.cache/**/*"
+    ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": "nsis"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": "AppImage"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "resolutions": {
+    "motion-utils": "10.18.0",
+    "react-transition-group": "^4.4.5"
   }
 }

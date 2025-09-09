@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 echo ==========================================
 echo        Akash Share Startup Checker
 echo ==========================================
@@ -14,28 +15,7 @@ timeout /t 2 > nul
 REM Check if MongoDB process is running
 tasklist /fi "imagename eq mongod.exe" 2>nul | find /i "mongod.exe" >nul
 if errorlevel 1 (
-    echo ❌ MongoDB is not running!
-    echo.
-    echo 💡 Choose how to start MongoDB:
-    echo    Option 1: Right-click 'start-mongodb-admin.bat' → Run as administrator
-    echo    Option 2: Double-click 'start-mongodb-manual.bat' (no admin needed)
-    echo    Option 3: Open Command Prompt as Administrator → net start MongoDB
-    echo.
-    echo 🔧 If MongoDB is not installed:
-    echo    Download from: https://www.mongodb.com/try/download/community
-    echo.
-    echo Press any key after starting MongoDB...
-    pause
-    
-    REM Check again after user starts MongoDB
-    tasklist /fi "imagename eq mongod.exe" 2>nul | find /i "mongod.exe" >nul
-    if errorlevel 1 (
-        echo ❌ MongoDB still not detected. Please start MongoDB first.
-        pause
-        exit /b 1
-    ) else (
-        echo ✅ MongoDB process found
-    )
+    echo ⚠️  MongoDB process not detected locally. Continuing (Atlas may be used).
 ) else (
     echo ✅ MongoDB process found
 )
@@ -44,7 +24,7 @@ echo.
 echo [2/4] Starting Backend Server...
 echo.
 
-start "Backend Server" cmd /k "cd backend && echo Starting backend on port 5002... && npm start"
+start "Backend Server" cmd /k "cd /d %~dp0backend && echo Starting backend on port 5002... && npm start"
 
 REM Wait for backend to start
 echo Waiting for backend to initialize...
@@ -57,8 +37,13 @@ echo.
 REM Test backend health endpoint
 curl -s http://localhost:5002/health > nul 2>&1
 if errorlevel 1 (
-    echo ⚠️  Backend might still be starting...
-    echo    Please wait and check the backend terminal
+    powershell -Command "try { iwr http://localhost:5002/health -UseBasicParsing -TimeoutSec 3 ^| Out-Null; exit 0 } catch { exit 1 }"
+    if errorlevel 1 (
+        echo ⚠️  Backend might still be starting...
+        echo    Please wait and check the backend terminal
+    ) else (
+        echo ✅ Backend server is responding
+    )
 ) else (
     echo ✅ Backend server is responding
 )
@@ -67,7 +52,7 @@ echo.
 echo [4/4] Starting Frontend...
 echo.
 
-start "React Frontend" cmd /k "echo Starting React development server... && npm start"
+start "React Frontend" cmd /k "cd /d %~dp0 && echo Starting React development server... && npm start"
 
 echo.
 echo ==========================================
@@ -75,7 +60,7 @@ echo          🚀 Startup Complete!
 echo ==========================================
 echo.
 echo 📍 Application URLs:
-echo    Frontend: http://localhost:3000
+echo    Frontend: http://localhost:5002
 echo    Backend:  http://localhost:5002
 echo    Health:   http://localhost:5002/health
 echo.

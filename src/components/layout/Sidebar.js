@@ -10,7 +10,8 @@ import {
   User,
   MessageCircle,
   Music,
-  DownloadCloud
+  DownloadCloud,
+  Calculator
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -78,7 +79,13 @@ const Sidebar = () => {
       icon: User,
       label: 'Interface Check',
       description: 'Verify Chat Interface'
-    }
+    },
+    {
+      path: '/scientific-calculator',
+      icon: Calculator,
+      label: 'Scientific Calculator',
+      description: 'Advanced Calculations'
+    },
   ];
 
   // Add a handler for navigation to help debug issues

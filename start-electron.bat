@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 echo ===============================================
 echo          AkashShare Electron Launcher
 echo ===============================================
