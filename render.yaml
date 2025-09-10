@@ -13,6 +13,7 @@ services:
       cd backend
       npm install --production
       npm list express-rate-limit
+      npm list mime
       echo "✅ Dependencies installed successfully"
     startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5003 node start-production.js
     healthCheckPath: /health
@@ -67,6 +68,8 @@ services:
         value: false
       - key: NPM_CONFIG_FUND
         value: false
+      - key: RENDER
+        value: true
 
   # Frontend Service (Static Site)
   - type: web
