@@ -11,10 +11,13 @@ services:
     branch: main
     buildCommand: |
       cd backend
-      npm install --production
+      npm ci --production
+      npm install mime@^1.6.0 mime-types@^2.1.35 mime-db@^1.52.0 --save
       npm list express-rate-limit
       npm list mime
-      echo "✅ Dependencies installed successfully"
+      npm list mime-types
+      npm list mime-db
+      echo "✅ All dependencies installed successfully"
     startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5003 node start-production.js
     healthCheckPath: /health
     envVars:
