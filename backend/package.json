@@ -24,7 +24,7 @@
     "express-rate-limit": "^7.5.1",
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
-    "mime": "^1.6.0",
+    "mime": "^2.6.0",
     "mime-db": "^1.52.0",
     "mime-types": "^2.1.35",
     "mongoose": "^6.13.8",

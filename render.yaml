@@ -12,7 +12,7 @@ services:
     buildCommand: |
       cd backend
       npm ci --production
-      npm install mime@^1.6.0 mime-types@^2.1.35 mime-db@^1.52.0 --save
+      npm install mime@^2.6.0 mime-types@^2.1.35 mime-db@^1.52.0 --save
       npm list express-rate-limit
       npm list mime
       npm list mime-types
