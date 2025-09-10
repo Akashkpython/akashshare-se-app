@@ -4,7 +4,9 @@
  */
 
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const rateLimit = require('express-rate-limit');
 import helmet from 'helmet';
 
 class BackendSecurityManager {
