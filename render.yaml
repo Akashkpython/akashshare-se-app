@@ -7,11 +7,15 @@ services:
     name: akashshare-backend
     env: node
     plan: free
+    autoDeploy: true
+    branch: main
     buildCommand: |
       cd backend
       npm install --production
       npm list express-rate-limit
+      echo "✅ Dependencies installed successfully"
     startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5003 node start-production.js
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
@@ -55,12 +59,22 @@ services:
         value: true
       - key: HEALTH_CHECK_INTERVAL
         value: 30000
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=1024
+      - key: NPM_CONFIG_PRODUCTION
+        value: true
+      - key: NPM_CONFIG_AUDIT
+        value: false
+      - key: NPM_CONFIG_FUND
+        value: false
 
   # Frontend Service (Static Site)
   - type: web
     name: akashshare-frontend
     env: static
     plan: free
+    autoDeploy: true
+    branch: main
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
     envVars:
