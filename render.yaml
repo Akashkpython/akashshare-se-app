@@ -11,14 +11,16 @@ services:
     branch: main
     buildCommand: |
       cd backend
-      npm ci --production
-      npm install mime@^2.6.0 mime-types@^2.1.35 mime-db@^1.52.0 mongodb@^6.3.0 --save
+      rm -rf node_modules package-lock.json
+      npm install --production
+      npm install mime@^2.6.0 mime-types@^2.1.35 mime-db@^1.52.0 mongodb@^6.3.0 debug@^4.3.4 --save
       npm list express-rate-limit
       npm list mime
       npm list mime-types
       npm list mime-db
       npm list mongodb
       npm list mongoose
+      npm list debug
       echo "✅ All dependencies installed successfully"
     startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5003 node start-production.js
     healthCheckPath: /health
