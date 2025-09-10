@@ -16,6 +16,7 @@
     "electron-log": "^5.4.3",
     "electron-updater": "^6.6.2",
     "eslint-config-prettier": "^10.1.8",
+    "express-rate-limit": "^8.1.0",
     "framer-motion": "^6.5.1",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
@@ -53,7 +54,6 @@
     "dist": "npm run build && electron-builder",
     "pack": "electron-builder --dir",
     "build-electron": "npm run build && npm run electron-build",
-    "preinstall": "npx npm-force-resolutions",
     "postinstall": "electron-builder install-app-deps"
   },
   "eslintConfig": {
