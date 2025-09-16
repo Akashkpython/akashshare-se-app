@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 
+// Suppress Mongoose deprecation warning for strictQuery
+mongoose.set('strictQuery', false);
+
 const connectToMongoDB = async (maxRetries = 5, retryDelay = 5000) => {
   let retries = 0;
   const startTime = Date.now();
