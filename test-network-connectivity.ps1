@@ -13,10 +13,10 @@ if (-not $networkIP) {
 Write-Host "🏠 Detected Network IP: $networkIP" -ForegroundColor Cyan
 Write-Host ""
 
-# Test Backend (port 5002)
-Write-Host "🔧 Testing Backend Service (port 5002)..." -ForegroundColor Yellow
+# Test Backend (port 5004)
+Write-Host "🔧 Testing Backend Service (port 5004)..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://$networkIP`:5002/health" -TimeoutSec 5 -ErrorAction Stop
+    $response = Invoke-WebRequest -Uri "http://$networkIP`:5004/health" -TimeoutSec 5 -ErrorAction Stop
     if ($response.StatusCode -eq 200) {
         Write-Host "✅ Backend is accessible from network!" -ForegroundColor Green
         $backendWorking = $true

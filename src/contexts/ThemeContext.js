@@ -12,26 +12,28 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const { theme, setTheme } = useStore();
+  // Removed unused 'theme' variable from destructuring
+  const { setTheme } = useStore();
 
   useEffect(() => {
-    // Apply theme to document on mount
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    // Always use dark theme as requested
+    document.documentElement.classList.add('dark');
     
-    // Store theme preference
-    localStorage.setItem('akash-share-theme', theme);
-  }, [theme]);
+    // Set theme to dark permanently
+    setTheme('dark');
+  }, [setTheme]);
 
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(newTheme);
-  };
+  // Remove toggleTheme function as requested
+  // const toggleTheme = () => {
+  //   const newTheme = theme === 'dark' ? 'light' : 'dark';
+  //   setTheme(newTheme);
+  // };
 
   const value = {
-    theme,
+    theme: 'dark', // Always use dark theme
     setTheme,
-    toggleTheme,
-    isDark: theme === 'dark'
+    toggleTheme: () => {}, // Empty function as toggle is removed
+    isDark: true // Always true
   };
 
   return (

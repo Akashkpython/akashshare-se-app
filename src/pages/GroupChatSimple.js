@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Users, AlertCircle, RefreshCw, X, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import environment from '../config/environment.js';
 
 const GroupChatSimple = () => {
   const [username, setUsername] = useState('');
@@ -25,34 +26,26 @@ const GroupChatSimple = () => {
   }, [messages]);
 
   // Simple notification system
-  const addNotification = (notification) => {
+  const addNotification = useCallback((notification) => {
     const id = Date.now();
     setNotifications(prev => [...prev, { ...notification, id }]);
     setTimeout(() => {
       setNotifications(prev => prev.filter(n => n.id !== id));
     }, 3000);
-  };
+  }, []);
 
-  // Enhanced connection function with better error handling
-  const connectToChat = () => {
-    console.log('🚀 Akash Share Group Chat: Connecting with username:', username);
+  // Connect to WebSocket chat
+  const connectToChat = useCallback(() => {
+    if (!username || hasConnectedRef.current) return;
     
-    // Prevent multiple connections
-    if (hasConnectedRef.current || wsRef.current) {
-      console.log('🚫 Akash Share Group Chat: Already connected or connecting');
-      return;
-    }
-
-    if (!username || !isMountedRef.current) {
-      console.log('❌ Akash Share Group Chat: No username or not mounted');
-      return;
-    }
-
+    console.log('🔄 Akash Share Group Chat: Connecting...');
     setIsConnecting(true);
     hasConnectedRef.current = true;
     
-    // Use the correct port for WebSocket connection (5003 for backend)
-    const wsUrl = `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=general`;
+    // Use the correct WebSocket URL based on environment
+    const wsUrl = environment.getWebSocketUrl(username, 'general');
+    
+    console.log('🔧 Connecting to WebSocket URL:', wsUrl);
     
     try {
       const ws = new WebSocket(wsUrl);
@@ -106,7 +99,7 @@ const GroupChatSimple = () => {
         addNotification({
           type: 'error',
           title: 'Connection Error',
-          message: 'Failed to connect to the chat server. Make sure the backend is running on port 5003.'
+          message: 'Failed to connect to the chat server. Ensure backend is running on localhost:5004 or set REACT_APP_API_URL.'
         });
       };
 
@@ -138,7 +131,7 @@ const GroupChatSimple = () => {
         message: `Could not establish connection to chat server. Error: ${error.message}`
       });
     }
-  };
+  }, [username, reconnectAttempts, addNotification]);
 
   // Connect when username is set - ONLY ONCE
   useEffect(() => {
@@ -146,7 +139,7 @@ const GroupChatSimple = () => {
       console.log('🔧 Akash Share Group Chat: Username set, connecting...');
       connectToChat();
     }
-  }, [username]);
+  }, [username, connectToChat]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -208,8 +201,19 @@ const GroupChatSimple = () => {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md p-8 mx-4 bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl"
+          className="relative w-full max-w-md p-8 mx-4 bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl"
         >
+          {/* Close Button */}
+          <button
+            onClick={() => {
+              // Close the modal instead of going back in history
+              setShowNameModal(false);
+            }}
+            className="absolute p-2 transition-colors rounded-full top-4 right-4 hover:bg-gray-700"
+          >
+            <X size={20} className="text-gray-400" />
+          </button>
+          
           <div className="mb-6 text-center">
             <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-gray-700 to-gray-800">
               <Users size={32} className="text-white" />
@@ -230,7 +234,6 @@ const GroupChatSimple = () => {
               onKeyPress={(e) => e.key === 'Enter' && handleJoinChat()}
               placeholder="Enter your name"
               className="w-full p-4 mb-4 text-white transition-all bg-gray-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-600"
-              autoFocus
             />
             <button
               onClick={handleJoinChat}

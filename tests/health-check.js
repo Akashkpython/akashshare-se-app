@@ -26,7 +26,7 @@ async function testBackendHealth() {
   return new Promise((resolve) => {
     const options = {
       hostname: 'localhost',
-      port: 5002,
+      port: 5004,
       path: '/health',
       method: 'GET',
       timeout: 5000
@@ -67,7 +67,7 @@ async function testBackendHealth() {
 
 async function testWebSocketConnection() {
   return new Promise((resolve) => {
-    const ws = new WebSocket('ws://localhost:5003/chat?username=HealthCheck&room=test');
+    const ws = new WebSocket('ws://localhost:5004/chat?username=HealthCheck&room=test');
     let connected = false;
     
     const timeout = setTimeout(() => {
@@ -123,7 +123,7 @@ async function testAPIEndpoints() {
     await new Promise((resolve) => {
       const options = {
         hostname: 'localhost',
-        port: 5003,
+        port: 5004,
         path: endpoint.path,
         method: 'GET',
         timeout: 3000
@@ -157,11 +157,11 @@ async function testCORSHeaders() {
   return new Promise((resolve) => {
     const options = {
       hostname: 'localhost',
-      port: 5003,
+      port: 5004,
       path: '/health',
       method: 'OPTIONS',
       headers: {
-        'Origin': 'http://localhost:5003',
+        'Origin': 'http://localhost:5004',
         'Access-Control-Request-Method': 'GET'
       },
       timeout: 3000
@@ -169,7 +169,7 @@ async function testCORSHeaders() {
 
     const req = http.request(options, (res) => {
       const corsHeader = res.headers['access-control-allow-origin'];
-      const passed = corsHeader === '*' || corsHeader === 'http://localhost:5003';
+      const passed = corsHeader === '*' || corsHeader === 'http://localhost:5004';
       logTest('CORS Configuration', passed, 
         passed ? 'CORS headers properly configured' : 'CORS headers missing or incorrect');
       resolve(passed);

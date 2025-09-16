@@ -4,9 +4,7 @@
  */
 
 import crypto from 'crypto';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const rateLimit = require('express-rate-limit');
+import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
 class BackendSecurityManager {
@@ -526,7 +524,7 @@ class BackendSecurityManager {
           styleSrc: ["'self'", "'unsafe-inline'"],
           scriptSrc: ["'self'"],
           imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: ["'self'", "ws:", "wss:"],
+          connectSrc: ["'self'", "ws:", "wss:", "localhost:5004"],
           fontSrc: ["'self'"],
           objectSrc: ["'none'"],
           mediaSrc: ["'self'"],

@@ -8,7 +8,7 @@ const server = createServer(app);
 
 // Enable CORS for all origins
 app.use(cors({
-  origin: ['http://localhost:5002'],
+  origin: ['http://localhost:5004'],
   credentials: true
 }));
 
@@ -20,7 +20,7 @@ app.get('/health', (req, res) => {
     status: 'ok', 
     message: 'Backend server is running',
     timestamp: new Date().toISOString(),
-    port: 5002
+    port: 5004
   });
 });
 
@@ -136,7 +136,7 @@ wss.on('connection', (ws, req) => {
   }
 });
 
-const PORT = 5002;
+const PORT = 5004;
 const HOST = '0.0.0.0';  // Changed from 'localhost' to '0.0.0.0' for better network compatibility
 
 server.listen(PORT, HOST, () => {

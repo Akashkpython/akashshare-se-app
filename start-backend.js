@@ -19,7 +19,7 @@ const backend = spawn('node', ['server.js'], {
   env: {
     ...process.env,
     NODE_ENV: 'development',
-    PORT: '5003',
+    PORT: '5004',
     HOST: '0.0.0.0'  // Changed from 'localhost' to '0.0.0.0' for better network compatibility
   }
 });
@@ -46,6 +46,6 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-console.log('🔧 Backend server started on port 5002');
+console.log('🔧 Backend server started on port 5004');
 console.log('💬 You can now use the group chat feature in the Electron app');
 console.log('ℹ️  Press Ctrl+C to stop the server');

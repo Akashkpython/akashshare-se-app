@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5004;
 
 app.get('/', (req, res) => {
   res.json({ 
@@ -21,7 +21,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.listen(PORT, 'localhost', () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Simple server running on http://localhost:${PORT}`);
   console.log(`🔍 Health endpoint: http://localhost:${PORT}/health`);
 });

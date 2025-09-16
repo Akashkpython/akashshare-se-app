@@ -10,15 +10,15 @@ const __dirname = path.dirname(__filename);
 console.log('🚀 Starting Akash Share Electron Development Environment...');
 
 // Start the backend server first
-console.log('🔧 Starting backend server on port 5003...');
+console.log('🔧 Starting backend server on port 5004...');
 const backend = spawn('node', ['server.js'], {
   cwd: path.join(__dirname, '../backend'),
   stdio: 'pipe',
   env: {
     ...process.env,
     NODE_ENV: 'development',
-    PORT: '5003',
-    HOST: 'localhost'
+    PORT: '5004',
+    HOST: '0.0.0.0'
   }
 });
 
@@ -31,7 +31,7 @@ backend.stdout.on('data', (data) => {
   
   // Check if backend has started successfully
   if (!backendStarted && (output.includes('Server running on') || output.includes('🚀 Server running'))) {
-    console.log('✅ Backend server started successfully on port 5003');
+    console.log('✅ Backend server started successfully on port 5004');
     backendStarted = true;
     // Now start the frontend
     startFrontend();
@@ -54,7 +54,7 @@ backend.on('close', (code) => {
 function startFrontend() {
   if (frontendStarted) return;
   
-  console.log('🔧 Starting frontend on port 5002...');
+  console.log('🔧 Starting frontend on port 5004...');
   
   // Try to find npm in different ways
   const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -65,8 +65,8 @@ function startFrontend() {
     env: {
       ...process.env,
       NODE_ENV: 'development',
-      PORT: '5002',
-      REACT_APP_API_URL: 'http://localhost:5003'
+      PORT: '5004',
+      REACT_APP_API_URL: 'http://localhost:5004'
     }
   });
 
@@ -75,13 +75,13 @@ function startFrontend() {
     console.log(`[FRONTEND] ${output}`);
     
     // Check if frontend has started successfully
-    if (!frontendStarted && (output.includes('Local:') || output.includes('http://localhost:5002'))) {
-      console.log('✅ Frontend started successfully on port 5002');
+      if (!frontendStarted && (output.includes('Local:') || output.includes('http://localhost:5004'))) {
+        console.log('✅ Frontend started successfully on port 5004');
       frontendStarted = true;
       console.log('🎉 Both frontend and backend are now running!');
-      console.log('🔗 Frontend: http://localhost:5002');
-      console.log('🔗 Backend: http://localhost:5003');
-      console.log('🔗 WebSocket: ws://localhost:5003/chat');
+        console.log('🔗 Frontend: http://localhost:5004');
+        console.log('🔗 Backend: http://localhost:5004');
+        console.log('🔗 WebSocket: ws://localhost:5004/chat');
     }
   });
 
@@ -94,13 +94,13 @@ function startFrontend() {
     
     // Try alternative method using cross-env
     console.log('🔧 Trying alternative method with cross-env...');
-    const frontendAlt = spawn('npx', ['cross-env', 'PORT=5002', 'react-scripts', 'start'], {
+    const frontendAlt = spawn('npx', ['cross-env', 'PORT=5004', 'react-scripts', 'start'], {
       cwd: path.join(__dirname, '..'),
       stdio: 'pipe',
       env: {
         ...process.env,
         NODE_ENV: 'development',
-        REACT_APP_API_URL: 'http://localhost:5003'
+        REACT_APP_API_URL: 'http://localhost:5004'
       }
     });
     
@@ -109,13 +109,13 @@ function startFrontend() {
       console.log(`[FRONTEND ALT] ${output}`);
       
       // Check if frontend has started successfully
-      if (!frontendStarted && (output.includes('Local:') || output.includes('http://localhost:5002'))) {
-        console.log('✅ Frontend started successfully on port 5002 (alternative method)');
+      if (!frontendStarted && (output.includes('Local:') || output.includes('http://localhost:5004'))) {
+        console.log('✅ Frontend started successfully on port 5004 (alternative method)');
         frontendStarted = true;
         console.log('🎉 Both frontend and backend are now running!');
-        console.log('🔗 Frontend: http://localhost:5002');
-        console.log('🔗 Backend: http://localhost:5003');
-        console.log('🔗 WebSocket: ws://localhost:5003/chat');
+        console.log('🔗 Frontend: http://localhost:5004');
+        console.log('🔗 Backend: http://localhost:5004');
+        console.log('🔗 WebSocket: ws://localhost:5004/chat');
       }
     });
     
@@ -151,5 +151,5 @@ process.on('SIGTERM', () => {
 });
 
 console.log('⏳ Please wait for both backend and frontend to start...');
-console.log('🔗 Backend will be available at http://localhost:5003');
-console.log('🔗 Frontend will be available at http://localhost:5002');
+console.log('🔗 Backend will be available at http://localhost:5004');
+console.log('🔗 Frontend will be available at http://localhost:5004');

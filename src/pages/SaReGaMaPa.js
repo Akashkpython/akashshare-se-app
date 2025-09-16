@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Volume2, VolumeX } from 'lucide-react';
 
@@ -6,6 +6,7 @@ const SaReGaMaPa = () => {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
 
   // Function to get the correct path for static assets in Electron
   const getAssetPath = (assetPath) => {
@@ -21,7 +22,7 @@ const SaReGaMaPa = () => {
   };
 
   // Play audio function
-  const playAudio = async () => {
+  const playAudio = useCallback(async () => {
     if (audioRef.current) {
       try {
         // Set properties for continuous playback
@@ -34,15 +35,18 @@ const SaReGaMaPa = () => {
         setIsPlaying(true);
         setIsMuted(false);
         console.log('Background music started playing');
+        return true;
       } catch (error) {
         console.log('Autoplay blocked, user interaction needed:', error);
         setIsPlaying(false);
+        return false;
       }
     }
-  };
+    return false;
+  }, []);
 
   // Toggle mute function
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (audioRef.current) {
       const newMutedState = !audioRef.current.muted;
       audioRef.current.muted = newMutedState;
@@ -53,25 +57,34 @@ const SaReGaMaPa = () => {
         playAudio();
       }
     }
-  };
+  }, [isPlaying, playAudio]);
+
+  // Handle user interaction
+  const handleUserInteraction = useCallback(async () => {
+    if (!userInteracted && audioRef.current) {
+      setUserInteracted(true);
+      audioRef.current.muted = false;
+      audioRef.current.volume = 0.7;
+      const success = await playAudio();
+      
+      // Remove event listeners after successful play
+      if (success) {
+        document.removeEventListener('click', handleUserInteraction);
+        document.removeEventListener('keydown', handleUserInteraction);
+        document.removeEventListener('touchstart', handleUserInteraction);
+      }
+    }
+  }, [userInteracted, playAudio]);
 
   useEffect(() => {
-    // Play audio when component mounts
+    // Try to play audio when component mounts (might work in some browsers)
     playAudio();
 
-    // Handle user interaction to enable audio playback
-    const handleUserInteraction = () => {
-      if (audioRef.current) {
-        audioRef.current.muted = false;
-        audioRef.current.volume = 0.7;
-        playAudio();
-      }
-    };
-
-    // Add event listeners for user interaction
-    document.addEventListener('click', handleUserInteraction, { once: true });
-    document.addEventListener('keydown', handleUserInteraction, { once: true });
-    document.addEventListener('touchstart', handleUserInteraction, { once: true });
+    // Add event listeners for user interaction to enable audio playback
+    // These are required due to browser autoplay policies
+    document.addEventListener('click', handleUserInteraction);
+    document.addEventListener('keydown', handleUserInteraction);
+    document.addEventListener('touchstart', handleUserInteraction);
 
     // Cleanup audio on unmount
     return () => {
@@ -86,16 +99,16 @@ const SaReGaMaPa = () => {
         audioRef.current = null;
       }
     };
-  }, []);
+  }, [playAudio, handleUserInteraction]); // Added playAudio to dependency array
 
   return (
-    <div className="p-6 h-full flex flex-col">
+    <div className="flex flex-col h-full p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex-1 flex flex-col items-center justify-center"
+        className="flex flex-col items-center justify-center flex-1"
       >
-        <div className="text-center max-w-md">
+        <div className="max-w-md text-center">
           {/* Akashshareicon */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -106,7 +119,7 @@ const SaReGaMaPa = () => {
             <img 
               src={getAssetPath('/Akashshareicon.png')} 
               alt="Akash Share Logo" 
-              className="w-24 h-24 object-contain rounded-full mx-auto"
+              className="object-contain w-24 h-24 mx-auto rounded-full"
             />
           </motion.div>
           
@@ -114,7 +127,7 @@ const SaReGaMaPa = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-3xl font-bold text-foreground mb-4"
+            className="mb-4 text-3xl font-bold text-foreground"
           >
             Sa Re Ga Ma Pa
           </motion.h1>
@@ -123,7 +136,7 @@ const SaReGaMaPa = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="text-foreground/70 text-lg mb-2"
+            className="mb-2 text-lg text-foreground/70"
           >
             Coming Soon
           </motion.p>
@@ -132,7 +145,7 @@ const SaReGaMaPa = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-foreground/50 text-sm"
+            className="text-sm text-foreground/50"
           >
             Get ready for an exciting musical experience!
           </motion.p>
@@ -145,7 +158,7 @@ const SaReGaMaPa = () => {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={toggleMute}
-            className="mt-6 p-3 rounded-full bg-foreground/10 hover:bg-foreground/20 transition-colors"
+            className="p-3 mt-6 transition-colors rounded-full bg-foreground/10 hover:bg-foreground/20"
             aria-label={isMuted ? "Unmute music" : "Mute music"}
           >
             {isMuted ? (
@@ -159,19 +172,42 @@ const SaReGaMaPa = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="text-foreground/70 text-sm mt-4"
+            className="mt-4 text-sm text-foreground/70"
           >
             {isMuted ? "Music is muted" : "Background music playing"}
           </motion.p>
+          
+          {/* Prompt user to interact if audio is not playing */}
+          {!isPlaying && !userInteracted && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              className="mt-4 text-sm italic text-foreground/70"
+            >
+              Click anywhere to start background music
+            </motion.p>
+          )}
         </div>
       </motion.div>
       
       {/* Hidden audio element that plays automatically in loop */}
       <audio 
         ref={audioRef} 
-        src={getAssetPath('/music1.mp3')}
+        src={getAssetPath('/Sri Krishna.mp3.mp3')}
+        autoPlay
+        loop
+        preload="auto"
         onError={(e) => {
           console.error('Audio error:', e);
+        }}
+        onPlay={() => {
+          console.log('Audio is now playing');
+          setIsPlaying(true);
+        }}
+        onPause={() => {
+          console.log('Audio is now paused');
+          setIsPlaying(false);
         }}
       />
     </div>

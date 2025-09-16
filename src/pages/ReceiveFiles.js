@@ -31,7 +31,7 @@ const ReceiveFiles = () => {
       addNotification({
         type: 'error',
         title: 'Backend Server Offline',
-        message: 'The backend server is not running. Please start the backend server on port 5002.'
+        message: 'The backend server is not reachable. Please ensure it is running on localhost:5004 or set REACT_APP_API_URL.'
       });
     }
   }, [addNotification]);
@@ -125,7 +125,7 @@ const ReceiveFiles = () => {
       addNotification({
         type: 'error',
         title: 'Backend Offline',
-        message: 'Cannot download files. Please ensure the backend server is running on port 5002.'
+        message: 'Cannot download files. Ensure the backend is running on localhost:5004 (Electron/local) or your configured API URL.'
       });
       return;
     }
@@ -187,7 +187,7 @@ const ReceiveFiles = () => {
       let errorMessage = error.message || 'Failed to download file. Please check if the backend is running.';
       
       if (error.message && error.message.includes('Cannot connect to server')) {
-        errorMessage = 'Cannot connect to the backend server. Please ensure the backend is running on port 5002.';
+        errorMessage = 'Cannot connect to the backend server. Make sure it is running on localhost:5004 or your configured API URL.';
       } else if (error.message && error.message.includes('fetch')) {
         errorMessage = 'Network error occurred. Please check your connection and ensure the backend server is running.';
       } else if (error.message && error.message.includes('404')) {
@@ -228,7 +228,10 @@ const ReceiveFiles = () => {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-black text-white min-h-screen">
+    <div className="bg-black text-white min-h-screen relative">
+      {/* Natural blur background effect */}
+      <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm"></div>
+      <div className="relative z-10 p-6 space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -253,7 +256,7 @@ const ReceiveFiles = () => {
           ) : (
             <div className="flex items-center text-red-400">
               <AlertCircle className="w-4 h-4 mr-2" />
-              <span>Backend server is offline. Please start the backend server on port 5002.</span>
+              <span>Backend server is offline. Start it on localhost:5004 (Electron/local) or set REACT_APP_API_URL.</span>
             </div>
           )}
         </div>
@@ -387,6 +390,7 @@ const ReceiveFiles = () => {
             </div>
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );

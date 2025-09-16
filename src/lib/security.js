@@ -418,7 +418,7 @@ class SecurityManager {
       'script-src': ["'self'"],
       'style-src': ["'self'"],
       'img-src': ["'self'"],
-      'connect-src': ["'self'", ...allowedDomains],
+      'connect-src': ["'self'", ...allowedDomains, ...allowedDomains.map(domain => `ws://${domain}`), ...allowedDomains.map(domain => `wss://${domain}`)],
       'font-src': ["'self'"],
       'object-src': ["'none'"],
       'media-src': ["'self'"],

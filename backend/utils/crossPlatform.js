@@ -433,7 +433,7 @@ export class EnvUtils {
    * @param {number} fallback - Fallback port
    * @returns {number} - Port number
    */
-  static getPort(fallback = 5002) {
+  static getPort(fallback = 5004) {
     return parseInt(this.get('PORT', fallback.toString()), 10) || fallback;
   }
 }

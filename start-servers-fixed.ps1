@@ -4,17 +4,17 @@
 Write-Host "Starting AkAsH Share with IPv4 Fix..." -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Cyan
 
-# Kill any existing processes using port 5002
+# Kill any existing processes using port 5004
 Write-Host "Stopping existing servers..." -ForegroundColor Yellow
-& ".\kill-port-5002.ps1"
+& ".\kill-port-5004.ps1"
 Start-Sleep 3
 
 # Start Backend Server with IPv4 binding
-Write-Host "Starting Backend Server (IPv4: 127.0.0.1:5002)..." -ForegroundColor Green
+Write-Host "Starting Backend Server (IPv4: 0.0.0.0:5004)..." -ForegroundColor Green
 $backendScript = @"
 Write-Host 'BACKEND SERVER - IPv4 FIXED' -ForegroundColor Green
 Set-Location 'D:\5th sem\project\akashshare-se\backend'
-`$env:HOST = '127.0.0.1'
+`$env:HOST = '0.0.0.0'
 node server.js
 "@
 
@@ -26,9 +26,9 @@ Start-Sleep 8
 
 # Verify backend is running on IPv4
 Write-Host "Verifying backend binding..." -ForegroundColor Yellow
-$netstat = netstat -an | findstr ":5002"
-if ($netstat -like "*127.0.0.1:5002*") {
-    Write-Host "SUCCESS: Backend correctly bound to IPv4 (127.0.0.1:5002)" -ForegroundColor Green
+$netstat = netstat -an | findstr ":5004"
+if ($netstat -like "*0.0.0.0:5004*") {
+    Write-Host "SUCCESS: Backend correctly bound to IPv4 (0.0.0.0:5004)" -ForegroundColor Green
 } else {
     Write-Host "ERROR: Backend not bound to IPv4! Check server logs." -ForegroundColor Red
 }
@@ -51,14 +51,14 @@ Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host "SUCCESS: SERVERS STARTED WITH IPv4 FIX!" -ForegroundColor Green
 Write-Host "=========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Frontend: " -NoNewline; Write-Host "http://localhost:5002" -ForegroundColor Cyan
-Write-Host "Backend:  " -NoNewline; Write-Host "http://127.0.0.1:5002" -ForegroundColor Cyan
-Write-Host "WebSocket: " -NoNewline; Write-Host "ws://127.0.0.1:5002/chat" -ForegroundColor Cyan
+Write-Host "Frontend: " -NoNewline; Write-Host "http://localhost:5004" -ForegroundColor Cyan
+Write-Host "Backend:  " -NoNewline; Write-Host "http://localhost:5004" -ForegroundColor Cyan
+Write-Host "WebSocket: " -NoNewline; Write-Host "ws://localhost:5004/chat" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "GROUP CHAT SHOULD NOW WORK!" -ForegroundColor Green
 Write-Host ""
 Write-Host "What to test:" -ForegroundColor Yellow
-Write-Host "1. Open http://localhost:5002 in browser"
+Write-Host "1. Open http://localhost:5004 in browser"
 Write-Host "2. Go to Group Chat section"
 Write-Host "3. Should show 'Connected' status"
 Write-Host "4. Try sending messages"

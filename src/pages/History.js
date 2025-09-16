@@ -170,7 +170,10 @@ const History = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="min-h-screen bg-black relative">
+      {/* Natural blur background effect */}
+      <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm"></div>
+      <div className="relative z-10 p-6 space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -470,6 +473,7 @@ const History = () => {
           </div>
         )}
       </motion.div>
+      </div>
     </div>
   );
 };

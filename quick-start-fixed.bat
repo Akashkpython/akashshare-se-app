@@ -12,11 +12,11 @@ taskkill /f /im node.exe >nul 2>&1
 timeout /t 3 >nul
 
 REM Set IPv4 environment
-set HOST=127.0.0.1
+set HOST=0.0.0.0
 
 REM Start Backend Server
-echo 🔧 Starting Backend Server (IPv4: 127.0.0.1:5002)...
-start "Backend Server" cmd /k "cd backend && set HOST=127.0.0.1 && node server.js"
+echo 🔧 Starting Backend Server (IPv4: 0.0.0.0:5004)...
+start "Backend Server" cmd /k "cd backend && set HOST=0.0.0.0 && node server.js"
 
 REM Wait for backend
 echo ⏳ Waiting for backend to start...
@@ -35,9 +35,9 @@ echo ========================================
 echo ✅ SERVERS STARTED!
 echo ========================================
 echo.
-echo 🌐 Frontend:  http://localhost:5002
-echo 🔧 Backend:   http://127.0.0.1:5002
-echo 💬 WebSocket: ws://127.0.0.1:5002/chat
+echo 🌐 Frontend:  http://localhost:5004
+echo 🔧 Backend:   http://localhost:5004
+echo 💬 WebSocket: ws://localhost:5004/chat
 echo.
 echo 🎯 GROUP CHAT SHOULD NOW WORK!
 echo.

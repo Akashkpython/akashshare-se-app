@@ -1,59 +1,73 @@
 @echo off
-echo ===============================================
-echo Akash Share - NSIS Installer Build Test
-echo ===============================================
+echo ================================================
+echo    Akash Share - Installer Builder
+echo ================================================
 echo.
 
-echo Step 1: Building React application...
-call npm run build
-if errorlevel 1 (
-    echo ERROR: React build failed!
-    pause
-    exit /b 1
-)
-echo React build completed successfully!
+echo Choose installation type:
+echo 1. System-wide installation (C:\Program Files\Akash Share)
+echo 2. User installation (%LOCALAPPDATA%\Programs\Akash Share)
+echo 3. Portable installation (Current directory)
+echo 4. Custom location
 echo.
 
-echo Step 2: Copying Electron files...
-call npm run electron:copy
-if errorlevel 1 (
-    echo ERROR: Electron copy failed!
-    pause
-    exit /b 1
-)
-echo Electron files copied successfully!
-echo.
+set /p choice="Enter your choice (1-4): "
 
-echo Step 3: Building NSIS installer...
-echo This will create an installer with:
-echo - License agreement (EULA) from license.txt
-echo - Password-protected uninstallation (Password: Varsha2005)
-echo.
-
-call npx electron-builder --win --publish=never
-if errorlevel 1 (
-    echo ERROR: NSIS installer build failed!
-    pause
-    exit /b 1
+if "%choice%"=="1" (
+    echo.
+    echo Building system-wide installer...
+    npm run build:win:custom
+    echo.
+    echo ✅ System-wide installer created successfully!
+    echo 📁 Installation location: C:\Program Files\Akash Share
+    echo 🔧 Requires: Administrator rights
+    goto end
 )
 
+if "%choice%"=="2" (
+    echo.
+    echo Building user installer...
+    npm run build:win:user
+    echo.
+    echo ✅ User installer created successfully!
+    echo 📁 Installation location: %LOCALAPPDATA%\Programs\Akash Share
+    echo 🔧 Requires: No administrator rights
+    goto end
+)
+
+if "%choice%"=="3" (
+    echo.
+    echo Building portable version...
+    npm run build:win:portable
+    echo.
+    echo ✅ Portable version created successfully!
+    echo 📁 Installation location: Current directory
+    echo 🔧 Requires: No installation, just extract and run
+    goto end
+)
+
+if "%choice%"=="4" (
+    echo.
+    set /p customPath="Enter custom installation path: "
+    echo.
+    echo Building custom installer for: %customPath%
+    npm run build && npm run electron:copy && electron-builder --win --config.nsis.installerDirectory="%customPath%" --publish=never
+    echo.
+    echo ✅ Custom installer created successfully!
+    echo 📁 Installation location: %customPath%
+    goto end
+)
+
+echo ❌ Invalid choice. Please run the script again and choose 1-4.
+
+:end
 echo.
-echo ===============================================
-echo SUCCESS: NSIS installer built successfully!
-echo ===============================================
+echo ================================================
+echo    Build completed!
+echo ================================================
 echo.
-echo The installer will be located in the 'dist' folder.
-echo.
-echo Features included:
-echo ✓ License agreement during installation
-echo ✓ Password protection during uninstallation
-echo ✓ Desktop and Start Menu shortcuts
-echo ✓ Custom branding and icons
-echo.
-echo To test the installer:
-echo 1. Run the .exe file from the dist folder
-echo 2. Accept the license agreement to install
-echo 3. To uninstall, use Windows Add/Remove Programs
-echo 4. Enter password "Varsha2005" when prompted
+echo 📦 Installer location: dist\
+echo 🚀 Ready for distribution!
 echo.
 pause
+

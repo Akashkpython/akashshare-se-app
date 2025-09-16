@@ -3,8 +3,9 @@
 
 Write-Host "Converting PNG to ICO for Windows installer..." -ForegroundColor Green
 
-# Check if the PNG file exists
-if (-not (Test-Path "icon.png")) {
+# Check if the PNG file exists in build-resources directory
+$iconPath = "build-resources\icon.png"
+if (-not (Test-Path $iconPath)) {
     Write-Host "❌ icon.png not found in build-resources directory!" -ForegroundColor Red
     Write-Host "Please copy your icon PNG file to build-resources/icon.png first" -ForegroundColor Yellow
     exit 1
@@ -26,7 +27,9 @@ Write-Host "⚠️  Creating placeholder ICO file..." -ForegroundColor Yellow
 Write-Host "   For a working installer, please convert PNG to ICO manually" -ForegroundColor Yellow
 
 # Copy PNG as ICO (this is just a placeholder - won't work properly)
-Copy-Item "icon.png" "icon.ico" -Force
+Copy-Item $iconPath "build-resources\icon.ico" -Force
+
+Write-Host "✅ Created icon.ico file" -ForegroundColor Green
 
 Write-Host ""
 Write-Host "📁 Files in build-resources:" -ForegroundColor Cyan

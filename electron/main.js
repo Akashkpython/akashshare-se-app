@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage, screen } from 'electron';
 import path from 'path';
-import { spawn, exec, execSync } from 'child_process';
+import { spawn, exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import http from 'http';
@@ -15,21 +15,40 @@ async function safeRequire(moduleName, fallback = null) {
   try {
     // For ES modules, we need to use dynamic imports
     const module = await import(moduleName);
-    console.log(`✅ Successfully loaded module: ${moduleName}`);
+    if (log && log.info) {
+      log.info(`✅ Successfully loaded module: ${moduleName}`);
+    } else {
+      console.log(`✅ Successfully loaded module: ${moduleName}`);
+    }
     return module.default || module;
   } catch (error) {
-    console.warn(`⚠️ Failed to load module: ${moduleName}`);
-    console.warn('Error details:', error.message);
-    console.warn('Error stack:', error.stack);
+    if (log && log.warn) {
+      log.warn(`⚠️ Failed to load module: ${moduleName}`);
+      log.warn('Error details:', error.message);
+      log.warn('Error stack:', error.stack);
+    } else {
+      console.warn(`⚠️ Failed to load module: ${moduleName}`);
+      console.warn('Error details:', error.message);
+      console.warn('Error stack:', error.stack);
+    }
     
     // Additional debugging for electron-log specifically
     if (moduleName === 'electron-log') {
       try {
         const modulePath = path.join(__dirname, '../node_modules/electron-log');
-        console.warn('Checking module path:', modulePath);
-        console.warn('Module exists:', fs.existsSync(modulePath));
+        if (log && log.warn) {
+          log.warn('Checking module path:', modulePath);
+          log.warn('Module exists:', fs.existsSync(modulePath));
+        } else {
+          console.warn('Checking module path:', modulePath);
+          console.warn('Module exists:', fs.existsSync(modulePath));
+        }
       } catch (pathError) {
-        console.warn('Error checking module path:', pathError.message);
+        if (log && log.warn) {
+          log.warn('Error checking module path:', pathError.message);
+        } else {
+          console.warn('Error checking module path:', pathError.message);
+        }
       }
     }
     
@@ -88,7 +107,11 @@ try {
     autoUpdater = null;
   }
 } catch (error) {
-  console.error('Error loading electron-log:', error);
+  if (log && log.error) {
+    log.error('Error loading electron-log:', error);
+  } else {
+    console.error('Error loading electron-log:', error);
+  }
 }
 
 // Create a mock autoUpdater that does nothing but logs if electron-updater is not available
@@ -190,6 +213,16 @@ if (isDev) {
   }
 }
 
+// Function to check if React dev server is ready
+async function checkReactDevServer() {
+  try {
+    const response = await fetch('http://localhost:5004');
+    return response.ok;
+  } catch (error) {
+    return false;
+  }
+}
+
 // Function to create the main window
 function createWindow() {
   // Get screen size to set appropriate window dimensions
@@ -200,27 +233,30 @@ function createWindow() {
   const windowWidth = Math.max(Math.min(Math.floor(width * 0.8), 1400), 800);
   const windowHeight = Math.max(Math.min(Math.floor(height * 0.8), 900), 600);
 
-  const mainWindow = new BrowserWindow({
-    width: windowWidth,
-    height: windowHeight,
-    minWidth: 800,
-    minHeight: 600,
-    backgroundColor: '#0f0f0f',
-    // Add title bar with window controls
-    frame: true, // Enable window frame for minimize/maximize/close buttons
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      enableRemoteModule: false,
-      nodeIntegration: false,
-      sandbox: false, // Required for some Electron functionality
-      // Add performance optimizations
-      devTools: isDev, // Only enable dev tools in development
-      backgroundThrottling: false, // Prevent throttling when window is not focused
-    },
-    // Add window icon for Windows
-    icon: path.join(__dirname, '../public/Akashshareicon.png')
-  });
+    const mainWindow = new BrowserWindow({
+      width: windowWidth,
+      height: windowHeight,
+      minWidth: 800,
+      minHeight: 600,
+      backgroundColor: '#0f0f0f',
+      // Use custom title bar with window controls
+      frame: false,
+      titleBarStyle: 'hidden',
+      webPreferences: {
+        preload: app.isPackaged 
+          ? path.join(process.resourcesPath, 'preload.js')
+          : path.join(__dirname, 'preload.js'),
+        contextIsolation: true,
+        enableRemoteModule: false,
+        nodeIntegration: false,
+        sandbox: false, // Required for some Electron functionality
+        // Add performance optimizations
+        devTools: isDev, // Only enable dev tools in development
+        backgroundThrottling: false, // Prevent throttling when window is not focused
+      },
+      // Add window icon for Windows
+      icon: path.join(__dirname, '../public/Akashshareicon.png')
+    });
 
   // Remove default menu bar
   mainWindow.setMenuBarVisibility(false);
@@ -230,16 +266,68 @@ function createWindow() {
   log.info(`⏱️ BrowserWindow created in ${windowCreateTime - startTime}ms with dimensions ${windowWidth}x${windowHeight}`);
 
   // Load the appropriate URL based on the environment
-  // Always use port 5002 for frontend in Electron dev mode
   const startUrl = isDev 
-    ? 'http://localhost:5002'  // React dev server
+    ? 'http://localhost:5004'  // React dev server on port 5004
     : `file://${path.join(__dirname, '../build/index.html')}`; // Production build
 
-  mainWindow.loadURL(startUrl);
+  console.log(`🌐 Loading URL: ${startUrl}`);
+  console.log(`🔧 Is Development: ${isDev}`);
+  console.log(`📦 Is Packaged: ${app.isPackaged}`);
+  
+  // Wait for React dev server to be ready before loading
+  const waitForReactDevServer = async () => {
+    if (isDev) {
+      console.log('🔍 Checking if React dev server is ready...');
+      let attempts = 0;
+      const maxAttempts = 10;
+      const checkDelay = 1000; // 1 second
+      
+      while (attempts < maxAttempts) {
+        const isReady = await checkReactDevServer();
+        if (isReady) {
+          console.log('✅ React dev server is ready!');
+          break;
+        }
+        attempts++;
+        console.log(`⏳ React dev server not ready yet (attempt ${attempts}/${maxAttempts}), waiting ${checkDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, checkDelay));
+      }
+      
+      if (attempts >= maxAttempts) {
+        console.error('❌ React dev server is not responding. Please start it with: npm start');
+        log.error('❌ React dev server is not responding. Please start it with: npm start');
+      }
+    }
+    
+    // Load the URL
+    mainWindow.loadURL(startUrl).catch((error) => {
+      console.error('❌ Failed to load URL:', error);
+      log.error('❌ Failed to load URL:', error);
+    });
+  };
+  
+  waitForReactDevServer();
   
   // Performance tracking
   const loadUrlTime = Date.now();
   log.info(`⏱️ URL loading started in ${loadUrlTime - windowCreateTime}ms`);
+
+  // Handle page load events
+  mainWindow.webContents.on('did-finish-load', () => {
+    console.log('✅ Page finished loading');
+    log.info('✅ Page finished loading successfully');
+  });
+
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.error(`❌ Page failed to load: ${errorCode} - ${errorDescription}`);
+    console.error(`❌ Failed URL: ${validatedURL}`);
+    log.error(`❌ Page failed to load: ${errorCode} - ${errorDescription} - URL: ${validatedURL}`);
+  });
+
+  mainWindow.webContents.on('did-start-loading', () => {
+    console.log('🔄 Page started loading...');
+    log.info('🔄 Page started loading...');
+  });
 
   // Handle navigation to external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -294,15 +382,56 @@ async function ensureBackendDependencies() {
 
     log.info(`🔧 Checking backend dependencies in: ${backendDir}`);
 
-    // In a packaged app, dependencies should already be installed
+    // In a packaged app, check if dependencies are installed and install if needed
     if (app.isPackaged) {
       if (fs.existsSync(nodeModulesPath)) {
         log.info('✅ Backend dependencies already installed in packaged app');
         return true;
       } else {
-        log.warn('⚠️ Backend dependencies not found in packaged app. This might cause issues.');
-        // In packaged apps, we can't install dependencies, so we'll continue anyway
-        return true;
+        log.warn('⚠️ Backend dependencies not found in packaged app. Attempting to install...');
+        
+        // Try to install backend dependencies using npm install directly
+        try {
+          log.info('🔧 Installing backend dependencies in packaged app...');
+          
+          // Use spawn to run npm install in the backend directory
+          const npmInstall = spawn('npm', ['install', '--production'], {
+            cwd: backendDir,
+            stdio: 'pipe',
+            shell: true
+          });
+          
+          // Capture output
+          let stdout = '';
+          let stderr = '';
+          
+          npmInstall.stdout.on('data', (data) => {
+            stdout += data.toString();
+          });
+          
+          npmInstall.stderr.on('data', (data) => {
+            stderr += data.toString();
+          });
+          
+          // Wait for the process to complete
+          const exitCode = await new Promise((resolve) => {
+            npmInstall.on('close', resolve);
+          });
+          
+          if (stdout) log.info(`[npm install stdout] ${stdout}`);
+          if (stderr) log.warn(`[npm install stderr] ${stderr}`);
+          
+          if (exitCode === 0) {
+            log.info('✅ Backend dependencies installed successfully in packaged app');
+            return true;
+          } else {
+            log.error('❌ Failed to install backend dependencies in packaged app. Exit code:', exitCode);
+            return false;
+          }
+        } catch (installError) {
+          log.error('❌ Failed to install backend dependencies in packaged app:', installError.message);
+          return false;
+        }
       }
     }
 
@@ -409,10 +538,10 @@ async function ensureBackendEnv() {
         
         // Create a minimal .env file with required variables
         const minimalEnv = `# Auto-generated .env file - SECURITY WARNING: Update these values!
-MONGO_URI=mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/YOUR_DATABASE?retryWrites=true&w=majority
-PORT=5003
+MONGO_URI=mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
+PORT=5004
 HOST=0.0.0.0
-JWT_SECRET=YOUR_JWT_SECRET_HERE_GENERATE_WITH_CRYPTO_RANDOM_BYTES
+JWT_SECRET=f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09
 NODE_ENV=production
 `;
         fs.writeFileSync(envPath, minimalEnv);
@@ -446,8 +575,8 @@ NODE_ENV=production
 async function checkIfBackendIsRunning() {
   return new Promise((resolve) => {
     const options = {
-      hostname: '127.0.0.1', // Use IPv4 explicitly to avoid ::1 binding issues
-      port: 5003,
+      hostname: 'localhost',
+      port: 5004,
       path: '/health',
       method: 'GET',
       timeout: 3000
@@ -491,32 +620,96 @@ async function checkIfBackendIsRunning() {
   });
 }
 
-// Add this function to kill processes on the specified port
+// Enhanced function to kill processes on port 5004 with better error handling
 async function killPortProcess(port) {
+  log.info(`🔧 Checking for processes using port ${port}...`);
+  
   if (process.platform === 'win32') {
     try {
       // Find processes using the port
+      const { execSync } = require('child_process');
       const cmd = `netstat -ano | findstr :${port}`;
-      const result = execSync(cmd, { encoding: 'utf8' });
+      const result = execSync(cmd, { encoding: 'utf8', timeout: 5000 });
       
-      const lines = result.split('\n');
+      const lines = result.split('\n').filter(line => line.trim());
+      let processesKilled = 0;
+      
       for (const line of lines) {
-        if (line.includes(`:${port}`)) {
+        if (line.includes(`:${port}`) && line.includes('LISTENING')) {
           const parts = line.trim().split(/\s+/);
           const pid = parts[parts.length - 1];
-          if (pid && !isNaN(pid)) {
-            log.info(`🔧 Killing process ${pid} using port ${port}`);
+          if (pid && !isNaN(pid) && pid !== '0') {
+            log.info(`🔧 Found process ${pid} using port ${port}`);
             try {
-              execSync(`taskkill /PID ${pid} /F`, { stdio: 'ignore' });
-              log.info(`✅ Successfully killed process ${pid}`);
-            } catch (killError) {
-              log.warn(`⚠️ Failed to kill process ${pid}:`, killError.message);
+              // Try graceful termination first
+              execSync(`taskkill /PID ${pid}`, { timeout: 3000 });
+              log.info(`✅ Gracefully terminated process ${pid}`);
+              processesKilled++;
+            } catch (gracefulError) {
+              // If graceful termination fails, force kill
+              try {
+                execSync(`taskkill /PID ${pid} /F`, { timeout: 3000 });
+                log.info(`✅ Force killed process ${pid}`);
+                processesKilled++;
+              } catch (forceError) {
+                log.warn(`⚠️ Failed to kill process ${pid}:`, forceError.message);
+              }
             }
           }
         }
       }
+      
+      if (processesKilled > 0) {
+        log.info(`✅ Killed ${processesKilled} process(es) using port ${port}`);
+        // Wait a moment for the port to be freed
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        log.info(`✅ Port ${port} is already free.`);
+      }
     } catch (error) {
-      log.warn(`⚠️ Error checking/killing processes on port ${port}:`, error.message);
+      // This error is expected if no process is using the port
+      log.info(`✅ Port ${port} is already free or no processes found.`);
+    }
+  } else {
+    // Add support for macOS and Linux
+    try {
+      const { execSync } = require('child_process');
+      const cmd = `lsof -i :${port} -t`;
+      const result = execSync(cmd, { encoding: 'utf8', timeout: 5000 });
+      const pids = result.split('\n').filter(pid => pid && !isNaN(pid));
+      
+      if (pids.length > 0) {
+        log.info(`🔧 Found ${pids.length} process(es) using port ${port}`);
+        
+        for (const pid of pids) {
+          log.info(`🔧 Killing process ${pid} using port ${port}`);
+          try {
+            // Try graceful termination first
+            process.kill(pid, 'SIGTERM');
+            // Wait a moment for graceful termination
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Check if process is still running
+            try {
+              process.kill(pid, 0); // This will throw if process doesn't exist
+              // Process still exists, force kill
+              process.kill(pid, 'SIGKILL');
+              log.info(`✅ Force killed process ${pid}`);
+            } catch (checkError) {
+              log.info(`✅ Gracefully terminated process ${pid}`);
+            }
+          } catch (killError) {
+            log.warn(`⚠️ Failed to kill process ${pid}:`, killError.message);
+          }
+        }
+        
+        // Wait a moment for the port to be freed
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      } else {
+        log.info(`✅ Port ${port} is already free.`);
+      }
+    } catch (error) {
+      log.info(`✅ Port ${port} is already free or no processes found.`);
     }
   }
 }
@@ -526,18 +719,26 @@ async function createBackendProcess() {
   log.info('🔧 Starting backend server process...');
   const backendStartTime = Date.now();
   
-  // Check if backend is already running on port 5003
+  // Check if backend is already running on port 5004
   const isBackendRunning = await checkIfBackendIsRunning();
   if (isBackendRunning) {
-    log.info('✅ Backend server is already running on port 5003, skipping startup');
+    log.info('✅ Backend server is already running on port 5004, using existing instance');
     return Promise.resolve(null);
   }
   
-  // Try to kill any process using port 5003
-  await killPortProcess(5003);
+  // Try to kill any process using port 5004
+  log.info('🔧 Ensuring port 5004 is available...');
+  await killPortProcess(5004);
   
   // Wait a moment for the port to be freed
   await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // Double-check that the port is now free
+  const isStillRunning = await checkIfBackendIsRunning();
+  if (isStillRunning) {
+    log.info('✅ Backend server is already running on port 5004, using existing instance');
+    return Promise.resolve(null);
+  }
   
   // Ensure backend dependencies are installed
   const depsInstalled = await ensureBackendDependencies();
@@ -561,6 +762,7 @@ async function createBackendProcess() {
     backendDir = path.join(process.resourcesPath, 'backend');
     backendPath = path.join(backendDir, 'server.js');
     log.info(`📦 Running in packaged mode. Backend dir: ${backendDir}`);
+    log.info(`📦 Resources path: ${process.resourcesPath}`);
   } else {
     // In development, backend is in the backend directory relative to project root
     backendDir = path.join(__dirname, '../backend');
@@ -611,12 +813,12 @@ async function createBackendProcess() {
       // Inject parsed backend env (if any)
       ...backendEnvCache,
       // Ensure these are set explicitly
-      NODE_ENV: 'production', // Always use production for Electron packaged app
-      PORT: '5003',
-      HOST: 'localhost',
+      NODE_ENV: isDev ? 'development' : 'production',
+      PORT: backendEnvCache.PORT || process.env.PORT || '5004',
+      HOST: backendEnvCache.HOST || '0.0.0.0',
       // Add additional environment variables for better debugging
-      DEBUG: 'false',
-      LOG_LEVEL: 'info'
+      DEBUG: isDev ? '*' : undefined,
+      LOG_LEVEL: isDev ? 'debug' : 'info'
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     // Add process options for better stability
@@ -671,7 +873,7 @@ async function createBackendProcess() {
     } else if (error.code === 'EACCES') {
       log.error('❌ Permission denied. Please check file permissions.');
     } else if (error.code === 'EADDRINUSE') {
-      log.error('❌ Port 5003 is already in use. Please check for conflicting processes.');
+      log.error('❌ Port 5004 is already in use. Please check for conflicting processes.');
     } else {
       log.error(`❌ Unexpected error starting backend: ${error.message}`);
     }
@@ -715,7 +917,7 @@ async function createBackendProcess() {
           output.includes('Server started') || 
           output.includes('Listening on port') ||
           output.includes('WebSocket server is listening') ||
-          output.includes('🚀 Server running')) {
+          output.includes('🚀 Server running on')) {
         backendStarted = true;
         log.info('✅ Backend server confirmed running');
         
@@ -736,7 +938,7 @@ async function createBackendProcess() {
         log.error('❌ Backend server startup timeout. The backend process did not start in time.');
         log.error('❌ This could be due to:');
         log.error('   - Missing dependencies (run npm install in backend directory)');
-        log.error('   - Port 5003 already in use');
+        log.error('   - Port 5004 already in use');
         log.error('   - MongoDB connection issues');
         log.error('   - Invalid environment configuration');
         
@@ -890,24 +1092,39 @@ app.whenReady().then(async () => {
     log.info('🔧 Initializing backend server...');
     backendProcess = await createBackendProcess();
     
-    // Wait for backend to be confirmed running before starting frontend
+    // Wait for backend to be fully ready
     if (backendProcess) {
       log.info('⏳ Waiting for backend server to initialize...');
-      // The createBackendProcess function already waits for startup confirmation
-      log.info('✅ Backend server initialization complete');
-    } else {
-      // Backend might already be running
-      const isBackendRunning = await checkIfBackendIsRunning();
-      if (!isBackendRunning) {
-        log.error('❌ Backend server failed to start and is not running');
-        // We'll continue anyway to allow frontend to start
-      } else {
-        log.info('✅ Backend server is already running');
+      
+      // Wait for backend to be ready with health checks
+      let backendReady = false;
+      let attempts = 0;
+      const maxAttempts = 20; // 20 attempts = 20 seconds max
+      
+      while (!backendReady && attempts < maxAttempts) {
+        try {
+          const response = await fetch('http://localhost:5004/health');
+          if (response.ok) {
+            backendReady = true;
+            log.info('✅ Backend server is ready and responding!');
+          }
+        } catch (error) {
+          // Backend not ready yet, continue waiting
+        }
+        
+        if (!backendReady) {
+          attempts++;
+          log.info(`⏳ Backend not ready yet (attempt ${attempts}/${maxAttempts}), waiting...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
+      
+      if (!backendReady) {
+        log.warn('⚠️ Backend server may not be fully ready, but continuing...');
+      }
+      
+      log.info('✅ Backend server initialization complete');
     }
-    
-    // Add a small delay to ensure backend is fully ready
-    await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Now create the main window
     mainWindow = createWindow();
@@ -1015,54 +1232,6 @@ ipcMain.handle('get-app-version', () => {
   }
 });
 
-// Window control handlers with performance tracking
-ipcMain.handle('window-minimize', () => {
-  if (mainWindow) {
-    try {
-      const minimizeStartTime = Date.now();
-      mainWindow.minimize();
-      console.log(`⏱️ Window minimized in ${Date.now() - minimizeStartTime}ms`);
-    } catch (error) {
-      console.error('❌ Error minimizing window:', error);
-    }
-  } else {
-    console.warn('⚠️ No main window to minimize');
-  }
-});
-
-ipcMain.handle('window-maximize', () => {
-  if (mainWindow) {
-    try {
-      const maximizeStartTime = Date.now();
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-        console.log(`⏱️ Window unmaximized in ${Date.now() - maximizeStartTime}ms`);
-      } else {
-        mainWindow.maximize();
-        console.log(`⏱️ Window maximized in ${Date.now() - maximizeStartTime}ms`);
-      }
-    } catch (error) {
-      console.error('❌ Error (un)maximizing window:', error);
-    }
-  } else {
-    console.warn('⚠️ No main window to (un)maximize');
-  }
-});
-
-ipcMain.handle('window-close', () => {
-  if (mainWindow) {
-    try {
-      const closeStartTime = Date.now();
-      mainWindow.hide(); // Hide instead of close to keep app running in tray
-      console.log(`⏱️ Window hidden in ${Date.now() - closeStartTime}ms`);
-    } catch (error) {
-      console.error('❌ Error hiding window:', error);
-    }
-  } else {
-    console.warn('⚠️ No main window to hide');
-  }
-});
-
 // Auto-update IPC handlers
 ipcMain.handle('check-for-updates', async () => {
   if (!isDev) {
@@ -1116,4 +1285,71 @@ ipcMain.handle('get-platform', () => {
     return 'unknown';
   }
 });
+
+// Window control handlers with performance tracking
+ipcMain.handle('window-minimize', () => {
+  if (mainWindow) {
+    try {
+      const minimizeStartTime = Date.now();
+      mainWindow.minimize();
+      console.log(`⏱️ Window minimized in ${Date.now() - minimizeStartTime}ms`);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error minimizing window:', error);
+      return { success: false, error: error.message };
+    }
+  } else {
+    console.warn('⚠️ No main window to minimize');
+    return { success: false, error: 'No main window' };
+  }
+});
+
+ipcMain.handle('window-maximize', () => {
+  if (mainWindow) {
+    try {
+      const maximizeStartTime = Date.now();
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+        console.log(`⏱️ Window unmaximized in ${Date.now() - maximizeStartTime}ms`);
+        return { success: true, maximized: false };
+      } else {
+        mainWindow.maximize();
+        console.log(`⏱️ Window maximized in ${Date.now() - maximizeStartTime}ms`);
+        return { success: true, maximized: true };
+      }
+    } catch (error) {
+      console.error('❌ Error (un)maximizing window:', error);
+      return { success: false, error: error.message };
+    }
+  } else {
+    console.warn('⚠️ No main window to (un)maximize');
+    return { success: false, error: 'No main window' };
+  }
+});
+
+ipcMain.handle('window-close', () => {
+  if (mainWindow) {
+    try {
+      const closeStartTime = Date.now();
+      // In a packaged app, we want to hide the window but keep the app running in the tray
+      // In development, we can close the window
+      if (app.isPackaged) {
+        mainWindow.hide(); // Hide instead of close to keep app running in tray
+        console.log(`⏱️ Window hidden in ${Date.now() - closeStartTime}ms`);
+        return { success: true, action: 'hidden' };
+      } else {
+        mainWindow.close();
+        console.log(`⏱️ Window closed in ${Date.now() - closeStartTime}ms`);
+        return { success: true, action: 'closed' };
+      }
+    } catch (error) {
+      console.error('❌ Error closing/hiding window:', error);
+      return { success: false, error: error.message };
+    }
+  } else {
+    console.warn('⚠️ No main window to close/hide');
+    return { success: false, error: 'No main window' };
+  }
+});
+
 })();

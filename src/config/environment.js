@@ -82,46 +82,45 @@ const environment = {
 
   // Computed values
   get baseApiUrl() {
+    // Always prefer localhost:5004 for local development and Electron
+    if (this.isDevelopment) {
+      return 'http://localhost:5004';
+    }
+
+    // Prefer local backend in packaged/Electron
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+      return 'http://localhost:5004';
+    }
+
+    // Use explicit API URL if set
     if (this.apiUrl) {
       return this.apiUrl;
     }
 
-    // In Electron/Production mode, use localhost for the backend
-    if (this.isProduction || (typeof window !== 'undefined' && window.location.protocol === 'file:')) {
-      return 'http://localhost:5003';
-    }
-
-    // Development fallback - use localhost:5003
-    return 'http://localhost:5003';
+    // Production web deployment fallback (Render)
+    return 'https://akashshare-se-backend.onrender.com';
   },
 
   // Get dynamic WebSocket URL based on current context
   getWebSocketUrl: (username, room) => {
-    // If we have an explicit API URL, use it
+    // Always prefer localhost:5004 for local development and Electron
+    if (environment.isDevelopment) {
+      return `ws://localhost:5004/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    }
+
+    // Prefer local ws in Electron
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+      return `ws://localhost:5004/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    }
+
+    // Use explicit API URL if set
     if (environment.apiUrl) {
       const wsUrl = environment.apiUrl.replace(/^http/, 'ws');
       return `${wsUrl}/chat?username=${encodeURIComponent(username)}&room=${room}`;
     }
 
-    // In Electron or production (distributed app), use localhost:5003
-    if (environment.isProduction || (typeof window !== 'undefined' && window.location.protocol === 'file:')) {
-      // For Electron apps, we need to ensure we're using the correct localhost address
-      // Always use localhost:5003 for Electron apps
-      // Add additional debugging for distributed app
-      console.log('🔧 Using WebSocket URL for distributed app:', `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`);
-      return `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`;
-    }
-
-    // Development mode - use localhost:5003
-    // Explicitly handle development mode to ensure correct URL
-    if (environment.isDevelopment) {
-      console.log('🔧 Using WebSocket URL for development:', `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`);
-      return `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`;
-    }
-
-    // Fallback to localhost with additional logging
-    console.log('🔧 Using fallback WebSocket URL:', `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`);
-    return `ws://localhost:5003/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    // Production web fallback (Render)
+    return `wss://akashshare-se-backend.onrender.com/chat?username=${encodeURIComponent(username)}&room=${room}`;
   }
 };
 
@@ -132,18 +131,18 @@ environment.getApiBaseUrl = () => {
     return environment.apiUrl;
   }
   
-  // For Electron apps, always use localhost:5003
+  // For Electron apps, always use localhost:5004
   if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-    return 'http://localhost:5003';
+    return 'http://localhost:5004';
   }
   
-  // In development, use localhost:5003
+  // In development, use localhost:5004
   if (environment.isDevelopment) {
-    return 'http://localhost:5003';
+    return 'http://localhost:5004';
   }
   
   // Production fallback
-  return 'http://localhost:5003';
+  return 'http://localhost:5004';
 };
 
 export { environment };

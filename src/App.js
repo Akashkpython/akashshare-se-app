@@ -7,6 +7,10 @@ import performanceMonitor from './lib/performance.js';
 import securityManager from './lib/security.js';
 import optimizationManager from './lib/optimization.js';
 
+// Test Electron API exposure
+// import './test-electron-api.js';
+// import './test-electron-api-simple.js';
+
 // Components
 import Sidebar from './components/layout/Sidebar.js';
 import Header from './components/layout/Header.js';
@@ -190,7 +194,7 @@ function AppContent() {
     // Initialize security policies
     const csp = securityManager.createCSP({
       allowInline: process.env.NODE_ENV === 'development',
-      allowedDomains: ['localhost:5002']
+      allowedDomains: ['localhost:5004', '127.0.0.1:5004']
     });
     
     // Apply CSP to document
@@ -226,15 +230,17 @@ function AppContent() {
 
   // Optimized theme application with memoization
   const themeClasses = useMemo(() => {
-    return theme === 'dark' ? 'dark' : '';
-  }, [theme]);
+    // Always use dark theme as requested
+    return 'dark';
+  }, []);
 
   useEffect(() => {
     // Apply theme to document with optimization
     optimizationManager.batchDOMUpdates(() => {
-      document.documentElement.classList.toggle('dark', theme === 'dark');
+      // Always use dark theme as requested
+      document.documentElement.classList.add('dark');
     });
-  }, [theme]);
+  }, []);
 
   // Enhanced route change tracking with performance monitoring
   const handleRouteChange = useCallback(() => {

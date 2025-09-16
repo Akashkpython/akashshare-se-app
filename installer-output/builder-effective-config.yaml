@@ -1,0 +1,28 @@
+directories:
+  output: installer-output
+  buildResources: assets
+files:
+  - filter:
+      - build/**/*
+      - dist-final/Akash Share-win32-x64/**/*
+extraMetadata:
+  main: build/electron.js
+appId: com.akashshare.app
+productName: Akash Share
+copyright: Copyright © 2024 Akash Share Team
+win:
+  target: nsis
+  icon: build-resources/icon.ico
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Akash Share
+  installerIcon: build-resources/icon.ico
+  uninstallerIcon: build-resources/icon.ico
+  deleteAppDataOnUninstall: false
+  artifactName: AkashShareUserSetup-x64.exe
+extends: react-cra
+electronVersion: 28.3.3

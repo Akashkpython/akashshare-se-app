@@ -1,18 +1,12 @@
 import environment from '../config/environment.js';
 import performanceMonitor from './performance.js';
 
-// Dynamic API URL configuration with security improvements
-const getApiBaseUrl = () => {
-  // In Electron environment, always use localhost:5002
-  if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-    return 'http://localhost:5002';
-  }
-  
-  // Use environment configuration
+
+// Make API_BASE_URL dynamic to handle Electron environment changes
+const getDynamicApiBaseUrl = () => {
+  console.log('🔧 Using environment base API URL in API:', environment.baseApiUrl);
   return environment.baseApiUrl;
 };
-
-const API_BASE_URL = getApiBaseUrl();
 
 // Format bytes to human readable format
 const formatBytes = (bytes, decimals = 2) => {
@@ -40,6 +34,14 @@ export const api = {
     performanceMonitor.start('file-upload');
     
     try {
+      const API_BASE_URL = getDynamicApiBaseUrl();
+      console.log('🔍 Upload API Debug Info:');
+      console.log('  - API_BASE_URL:', API_BASE_URL);
+      console.log('  - Window protocol:', typeof window !== 'undefined' ? window.location.protocol : 'undefined');
+      console.log('  - Full upload URL:', `${API_BASE_URL}/upload`);
+      console.log('  - File name:', file.name);
+      console.log('  - File size:', file.size);
+      
       const formData = new FormData();
       formData.append('file', file);
       
@@ -98,14 +100,29 @@ export const api = {
       };
     } catch (error) {
       performanceMonitor.end('file-upload');
-      console.error('Upload error:', error);
+      console.error('❌ Upload error:', error);
+      const API_BASE_URL = getDynamicApiBaseUrl();
+      console.error('❌ Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        apiBaseUrl: API_BASE_URL,
+        uploadUrl: `${API_BASE_URL}/upload`,
+        windowProtocol: typeof window !== 'undefined' ? window.location.protocol : 'undefined'
+      });
       
       if (error.name === 'AbortError') {
         throw new Error('Upload timed out. Please check your network connection and try again.');
       }
       
       if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        throw new Error('Cannot connect to server. Please check if the backend is running on port 5002.');
+        const API_BASE_URL = getDynamicApiBaseUrl();
+        console.error('❌ Fetch error details:', {
+          apiBaseUrl: API_BASE_URL,
+          endpoint: `${API_BASE_URL}/upload`,
+          error: error.message
+        });
+        throw new Error('Cannot connect to server. Please check if the backend is running on port 5004.');
       }
       
       throw error;
@@ -117,6 +134,7 @@ export const api = {
     performanceMonitor.start('file-download');
     
     try {
+      const API_BASE_URL = getDynamicApiBaseUrl();
       const startTime = performance.now();
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -167,7 +185,13 @@ export const api = {
       }
       
       if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        throw new Error('Cannot connect to server. Please check if the backend is running on port 5002.');
+        const API_BASE_URL = getDynamicApiBaseUrl();
+        console.error('❌ Fetch error details:', {
+          apiBaseUrl: API_BASE_URL,
+          endpoint: `${API_BASE_URL}/download/${code}`,
+          error: error.message
+        });
+        throw new Error('Cannot connect to server. Please check if the backend is running on port 5004.');
       }
       
       throw error;
@@ -177,6 +201,7 @@ export const api = {
   // Health check with caching
   healthCheck: async () => {
     try {
+      const API_BASE_URL = getDynamicApiBaseUrl();
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
@@ -202,6 +227,12 @@ export const api = {
       }
       
       if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+        const API_BASE_URL = getDynamicApiBaseUrl();
+        console.error('❌ Fetch error details:', {
+          apiBaseUrl: API_BASE_URL,
+          endpoint: `${API_BASE_URL}/health`,
+          error: error.message
+        });
         throw new Error('Cannot connect to backend server');
       }
       

@@ -3,23 +3,27 @@
 
 [Setup]
 AppName=AkAsH Share
-AppVersion=1.0
-DefaultDirName={pf}\AkAsH Share
+AppVersion=1.0.5
+DefaultDirName={localappdata}\Programs\AkAsH Share
 DefaultGroupName=AkAsH Share
-UninstallDisplayIcon={app}\Akashshareicon.png
+UninstallDisplayIcon={app}\resources\app.asar.unpacked\build-resources\icon.ico
 Compression=lzma2
 SolidCompression=yes
-OutputDir=.
+OutputDir=dist
 OutputBaseFilename=AkAsH Share Setup
-SetupIconFile=public\Akashshareicon.ico
+SetupIconFile=build-resources\icon.ico
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
 
 [Files]
-; Add your application files here
-; Source: "dist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Application files
+Source: "dist\build\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\build\backend\*"; DestDir: "{app}\backend"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\AkAsH Share"; Filename: "{app}\AkAsH Share.exe"
+Name: "{group}\AkAsH Share"; Filename: "{app}\Akash Share.exe"
 Name: "{group}\Uninstall AkAsH Share"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\AkAsH Share"; Filename: "{app}\Akash Share.exe"
 
 [Code]
 var

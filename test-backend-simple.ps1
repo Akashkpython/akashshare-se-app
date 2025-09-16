@@ -2,15 +2,15 @@
 Write-Host "Testing AkAsH Share Backend..." -ForegroundColor Green
 Write-Host "============================" -ForegroundColor Cyan
 
-# Check if port 5002 is free
-Write-Host "Checking port 5002..." -ForegroundColor Yellow
-$portInUse = netstat -ano | findstr ":5002"
+# Check if port 5004 is free
+Write-Host "Checking port 5004..." -ForegroundColor Yellow
+$portInUse = netstat -ano | findstr ":5004"
 if ($portInUse) {
-    Write-Host "Port 5002 in use, killing processes..." -ForegroundColor Red
+    Write-Host "Port 5004 in use, killing processes..." -ForegroundColor Red
     & ".\kill-port-5002.ps1"
     Start-Sleep 3
 } else {
-    Write-Host "Port 5002 is free" -ForegroundColor Green
+    Write-Host "Port 5004 is free" -ForegroundColor Green
 }
 
 # Start backend server
@@ -30,7 +30,7 @@ if ($backendRunning) {
 # Test health endpoint
 Write-Host "Testing health endpoint..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://127.0.0.1:5002/health" -TimeoutSec 5
+    $response = Invoke-WebRequest -Uri "http://127.0.0.1:5004/health" -TimeoutSec 5
     if ($response.StatusCode -eq 200) {
         Write-Host "Health check passed (IPv4)" -ForegroundColor Green
     } else {
@@ -40,7 +40,7 @@ try {
     Write-Host "Health check failed (IPv4): $($_.Exception.Message)" -ForegroundColor Red
     # Try localhost
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:5002/health" -TimeoutSec 5
+        $response = Invoke-WebRequest -Uri "http://localhost:5004/health" -TimeoutSec 5
         if ($response.StatusCode -eq 200) {
             Write-Host "Health check passed (localhost)" -ForegroundColor Green
         } else {
@@ -66,14 +66,14 @@ try {
 
 # Check listening ports
 Write-Host "Checking listening ports..." -ForegroundColor Yellow
-$listeningPorts = netstat -ano | findstr ":5002"
+$listeningPorts = netstat -ano | findstr ":5004"
 if ($listeningPorts) {
-    Write-Host "Ports listening on 5002:" -ForegroundColor Cyan
+    Write-Host "Ports listening on 5004:" -ForegroundColor Cyan
     foreach ($line in $listeningPorts) {
         Write-Host "   $line" -ForegroundColor White
     }
 } else {
-    Write-Host "No ports listening on 5002" -ForegroundColor Red
+    Write-Host "No ports listening on 5004" -ForegroundColor Red
 }
 
 # Cleanup

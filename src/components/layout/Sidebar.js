@@ -116,6 +116,8 @@ const Sidebar = () => {
             className="w-10 h-10 object-contain rounded-full"
             onError={(e) => {
               console.error('Failed to load logo:', e);
+              // Try alternative path
+              e.target.src = './public/Akashshareicon.png';
               // Fallback to gradient icon if image fails to load
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';

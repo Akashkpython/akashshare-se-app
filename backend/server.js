@@ -1,3 +1,4 @@
+import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import express from "express";
@@ -11,26 +12,29 @@ import mongoose from "mongoose";
 import connectToMongoDB from "./mongo-connection.js";
 import { validateFile, sanitizeFilename } from "./utils/fileValidation.js";
 // Rate limiting functions are now used in group.js module
-// DISABLED AI WebSocket system to prevent conflicts
-// import { initializeGroupChat, getChatClients, getRooms, getRoomHistory, summarizeMessages } from "./utils/aiWebSocket.js";
+import { initializeGroupChat, getChatClients } from "./utils/group.js";
 import { 
   asyncErrorHandler, 
   globalErrorHandler, 
   setupGlobalErrorHandlers, 
   validateEnvironment 
 } from "./utils/errorHandler.js";
-import backendPerformanceManager from "./utils/performance.js";
 import backendSecurityManager from "./utils/security.js";
-import memoryMonitor from "./utils/memoryMonitor.js";
-import { httpConnectionPool, wsConnectionPool } from "./utils/connectionPool.js";
-import performanceRoutes from "./routes/performance.js";
-import { trackConnection } from "./middleware/connectionTracking.js";
-import { PathUtils, OSUtils, FileUtils } from "./utils/crossPlatform.js";
-import ConnectionLimiter from "./middleware/connectionLimiter.js";
-import PerformanceOptimizer from "./utils/performanceOptimizer.js";
+import backendPerformanceManager from "./utils/performance.js";
 import dotenv from "dotenv";
+import { tagFile, detectNSFW, runOCR, detectPII } from "./services/ai/classify.js";
+import { summarizeMessages } from "./services/ai/summary.js";
+import { getRooms, getRoomHistory } from "./utils/group.js";
 
-dotenv.config();
+// Load environment variables from root .env file
+dotenv.config({ path: '../.env' });
+
+// Debug: Check if environment variables are loaded
+console.log('🔍 Environment Variables Debug:');
+console.log('   MONGO_URI:', process.env.MONGO_URI ? 'Set' : 'Not Set');
+console.log('   JWT_SECRET:', process.env.JWT_SECRET ? 'Set' : 'Not Set');
+console.log('   NODE_ENV:', process.env.NODE_ENV || 'Not Set');
+console.log('   PORT:', process.env.PORT || 'Not Set');
 
 // For ES modules __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -41,13 +45,30 @@ const __dirname = path.dirname(__filename);
 // Setup global error handlers
 setupGlobalErrorHandlers();
 
+// Set default environment variables for local development
+if (!process.env.MONGO_URI) {
+  process.env.MONGO_URI = 'mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare';
+  console.log('🔧 Using default MongoDB URI for local development');
+} else {
+  console.log('✅ Using MongoDB URI from environment variables');
+}
+
+if (!process.env.JWT_SECRET) {
+  process.env.JWT_SECRET = 'f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09';
+  console.log('🔧 Using default JWT secret for local development');
+} else {
+  console.log('✅ Using JWT secret from environment variables');
+}
+
 // Environment validation with enhanced error handling
 try {
   validateEnvironment(['MONGO_URI', 'JWT_SECRET']);
 } catch (error) {
-  console.error('❌ Environment validation failed');
-  if (process.env.NODE_ENV !== 'production') {
+  console.error('❌ Environment validation failed:', error.message);
+  if (process.env.NODE_ENV === 'production') {
     process.exit(1);
+  } else {
+    console.log('⚠️  Continuing in development mode with defaults...');
   }
 }
 
@@ -55,203 +76,53 @@ try {
 
 const app = express();
 
-// Initialize performance optimizations
-const connectionLimiter = new ConnectionLimiter({
-  maxConnections: parseInt(process.env.WS_CONNECTION_LIMIT) || 100,
-  maxConnectionsPerIP: parseInt(process.env.WS_RATE_LIMIT_MAX) || 10
-});
+// Trust proxy configuration for production deployments (Render, etc.)
+if (process.env.TRUST_PROXY === 'true' || process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', true);
+  console.log('🔒 Trust proxy enabled for production deployment');
+}
 
-const performanceOptimizer = new PerformanceOptimizer({
-  maxCacheSize: 500,
-  defaultCacheTTL: 5 * 60 * 1000, // 5 minutes
-  bufferTimeout: 100
-});
+// Create server with proper binding for Electron
+const server = http.createServer(app);
 
-// Explicitly create server with IPv4 to avoid ::1 binding issues on Render
-const server = http.createServer({ family: 4 }, app);
-
-// WebSocket Server with production-ready options
+// WebSocket Server with CORS support
 const wss = new WebSocketServer({ 
   server, 
   path: '/chat',
-  perMessageDeflate: false, // Disable compression for lower latency
-  clientTracking: true, // Track clients for cleanup
-  maxPayload: 1024 * 1024 // 1MB max message size
-});
-
-// DISABLED AI system - using simple WebSocket handling instead
-// console.log('🤖 Initializing AI-Enhanced WebSocket Chat System');
-// initializeGroupChat(wss);
-
-// Simple WebSocket handling - no AI interference
-const chatClients = new Map();
-const rooms = new Map();
-
-wss.on('connection', (ws, req) => {
-  // New WebSocket connection established
-  
-  try {
-    const ip = req.socket.remoteAddress;
-    const connectionId = `ws_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  verifyClient: (info) => {
+    const origin = info.origin;
     
-    // Track connection with limiter
-    try {
-      connectionLimiter.trackConnection(connectionId, ip, { type: 'websocket' });
-    } catch (error) {
-      ws.close(1008, error.message);
-      return;
+    // Allow connections with no origin (Electron)
+    if (!origin) {
+      console.log('🔌 WebSocket connection from no origin (likely Electron)');
+      return true;
     }
     
-    const url = new URL(req.url, 'http://localhost');
-    const username = url.searchParams.get('username') || `User${Math.floor(Math.random() * 10000)}`;
-    const room = url.searchParams.get('room') || 'general';
-    
-    console.log(`🔌 WebSocket connected - User: ${username}, Room: ${room}, IP: ${ip}`);
-    
-    // Store connection
-    const connectionData = {
-      id: connectionId,
-      ws,
-      username,
-      room,
-      joinedAt: new Date(),
-      isActive: true
-    };
-    
-    chatClients.set(connectionId, connectionData);
-    ws.connectionId = connectionId;
-    
-    // Add to room
-    if (!rooms.has(room)) {
-      rooms.set(room, new Set());
+    // Allow all localhost and 127.0.0.1 origins
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      console.log('🔌 WebSocket connection from localhost:', origin);
+      return true;
     }
-    rooms.get(room).add(connectionId);
     
-    // Notify other users in the room
-    const roomUsers = Array.from(rooms.get(room) || [])
-      .map(id => chatClients.get(id)?.username)
-      .filter(Boolean);
+    // Allow file:// origins for Electron
+    if (origin.startsWith('file://')) {
+      console.log('🔌 WebSocket connection from file:// origin (Electron)');
+      return true;
+    }
     
-    // Send welcome message
-    ws.send(JSON.stringify({
-      type: 'system',
-      message: `Welcome ${username} to ${room}!`,
-      timestamp: new Date().toISOString()
-    }));
+    // Allow null origins
+    if (origin === 'null') {
+      console.log('🔌 WebSocket connection from null origin');
+      return true;
+    }
     
-    // Send user list to the new user
-    ws.send(JSON.stringify({
-      type: 'userList',
-      users: roomUsers,
-      timestamp: new Date().toISOString()
-    }));
-    
-    // Notify other users about the new user
-    const roomConnections = rooms.get(room) || new Set();
-    roomConnections.forEach(id => {
-      const client = chatClients.get(id);
-      if (client && client.ws.readyState === 1 && client.ws !== ws) { // OPEN and not the sender
-        client.ws.send(JSON.stringify({
-          type: 'userJoined',
-          username,
-          message: `${username} joined the chat`,
-          users: roomUsers,
-          timestamp: new Date().toISOString()
-        }));
-      }
-    });
-    
-    // Handle messages
-    ws.on('message', (data) => {
-      try {
-        const message = JSON.parse(data);
-        console.log('📨 Message received:', message);
-        
-        if (message.type === 'message') {
-          // Broadcast to room (exclude sender)
-          const roomConnections = rooms.get(room) || new Set();
-          roomConnections.forEach(id => {
-            const client = chatClients.get(id);
-            if (client && client.ws.readyState === 1 && client.ws !== ws) { // OPEN and not the sender
-              client.ws.send(JSON.stringify({
-                type: 'message',
-                messageId: Date.now() + Math.random(),
-                message: message.message,
-                username,
-                timestamp: new Date().toISOString()
-              }));
-            }
-          });
-        } else if (message.type === 'image') {
-          // Broadcast image to room (exclude sender)
-          const roomConnections = rooms.get(room) || new Set();
-          roomConnections.forEach(id => {
-            const client = chatClients.get(id);
-            if (client && client.ws.readyState === 1 && client.ws !== ws) { // OPEN and not the sender
-              client.ws.send(JSON.stringify({
-                type: 'image',
-                messageId: Date.now() + Math.random(),
-                imageUrl: message.imageUrl,
-                caption: message.caption || '',
-                username,
-                timestamp: new Date().toISOString()
-              }));
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Message processing error:', error);
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Failed to process your message'
-        }));
-      }
-    });
-    
-    // Handle disconnect
-    ws.on('close', () => {
-      console.log(`🔌 User ${username} disconnected from room ${room}`);
-      
-      // Remove from room
-      if (rooms.has(room)) {
-        rooms.get(room).delete(connectionId);
-      }
-      
-      // Remove from clients
-      chatClients.delete(connectionId);
-      
-      // Remove from connection limiter
-      connectionLimiter.removeConnection(connectionId);
-      
-      // Notify other users about the disconnected user
-      const roomUsers = Array.from(rooms.get(room) || [])
-        .map(id => chatClients.get(id)?.username)
-        .filter(Boolean);
-        
-      const roomConnections = rooms.get(room) || new Set();
-      roomConnections.forEach(id => {
-        const client = chatClients.get(id);
-        if (client && client.ws.readyState === 1 && client.ws !== ws) { // OPEN and not the sender
-          client.ws.send(JSON.stringify({
-            type: 'userLeft',
-            username,
-            message: `${username} left the chat`,
-            users: roomUsers,
-            timestamp: new Date().toISOString()
-          }));
-        }
-      });
-    });
-    
-    ws.on('error', (error) => {
-      console.error('WebSocket error for user', username, ':', error);
-    });
-    
-  } catch (error) {
-    console.error('Connection setup error:', error);
-    ws.close();
+    console.log('🚫 WebSocket connection blocked from origin:', origin);
+    return false;
   }
 });
+
+// Initialize group chat functionality
+initializeGroupChat(wss);
 
 // Add WebSocket server event listeners for debugging
 wss.on('listening', () => {
@@ -259,24 +130,24 @@ wss.on('listening', () => {
   const address = server.address();
   if (address) {
     if (typeof address === 'string') {
-      // WebSocket server listening
+      console.log('💬 WebSocket server is listening on', address);
     } else {
-      // WebSocket server listening on port
+      console.log('💬 WebSocket server is listening on', `${address.address}:${address.port}`);
     }
   } else {
-    // WebSocket server listening
+    console.log('💬 WebSocket server is listening');
   }
 });
 
 wss.on('error', (error) => {
-  console.error('WebSocket server error:', error);
+  console.error('❌ WebSocket server error:', error);
 });
 
-wss.on('headers', (_headers, _request) => {
-  // WebSocket headers received
+wss.on('headers', (headers, _request) => {
+  console.log('📋 WebSocket headers:', headers);
 });
 
-// WebSocket server initialized with path /chat
+console.log('🔧 WebSocket server initialized with path /chat');
 
 // Store connected clients (moved from direct implementation to using group.js)
 // These are now exported from group.js for access in other parts of the application
@@ -288,33 +159,11 @@ wss.on('headers', (_headers, _request) => {
 
 // broadcastToRoom function moved to group.js module
 
-// Ultra-Powerful Security Middleware (temporarily relaxed for WebSocket debugging)
-app.use((req, res, next) => {
-  // Set permissive CSP for development WebSocket connections
-  res.setHeader('Content-Security-Policy', 
-    "default-src 'self'; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "script-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: https:; " +
-    "connect-src 'self' localhost:* 127.0.0.1:* ws: wss: *; " +
-    "font-src 'self'; " +
-    "object-src 'none'; " +
-    "media-src 'self'; " +
-    "frame-src 'none'"
-  );
-  next();
-});
-// app.use(backendSecurityManager.createSecurityHeaders());
-
+// Ultra-Powerful Security Middleware
+app.use(backendSecurityManager.createSecurityHeaders());
 
 // Performance monitoring middleware
 app.use(backendPerformanceManager.createPerformanceMiddleware());
-
-// Add performance optimization middleware
-app.use(performanceOptimizer.cacheMiddleware());
-
-// Connection tracking middleware
-app.use(trackConnection);
 
 // Ultra-Powerful Rate Limiting with Security Integration
 const limiter = backendSecurityManager.createRateLimiter({
@@ -327,38 +176,89 @@ if (process.env.NODE_ENV !== 'test' || process.env.ENABLE_RATE_LIMIT_TEST === 't
   app.use(limiter);
 }
 
+// Handle preflight requests explicitly - BEFORE CORS middleware
+app.options('*', (req, res) => {
+  const origin = req.get('Origin');
+  console.log('🔍 Preflight request from:', origin || 'no-origin');
+  
+  // Check if origin is allowed (same logic as CORS middleware)
+  let isAllowed = false;
+  
+  if (!origin) {
+    // Allow requests with no origin (Electron, mobile apps, curl)
+    isAllowed = true;
+  } else if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    // Allow all localhost and 127.0.0.1 origins
+    isAllowed = true;
+  } else if (origin.startsWith('file://')) {
+    // Allow file:// origins for Electron
+    isAllowed = true;
+  } else if (origin === 'null') {
+    // Allow null origins
+    isAllowed = true;
+  } else {
+    // Check specific production origins
+    const allowedOrigins = [
+      'https://akashshare-se.onrender.com',
+      'https://akashshare-se-backend.onrender.com',
+      'http://44.229.227.142:5004'
+    ];
+    isAllowed = allowedOrigins.includes(origin);
+  }
+  
+  if (isAllowed) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-Request-Start, Cache-Control, Access-Control-Request-Method, Access-Control-Request-Headers');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Max-Age', '86400'); // 24 hours
+    res.status(200).end();
+  } else {
+    console.log('🚫 CORS blocked origin in preflight:', origin);
+    res.status(403).end('Not allowed by CORS');
+  }
+});
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [
-        'https://akashshare-se.onrender.com', // Your Render frontend domain
-        'https://akashshare-se-backend.onrender.com', // Your Render backend domain
-        'https://44.229.227.142:5002', // Your production IP
-        process.env.CORS_ORIGIN || 'https://akashshare-se.onrender.com'
-      ]
-    : function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        // List of allowed origins for development
-        const allowedOrigins = [
-          'http://localhost:5002', 'http://localhost:5003', 'http://localhost:5004', 'http://localhost:59489',
-          'http://127.0.0.1:5002', 'http://127.0.0.1:5003', 'http://127.0.0.1:5004', 'http://127.0.0.1:59489',
-          'http://[::1]:5002',
-          'http://0.0.0.0:5002',
-          'http://192.168.0.185:5002', 'http://192.168.0.185:5003', 'http://192.168.0.185:5004', 'http://192.168.0.185:59489'
-        ];
-        
-        // Check if origin is in allowed list
-        if (allowedOrigins.includes(origin)) {
-          return callback(null, true);
-        }
-        
-        // CORS origin blocked
-        callback(new Error('Not allowed by CORS'));
-      },
+  origin: function (origin, callback) {
+    // Allow requests with no origin (Electron, mobile apps, curl)
+    if (!origin) return callback(null, true);
+    
+    // Allow all localhost and 127.0.0.1 origins
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow file:// origins for Electron
+    if (origin.startsWith('file://')) {
+      return callback(null, true);
+    }
+    
+    // Allow null origins
+    if (origin === 'null') {
+      return callback(null, true);
+    }
+    
+    // Allow specific production origins
+    const allowedOrigins = [
+      'https://akashshare-se.onrender.com',
+      'https://akashshare-se-backend.onrender.com',
+      'http://44.229.227.142:5004'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    console.log('🚫 CORS blocked origin:', origin);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'X-Request-Start', 'Cache-Control', 'Access-Control-Request-Method', 'Access-Control-Request-Headers'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200,
+  handlePreflight: false
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -379,20 +279,21 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Storage (Multer) with cross-platform path handling
+// Storage (Multer)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = PathUtils.normalize("uploads");
-    // Ensure uploads directory exists using cross-platform utility
-    FileUtils.createDir(uploadDir);
+    const uploadDir = "uploads/";
+    // Ensure uploads directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Use enhanced filename sanitization with cross-platform safe path
+    // Use enhanced filename sanitization
     const sanitizedName = sanitizeFilename(file.originalname);
     const uniqueName = `${Date.now()}_${sanitizedName}`;
-    const safePath = PathUtils.createSafeFilePath(uniqueName);
-    cb(null, safePath);
+    cb(null, uniqueName);
   }
 });
 
@@ -410,7 +311,7 @@ const validateUpload = [
   (req, res, next) => {
     upload.single("file")(req, res, (err) => {
       if (err instanceof multer.MulterError) {
-        console.error('File upload error:', err);
+        console.error('Multer error:', err);
         if (err.code === 'LIMIT_FILE_SIZE') {
           return res.status(400).json({ 
             error: `File too large. Maximum size is ${maxFileSize / (1024 * 1024)}MB` 
@@ -423,7 +324,7 @@ const validateUpload = [
       }
       
       if (err) {
-        console.error('File processing error:', err);
+        console.error('Upload middleware error:', err);
         if (err.message && err.message.includes('File type')) {
           return res.status(400).json({ error: err.message });
         }
@@ -434,7 +335,7 @@ const validateUpload = [
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      // File validation successful
+      console.log('File validation passed:', req.file.originalname);
       next();
     });
   },
@@ -465,8 +366,8 @@ const validateDownload = [
 ];
 
 // IMPORTANT: API routes must be defined BEFORE static file serving to avoid conflicts
-// API status endpoint (moved from root to avoid conflicts with React app)
-app.get("/api", (req, res) => {
+// Root endpoint
+app.get("/", (req, res) => {
   res.status(200).json({ 
     message: "Akash Share Backend API",
     status: "running",
@@ -536,23 +437,33 @@ const FileSchema = new mongoose.Schema({
 
 const File = mongoose.model("File", FileSchema);
 
-// Health check endpoint with performance monitoring
+// Health check endpoint
 app.get("/health", (req, res) => {
-  const chatStats = {
-    totalClients: chatClients.size,
-    totalRooms: rooms.size,
+  console.log('🔍 Health check request from:', req.get('Origin') || 'no-origin', req.ip);
+  
+  const chatStats = getChatClients && getRooms ? {
+    totalClients: getChatClients().size,
+    totalRooms: getRooms().size,
+    roomStats: {}
+  } : {
+    totalClients: 0,
+    totalRooms: 0,
     roomStats: {}
   };
 
-  // Get stats for each room
-  rooms.forEach((clientIds, roomName) => {
-    chatStats.roomStats[roomName] = clientIds.size;
-  });
+  // Get stats for each room if functions are available
+  if (getRooms) {
+    getRooms().forEach((clients, roomName) => {
+      chatStats.roomStats[roomName] = clients.size;
+    });
+  }
 
   res.status(200).json({
     status: "OK",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    port: process.env.PORT || 5004,
+    host: process.env.HOST || '0.0.0.0',
     websocket: chatStats,
     system: {
       memory: process.memoryUsage(),
@@ -564,15 +475,18 @@ app.get("/health", (req, res) => {
       connected: mongoose.connection.readyState === 1,
       name: mongoose.connection.name,
       host: mongoose.connection.host
-    },
-    performance: {
-      memory: memoryMonitor.getMemoryStats(),
-      connections: {
-        http: httpConnectionPool.getPoolStats(),
-        websocket: wsConnectionPool.getPoolStats(),
-        rooms: wsConnectionPool.getRoomStats()
-      }
     }
+  });
+});
+
+// Add a health check endpoint specifically for Electron app to verify backend is running
+app.get("/electron-health", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Backend server is running",
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 5004,
+    host: process.env.HOST || "0.0.0.0"
   });
 });
 
@@ -596,6 +510,7 @@ app.get("/debug/files", async (req, res) => {
 
 // Ultra-Powerful Upload Route with Advanced Security and Performance Monitoring
 app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
+  console.log('🔍 Upload request from:', req.get('Origin') || 'no-origin', req.ip);
   const uploadStartTime = performance.now();
   
   try {
@@ -620,8 +535,8 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
-    // Check if file was actually saved to disk using cross-platform file utilities
-    if (!req.file || !FileUtils.exists(req.file.path)) {
+    // Check if file was actually saved to disk
+    if (!req.file || !fs.existsSync(req.file.path)) {
       return res.status(500).json({ error: "File not saved to disk" });
     }
 
@@ -647,10 +562,10 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
         await newFile.save();
         break; // Success, exit the loop
       } catch (saveErr) {
-        // Clean up the uploaded file if database save fails using cross-platform utilities
+        // Clean up the uploaded file if database save fails
         try {
-          if (req.file.path && FileUtils.exists(req.file.path)) {
-            FileUtils.deleteFile(req.file.path);
+          if (req.file.path && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
           }
         } catch (cleanupErr) {
           console.error('Cleanup error:', cleanupErr);
@@ -697,17 +612,17 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
         if (process.env.AI_CLASSIFY_ENABLED === 'false') return;
         const fileDoc = await File.findOne({ code: randomCode });
         if (!fileDoc) return;
-        // AI analysis functions would be implemented here
-        const tags = [];
-        const nsfw = { nsfw: false, confidence: 0 };
-        const ocr = { performed: false, text: '' };
-        const pii = { performed: false, pii: [] };
+        const fullPath = path.isAbsolute(fileDoc.path) ? fileDoc.path : path.join(process.cwd(), fileDoc.path);
+        const tags = await tagFile({ originalName: fileDoc.originalName, mimetype: fileDoc.mimetype, filePath: fullPath });
+        const nsfw = await detectNSFW({ originalName: fileDoc.originalName, mimetype: fileDoc.mimetype });
+        const ocr = await runOCR({ mimetype: fileDoc.mimetype, filePath: fullPath });
+        const pii = await detectPII({ text: ocr.text });
         const textPreview = (ocr.text || '').slice(0, 300);
         await File.updateOne({ _id: fileDoc._id }, {
           $set: {
             ai: {
               tags,
-    nsfw: { flag: !!nsfw.nsfw, confidence: Number(nsfw.confidence || 0) },
+              nsfw: { flag: !!nsfw.nsfw, confidence: Number(nsfw.confidence || 0) },
               ocr: { performed: !!ocr.performed, textPreview },
               pii: { performed: !!pii.performed, items: pii.pii || [] }
             }
@@ -720,10 +635,10 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
   } catch (err) {
     console.error('Upload error:', err);
     
-    // Clean up uploaded file if it exists using cross-platform utilities
+    // Clean up uploaded file if it exists
     try {
-      if (req.file && req.file.path && FileUtils.exists(req.file.path)) {
-        FileUtils.deleteFile(req.file.path);
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
       }
     } catch (cleanupErr) {
       console.error('Cleanup error:', cleanupErr);
@@ -745,8 +660,8 @@ app.get("/download/:code", validateDownload, asyncErrorHandler(async (req, res) 
     return res.status(404).json({ error: "File not found or code is invalid" });
   }
 
-  // Check if file exists on disk using cross-platform utilities
-  if (!FileUtils.exists(file.path)) {
+  // Check if file exists on disk
+  if (!fs.existsSync(file.path)) {
     await File.deleteOne({ _id: file._id });
     return res.status(404).json({ error: "File not found on server" });
   }
@@ -763,61 +678,48 @@ app.get("/download/:code", validateDownload, asyncErrorHandler(async (req, res) 
   });
 }, { fileOperation: 'download' }));
 
-// Serve static files with cross-platform path handling
+// Serve static files from the React app build directory in production
 // This must come AFTER all API routes to avoid conflicts
-
-// Try to serve React build files first if they exist
-const buildPath = PathUtils.join(__dirname, '../build');
-const indexHtmlPath = PathUtils.join(buildPath, 'index.html');
-
-if (FileUtils.exists(indexHtmlPath)) {
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, '../build');
   console.log('🗂️  Serving React build files from:', buildPath);
   app.use(express.static(buildPath));
   
   // Catch-all handler to serve the React app for any non-API routes
   // This must come AFTER all API routes to avoid conflicts
   app.get('*', (req, res) => {
-    res.sendFile(indexHtmlPath);
+    res.sendFile(path.join(buildPath, 'index.html'));
   });
 } else {
-  // Fallback to public directory if build doesn't exist
-  const publicPath = PathUtils.join(__dirname, '../public');
+  // In development, still serve static files from public directory
+  const publicPath = path.join(__dirname, '../public');
   console.log('🗂️  Serving static files from:', publicPath);
   app.use(express.static(publicPath));
   
-  // Debug route to test static file serving with cross-platform support
+  // Debug route to test static file serving
   app.get('/debug/static', (req, res) => {
-    const akashPath = PathUtils.join(publicPath, 'akash.jpg');
+    const akashPath = path.join(publicPath, 'akash.jpg');
     res.json({
       publicPath,
-      akashExists: FileUtils.exists(akashPath),
-      akashPath,
-      platform: OSUtils.getOS(),
-      systemInfo: OSUtils.getSystemInfo()
+      akashExists: fs.existsSync(akashPath),
+      akashPath
     });
   });
 }
-
-// Performance monitoring routes
-app.use('/api/performance', performanceRoutes);
 
 // Summary endpoint: quick extractive summary for recent messages in a room
 app.get('/chat/:room/summary', (req, res) => {
   try {
     const roomName = (req.params.room || '').toLowerCase().trim();
     if (!roomName) return res.status(400).json({ error: 'Room is required' });
-    
-    if (!rooms.has(roomName)) {
-      return res.status(404).json({ error: 'Room not found' });
+    const roomMap = getRooms();
+    if (!roomMap || !roomMap.has(roomName)) {
+      return res.status(404).json({ error: 'Room not found or has no messages' });
     }
-    
-    // Simple implementation - just return room info without AI features
-    const clientCount = rooms.get(roomName)?.size || 0;
-    return res.json({ 
-      room: roomName, 
-      summary: `Room ${roomName} has ${clientCount} active users.`,
-      message: 'AI summarization disabled - using simple WebSocket mode'
-    });
+    const history = getRoomHistory(roomName, 100);
+    const texts = history.map(h => `${h.username}: ${h.message}`);
+    const summary = summarizeMessages(texts);
+    return res.json({ room: roomName, summary });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
@@ -858,26 +760,6 @@ console.log('🔧 Server start check:', {
 if (shouldStartServer) {
   (async () => {
     console.log('🔧 Starting server initialization...');
-    
-    // Start performance monitoring
-    console.log('📊 Initializing performance monitoring...');
-    memoryMonitor.start();
-    
-    // Setup memory monitoring event listeners
-    memoryMonitor.on('criticalMemory', (entry) => {
-      console.error(`🚨 CRITICAL MEMORY: ${(entry.heapUsed / 1024 / 1024).toFixed(2)}MB`);
-      // Force cleanup of idle connections
-      httpConnectionPool.forceCleanup({ maxAge: 30000 });
-      wsConnectionPool.forceCleanup({ maxAge: 60000 });
-    });
-    
-    memoryMonitor.on('warningMemory', (entry) => {
-      console.warn(`⚠️ HIGH MEMORY: ${(entry.heapUsed / 1024 / 1024).toFixed(2)}MB`);
-      // Trigger regular cleanup
-      httpConnectionPool.cleanup();
-      wsConnectionPool.cleanup();
-    });
-    
     let dbConnected = false;
     try {
       await connectToMongoDB();
@@ -888,9 +770,17 @@ if (shouldStartServer) {
       console.error("📋 MONGO_URI:", process.env.MONGO_URI ? "Set" : "Not set");
     }
 
+    // Set default server configuration for local development
+    if (!process.env.PORT) {
+      process.env.PORT = '5004';
+    }
+    if (!process.env.HOST) {
+      process.env.HOST = '0.0.0.0'; // Changed from 127.0.0.1 to 0.0.0.0 for Electron compatibility
+    }
+
     // Start server regardless of DB status so Electron app can function (chat/UI)
-    const PORT = process.env.PORT || 5003;
-    const HOST = process.env.HOST || 'localhost'; // Bind to localhost explicitly for development
+    const PORT = process.env.PORT || 5004;
+    const HOST = process.env.HOST || '0.0.0.0';
     console.log(`🔧 Configuring server to bind to ${HOST}:${PORT}`);
 
     server.listen(PORT, HOST, () => {
@@ -900,8 +790,6 @@ if (shouldStartServer) {
       console.log(`⏱️  Rate limit: ${process.env.RATE_LIMIT_MAX_REQUESTS || 100} requests per ${(parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000) / (60 * 1000)} minutes`);
       console.log(`🌐 API endpoints available at: http://${HOST}:${PORT}`);
       console.log(`💬 WebSocket chat available at: ws://${HOST}:${PORT}/chat`);
-      console.log(`📊 Performance monitoring active`);
-      console.log(`🔗 Connection pools initialized (HTTP: ${httpConnectionPool.maxConnections}, WS: ${wsConnectionPool.maxConnections})`);
       if (!dbConnected) {
         console.warn('⚠️ Server started in degraded mode: database not connected. Upload/download endpoints may fail.');
       }
@@ -934,11 +822,11 @@ if (shouldStartServer) {
   console.log('📦 server.js imported as module, not starting server directly');
 }
 
-// Export app and simple WebSocket data structures for testing
+// Export app and WebSocket data structures for testing
 export {
   app,
-  chatClients,
-  rooms
+  getChatClients as chatClients,
+  getRooms as rooms
 };
 
 

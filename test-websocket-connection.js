@@ -1,41 +1,32 @@
-// Test WebSocket connections to both BCA (general) and BCOM rooms
-console.log('Testing WebSocket connections...');
+import { WebSocket } from 'ws';
 
-// Test BCA (general) room connection
-console.log('\n1. Testing BCA (general) room connection...');
-const ws1 = new WebSocket('ws://127.0.0.1:5002/chat?username=TestUser&room=general');
+console.log('Testing WebSocket connection to Akash Share backend...');
 
-ws1.onopen = () => {
-  console.log('✅ BCA (general) room connected successfully');
-  ws1.close();
-};
+// Test WebSocket connection
+const ws = new WebSocket('ws://localhost:5004/chat?username=TestUser&room=general');
 
-ws1.onerror = (error) => {
-  console.log('❌ BCA (general) room connection failed:', error.message);
-};
+ws.on('open', function open() {
+  console.log('✅ WebSocket connection established');
+  
+  // Send a test message
+  ws.send(JSON.stringify({
+    type: 'message',
+    message: 'Hello from test client!',
+    room: 'general'
+  }));
+});
 
-ws1.onclose = () => {
-  console.log('🔌 BCA (general) room connection closed');
-};
+ws.on('message', function incoming(data) {
+  console.log('📥 Received:', data.toString());
+  
+  // Close connection after receiving first message
+  ws.close();
+});
 
-// Test BCOM room connection
-console.log('\n2. Testing BCOM room connection...');
-const ws2 = new WebSocket('ws://127.0.0.1:5002/chat?username=TestUser&room=bcom');
+ws.on('error', function error(err) {
+  console.error('❌ WebSocket error:', err);
+});
 
-ws2.onopen = () => {
-  console.log('✅ BCOM room connected successfully');
-  ws2.close();
-};
-
-ws2.onerror = (error) => {
-  console.log('❌ BCOM room connection failed:', error.message);
-};
-
-ws2.onclose = () => {
-  console.log('🔌 BCOM room connection closed');
-};
-
-// Keep the process alive for a few seconds to see results
-setTimeout(() => {
-  console.log('\nTest completed.');
-}, 5000);
+ws.on('close', function close() {
+  console.log('🔌 WebSocket connection closed');
+});

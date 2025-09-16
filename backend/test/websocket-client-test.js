@@ -4,7 +4,7 @@ import WebSocket from 'ws';
 // Configuration
 const username = 'TestUser' + Math.floor(Math.random() * 1000);
 const room = 'general';
-const serverUrl = `ws://localhost:5002/chat?username=${encodeURIComponent(username)}&room=${room}`;
+const serverUrl = `ws://localhost:5004/chat?username=${encodeURIComponent(username)}&room=${room}`;
 
 // Create WebSocket connection
 console.log(`Connecting to ${serverUrl}...`);

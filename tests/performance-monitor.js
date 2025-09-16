@@ -25,7 +25,7 @@ class PerformanceMonitor {
     return new Promise((resolve) => {
       const options = {
         hostname: 'localhost',
-        port: 5002,
+        port: 5004,
         path: path,
         method: 'GET',
         timeout: 5000
@@ -81,7 +81,7 @@ class PerformanceMonitor {
       // Test multiple concurrent connections
       for (let i = 0; i < 5; i++) {
         const connectStart = Date.now();
-        const ws = new WebSocket(`ws://localhost:5003/chat?username=PerfTest${i}&room=performance`);
+        const ws = new WebSocket(`ws://localhost:5004/chat?username=PerfTest${i}&room=performance`);
         
         ws.on('open', () => {
           connectTimes.push(Date.now() - connectStart);

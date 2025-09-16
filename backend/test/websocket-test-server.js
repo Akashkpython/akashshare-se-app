@@ -174,7 +174,7 @@ app.get('/', (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5002;
-server.listen(PORT, () => {
+const PORT = process.env.PORT || 5004;
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 WebSocket test server running on port ${PORT}`);
 });

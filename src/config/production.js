@@ -9,8 +9,8 @@ export const config = {
   // API Configuration
   api: {
     baseURL: isProduction 
-      ? process.env.REACT_APP_API_URL || 'https://akashshare-backend.onrender.com'
-      : 'http://localhost:5002',
+      ? process.env.REACT_APP_API_URL || 'https://akashshare-se-backend.onrender.com'
+      : 'http://localhost:5004',
     timeout: 30000,
     retryAttempts: 3,
     retryDelay: 1000
@@ -19,8 +19,8 @@ export const config = {
   // WebSocket Configuration
   websocket: {
     url: isProduction
-      ? `wss://${process.env.REACT_APP_API_URL?.replace('https://', '') || 'akashshare-backend.onrender.com'}/chat`
-      : 'ws://localhost:5002/chat',
+      ? `wss://${process.env.REACT_APP_API_URL?.replace('https://', '') || 'akashshare-se-backend.onrender.com'}/chat`
+      : 'ws://localhost:5004/chat',
     reconnectInterval: 5000,
     maxReconnectAttempts: 10,
     heartbeatInterval: 30000

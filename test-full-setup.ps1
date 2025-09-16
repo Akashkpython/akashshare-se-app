@@ -2,15 +2,15 @@
 Write-Host "🧪 Testing AkAsH Share Full Setup..." -ForegroundColor Green
 Write-Host "=====================================" -ForegroundColor Cyan
 
-# Test 1: Check if port 5002 is free
-Write-Host "Test 1: Checking port 5002 availability..." -ForegroundColor Yellow
-$portInUse = netstat -ano | findstr ":5002"
+# Test 1: Check if port 5004 is free
+Write-Host "Test 1: Checking port 5004 availability..." -ForegroundColor Yellow
+$portInUse = netstat -ano | findstr ":5004"
 if ($portInUse) {
-    Write-Host "❌ Port 5002 is in use. Killing processes..." -ForegroundColor Red
+    Write-Host "❌ Port 5004 is in use. Killing processes..." -ForegroundColor Red
     & ".\kill-port-5002.ps1"
     Start-Sleep 3
 } else {
-    Write-Host "✅ Port 5002 is free" -ForegroundColor Green
+    Write-Host "✅ Port 5004 is free" -ForegroundColor Green
 }
 
 # Test 2: Check Node.js installation
@@ -68,7 +68,7 @@ if ($backendRunning) {
 # Test 6: Test backend health endpoint
 Write-Host "Test 6: Testing backend health endpoint..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://127.0.0.1:5002/health" -TimeoutSec 10
+    $response = Invoke-WebRequest -Uri "http://127.0.0.1:5004/health" -TimeoutSec 10
     if ($response.StatusCode -eq 200) {
         Write-Host "✅ Backend health check passed" -ForegroundColor Green
     } else {
@@ -112,9 +112,9 @@ try {
 # Test 9: Test frontend accessibility
 Write-Host "Test 9: Testing frontend accessibility..." -ForegroundColor Yellow
 try {
-    $response = Invoke-WebRequest -Uri "http://localhost:5002" -TimeoutSec 10
+    $response = Invoke-WebRequest -Uri "http://localhost:5004" -TimeoutSec 10
     if ($response.StatusCode -eq 200) {
-        Write-Host "✅ Frontend is accessible at http://localhost:5002" -ForegroundColor Green
+        Write-Host "✅ Frontend is accessible at http://localhost:5004" -ForegroundColor Green
     } else {
         Write-Host "❌ Frontend not accessible (Status: $($response.StatusCode))" -ForegroundColor Red
     }

@@ -1,115 +1,77 @@
-/**
- * Enhanced Build Script for Akash Share Setup.exe
- * Ensures all dependencies and files are properly included
- */
-
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-console.log('🚀 Starting Akash Share Setup.exe Build Process...\n');
+// ESM-compatible __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Step 1: Clean previous builds
-console.log('Step 1: Cleaning previous builds...');
-const dirsToClean = ['dist', 'build'];
-dirsToClean.forEach(dir => {
-  if (fs.existsSync(dir)) {
-    console.log(`🗑️ Removing ${dir} directory...`);
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
-});
+console.log('🔧 Starting build setup...');
 
-// Step 2: Install dependencies
-console.log('\nStep 2: Installing dependencies...');
-try {
-  console.log('📦 Installing frontend dependencies...');
-  execSync('npm install', { stdio: 'inherit' });
-  
-  console.log('📦 Installing backend dependencies...');
-  execSync('cd backend && npm install', { stdio: 'inherit', shell: true });
-  
-  console.log('✅ Dependencies installed successfully!');
-} catch (error) {
-  console.error('❌ Failed to install dependencies:', error.message);
-  process.exit(1);
-}
+// Ensure backend directory has .env file
+const backendDir = path.join(__dirname, '../backend');
+const envPath = path.join(backendDir, '.env');
+const envExamplePath = path.join(backendDir, '.env.example');
 
-// Step 3: Build React app
-console.log('\nStep 3: Building React application...');
-try {
-  console.log('🔨 Building React app for production...');
-  execSync('npm run build', { stdio: 'inherit' });
-  
-  if (!fs.existsSync('build/index.html')) {
-    throw new Error('React build failed - no index.html found');
-  }
-  
-  console.log('✅ React build completed successfully!');
-} catch (error) {
-  console.error('❌ React build failed:', error.message);
-  process.exit(1);
-}
+console.log(`📁 Checking backend directory: ${backendDir}`);
 
-// Step 4: Copy Electron files
-console.log('\nStep 4: Copying Electron files...');
-try {
-  console.log('📋 Copying required files for packaging...');
-  execSync('npm run electron:copy', { stdio: 'inherit' });
-  console.log('✅ Electron files copied successfully!');
-} catch (error) {
-  console.error('❌ Failed to copy Electron files:', error.message);
-  process.exit(1);
-}
-
-// Step 5: Create setup.exe
-console.log('\nStep 5: Creating Windows Setup.exe...');
-try {
-  console.log('🏗️ Building Windows installer with electron-builder...');
+// Check if .env file exists
+if (!fs.existsSync(envPath)) {
+  console.log('⚠️  .env file not found in backend directory');
   
-  // Set environment variables
-  process.env.NODE_ENV = 'production';
-  process.env.GENERATE_SOURCEMAP = 'false';
-  
-  execSync('npm run dist', { stdio: 'inherit' });
-  
-  // Check if setup.exe was created
-  const distDir = 'dist';
-  if (fs.existsSync(distDir)) {
-    const files = fs.readdirSync(distDir);
-    const exeFiles = files.filter(file => file.endsWith('.exe'));
-    
-    if (exeFiles.length > 0) {
-      console.log('\n🎉 BUILD COMPLETE!');
-      console.log('\n✅ Setup.exe created successfully!');
-      console.log('\n📁 Output files in dist/ directory:');
-      exeFiles.forEach(file => {
-        const filePath = path.join(distDir, file);
-        const stats = fs.statSync(filePath);
-        const sizeInMB = (stats.size / (1024 * 1024)).toFixed(2);
-        console.log(`   - ${file} (${sizeInMB} MB)`);
-      });
-      
-      console.log('\n🚀 Your Akash Share setup.exe is ready for distribution!');
-      console.log('\n📋 Installation includes:');
-      console.log('   - Desktop shortcut');
-      console.log('   - Start menu shortcut');
-      console.log('   - Automatic backend server startup');
-      console.log('   - WebSocket chat functionality');
-      console.log('   - File sharing capabilities');
-      console.log('\n💡 To install: Run the setup.exe file');
-      console.log('💡 To distribute: Share the setup.exe file');
-    } else {
-      throw new Error('No .exe files found in dist directory');
-    }
+  // Try to copy .env.example if it exists
+  if (fs.existsSync(envExamplePath)) {
+    console.log('📋 Copying .env.example to .env');
+    fs.copyFileSync(envExamplePath, envPath);
+    console.log('✅ .env file created from .env.example');
   } else {
-    throw new Error('Dist directory not created');
+    console.log('⚠️  .env.example not found, creating minimal .env file');
+    
+    // Create a minimal .env file
+    const minimalEnv = `# Development environment configuration
+NODE_ENV=production
+HOST=0.0.0.0
+PORT=5004
+
+# MongoDB connection string
+MONGO_URI=mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
+
+# Security
+JWT_SECRET=f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09
+
+# File upload settings
+FILE_SIZE_LIMIT=10485760
+
+# Rate limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+`;
+    
+    fs.writeFileSync(envPath, minimalEnv);
+    console.log('✅ Minimal .env file created');
   }
-} catch (error) {
-  console.error('\n❌ Setup.exe creation failed:', error.message);
-  console.log('\n🔧 Troubleshooting:');
-  console.log('   1. Ensure all dependencies are installed');
-  console.log('   2. Check that React build completed successfully');
-  console.log('   3. Verify electron-builder is properly configured');
-  console.log('   4. Try running: npm run dist');
-  process.exit(1);
+} else {
+  console.log('✅ .env file already exists');
 }
+
+// Ensure build directory exists
+const buildDir = path.join(__dirname, '../build');
+if (!fs.existsSync(buildDir)) {
+  console.log('📁 Creating build directory');
+  fs.mkdirSync(buildDir, { recursive: true });
+  console.log('✅ Build directory created');
+} else {
+  console.log('✅ Build directory already exists');
+}
+
+// Ensure build-resources directory exists
+const buildResourcesDir = path.join(__dirname, '../build-resources');
+if (!fs.existsSync(buildResourcesDir)) {
+  console.log('📁 Creating build-resources directory');
+  fs.mkdirSync(buildResourcesDir, { recursive: true });
+  console.log('✅ Build-resources directory created');
+} else {
+  console.log('✅ Build-resources directory already exists');
+}
+
+console.log('✅ Build setup completed successfully');

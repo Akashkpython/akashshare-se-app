@@ -1,15 +1,12 @@
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Cross-platform path utilities
-const normalizePath = (inputPath) => path.normalize(inputPath);
 const joinPath = (...paths) => path.join(...paths);
-const isWindows = () => os.platform() === 'win32';
 
 // Create build directory if it doesn't exist using cross-platform paths
 const buildDir = joinPath(__dirname, '..', 'build');
@@ -21,25 +18,47 @@ console.log('📦 Copying required files for Electron build...');
 
 try {
   // Copy main icon file to build directory (needed for packaging)
-  const iconSource = path.join(__dirname, '..', 'public', 'Akashshareicon.png');
-  const iconDest = path.join(buildDir, 'Akashshareicon.png');
+  const iconSource = path.join(__dirname, '..', 'build-resources', 'icon.ico');
+  const iconDest = path.join(buildDir, 'icon.ico');
   
   if (fs.existsSync(iconSource)) {
     fs.copyFileSync(iconSource, iconDest);
-    console.log('✅ Copied Akashshareicon.png to build directory');
+    console.log('✅ Copied icon.ico to build directory');
   } else {
-    console.log('⚠️ Warning: Akashshareicon.png not found in public directory');
+    console.log('⚠️ Warning: icon.ico not found in build-resources directory');
   }
   
-  // Copy backup icon file to build directory
-  const backupIconSource = path.join(__dirname, '..', 'public', 'Akashshareicon-backup.png');
-  const backupIconDest = path.join(buildDir, 'Akashshareicon-backup.png');
+  // Copy favicon.ico to build directory
+  const faviconSource = path.join(__dirname, '..', 'build-resources', 'icon.ico');
+  const faviconDest = path.join(buildDir, 'favicon.ico');
   
-  if (fs.existsSync(backupIconSource)) {
-    fs.copyFileSync(backupIconSource, backupIconDest);
-    console.log('✅ Copied Akashshareicon-backup.png to build directory');
+  if (fs.existsSync(faviconSource)) {
+    fs.copyFileSync(faviconSource, faviconDest);
+    console.log('✅ Copied favicon.ico to build directory');
   } else {
-    console.log('⚠️ Warning: Akashshareicon-backup.png not found in public directory');
+    console.log('⚠️ Warning: favicon.ico not found in build-resources directory');
+  }
+  
+  // Copy Electron main process file to build directory
+  const electronSource = path.join(__dirname, '..', 'electron', 'main.js');
+  const electronDest = path.join(buildDir, 'electron.js');
+  
+  if (fs.existsSync(electronSource)) {
+    fs.copyFileSync(electronSource, electronDest);
+    console.log('✅ Copied electron/main.js to build/electron.js');
+  } else {
+    console.log('⚠️ Warning: electron/main.js not found');
+  }
+  
+  // Copy Electron preload script to build directory
+  const preloadSource = path.join(__dirname, '..', 'electron', 'preload.js');
+  const preloadDest = path.join(buildDir, 'preload.js');
+  
+  if (fs.existsSync(preloadSource)) {
+    fs.copyFileSync(preloadSource, preloadDest);
+    console.log('✅ Copied electron/preload.js to build/preload.js');
+  } else {
+    console.log('⚠️ Warning: electron/preload.js not found');
   }
   
   // Create backend directory in build if it doesn't exist
@@ -48,11 +67,11 @@ try {
     fs.mkdirSync(buildBackendDir, { recursive: true });
   }
   
-  // Copy essential backend files
+  // Copy essential backend files including the updated .env file
   const backendFiles = [
     'server.js',
     'package.json',
-    '.env.example'
+    '.env'  // This is the important file that contains your updated configuration
   ];
   
   backendFiles.forEach(file => {
@@ -89,7 +108,10 @@ try {
       
       fs.mkdirSync(dest, { recursive: true });
       fs.readdirSync(src).forEach(childItemName => {
-        copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
+        // Skip test directories
+        if (childItemName !== 'test') {
+          copyRecursiveSync(path.join(src, childItemName), path.join(dest, childItemName));
+        }
       });
     } else {
       // Skip .env file as we already copied it above
@@ -101,7 +123,7 @@ try {
   
   // Copy all backend files except node_modules and uploads
   fs.readdirSync(backendSourceDir).forEach(item => {
-    if (item !== 'node_modules' && item !== 'uploads') {
+    if (item !== 'node_modules' && item !== 'uploads' && item !== 'test') {
       const srcPath = path.join(backendSourceDir, item);
       const destPath = path.join(buildBackendDir, item);
       copyRecursiveSync(srcPath, destPath);
@@ -109,33 +131,8 @@ try {
     }
   });
 
-  // Copy backend node_modules to ensure packaged backend can run offline
-  const backendNodeModulesSrc = path.join(backendSourceDir, 'node_modules');
-  const backendNodeModulesDest = path.join(buildBackendDir, 'node_modules');
-  if (fs.existsSync(backendNodeModulesSrc)) {
-    console.log('📦 Copying backend node_modules (this may take a while)...');
-    const copyDir = (src, dest) => {
-      const stats = fs.statSync(src);
-      if (stats.isDirectory()) {
-        if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-        for (const entry of fs.readdirSync(src)) {
-          // Skip npm cache and locks to reduce size
-          if (entry === '.cache' || entry === '.bin') continue;
-          copyDir(path.join(src, entry), path.join(dest, entry));
-        }
-      } else {
-        fs.copyFileSync(src, dest);
-      }
-    };
-    copyDir(backendNodeModulesSrc, backendNodeModulesDest);
-    console.log('✅ Copied backend node_modules to build/backend/node_modules');
-  } else {
-    console.log('⚠️ backend/node_modules not found. Packaged backend may require online install.');
-  }
-  
   console.log('🎉 Required files copied successfully!');
-  console.log('📝 Note: Using electron/main.js directly (no build/electron.js needed)');
-  console.log('📝 Note: All dependencies from package.json will be included in the final package automatically');
+  console.log('📝 Note: All dependencies from package.json will be installed during packaging');
   
 } catch (error) {
   console.error('❌ Error copying files:', error.message);

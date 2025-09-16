@@ -1,4 +1,4 @@
-/* Minimal Splash Screen Styles - Black Box with White Text */
+/* Minimal Black Splash Screen - 4cm Circular Logo with Loading Animation */
 .splash-container {
   position: fixed;
   top: 0;
@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.8); /* Semi-transparent black overlay */
   pointer-events: none;
 }
 
@@ -18,118 +18,138 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 2rem;
   background: #000000; /* Pure black background */
-  border-radius: 8px;
-  border: 1px solid #333333; /* Subtle border */
+  border-radius: 12px;
+  border: 1px solid #1a1a1a; /* Very subtle border */
   pointer-events: auto;
-  min-width: 280px;
+  min-width: 200px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
 
 .splash-logo-container {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .splash-logo {
-  width: 48px;
-  height: 48px;
+  width: 4cm; /* Exactly 4cm as requested */
+  height: 4cm;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%; /* Make it round */
+  border-radius: 50%; /* Perfect circle */
   background: #000000; /* Black background */
-  border: 1px solid #333333; /* Subtle border */
+  border: 2px solid #333333; /* Subtle border */
   overflow: hidden;
   position: relative;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .splash-logo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%) brightness(200%); /* Make logo white */
+  border-radius: 50%;
+  filter: brightness(1.1) contrast(1.1); /* Slight enhancement */
 }
 
-.splash-content {
-  text-align: center;
+/* Rotating ring animation around logo */
+.splash-logo-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border: 2px solid transparent;
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  animation: splash-rotate 2s linear infinite;
 }
 
-.splash-app-name {
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #ffffff; /* White text */
-  font-family: 'Inter', 'Segoe UI', sans-serif;
-  letter-spacing: -0.01em;
-  margin-bottom: 0.25rem;
-}
-
-.splash-tagline {
-  font-size: 0.75rem;
-  color: #cccccc; /* Light gray text */
-  font-weight: 300;
-  margin-bottom: 1rem;
+@keyframes splash-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .splash-loading-container {
-  width: 160px;
-  height: 3px;
-  background: #222222; /* Dark background for loading bar */
-  border-radius: 2px;
-  overflow: hidden;
-  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-.splash-loading-bar {
-  height: 100%;
-  background: #ffffff; /* White loading bar */
-  border-radius: 2px;
-  width: 0%;
-  transition: width 0.3s ease;
+/* Spinner dots animation */
+.splash-loading-spinner {
+  display: flex;
+  gap: 4px;
+  align-items: center;
 }
 
-.splash-version {
-  font-size: 0.625rem;
-  color: #888888; /* Medium gray text */
+.splash-spinner-dot {
+  width: 6px;
+  height: 6px;
+  background: #ffffff;
+  border-radius: 50%;
+  animation: splash-bounce 1.4s ease-in-out infinite both;
+}
+
+.splash-spinner-dot:nth-child(1) { animation-delay: -0.32s; }
+.splash-spinner-dot:nth-child(2) { animation-delay: -0.16s; }
+.splash-spinner-dot:nth-child(3) { animation-delay: 0s; }
+
+@keyframes splash-bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+.splash-loading-text {
+  font-size: 0.875rem;
+  color: #ffffff;
   font-weight: 300;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  letter-spacing: 0.5px;
 }
 
 /* Responsive styles */
 @media (max-width: 768px) {
   .splash-box {
-    padding: 1.25rem;
-    min-width: 240px;
+    padding: 1.5rem;
+    min-width: 180px;
   }
   
   .splash-logo {
-    width: 40px;
-    height: 40px;
+    width: 3cm; /* Slightly smaller on tablets */
+    height: 3cm;
   }
   
-  .splash-app-name {
-    font-size: 1.125rem;
-  }
-  
-  .splash-loading-container {
-    width: 140px;
+  .splash-loading-text {
+    font-size: 0.8rem;
   }
 }
 
 @media (max-width: 480px) {
   .splash-box {
-    padding: 1rem;
-    min-width: 200px;
+    padding: 1.25rem;
+    min-width: 160px;
   }
   
   .splash-logo {
-    width: 36px;
-    height: 36px;
+    width: 2.5cm; /* Smaller on mobile */
+    height: 2.5cm;
   }
   
-  .splash-app-name {
-    font-size: 1rem;
+  .splash-loading-text {
+    font-size: 0.75rem;
   }
   
-  .splash-loading-container {
-    width: 120px;
+  .splash-spinner-dot {
+    width: 5px;
+    height: 5px;
   }
 }

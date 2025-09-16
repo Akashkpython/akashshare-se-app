@@ -6,7 +6,7 @@ echo.
 
 echo 🔧 Setting up environment variables...
 set NODE_ENV=development
-set REACT_APP_API_URL=http://localhost:5002
+set REACT_APP_API_URL=http://localhost:5004
 set REACT_APP_DEBUG=true
 
 echo ✅ Environment variables set:
@@ -21,10 +21,10 @@ echo.
 echo Step 1: Checking for existing processes...
 echo.
 
-REM Kill any existing processes on port 5002
-echo 🔍 Checking for processes on port 5002...
-for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5002') do (
-    echo 🗑️ Killing process %%a on port 5002...
+REM Kill any existing processes on port 5004
+echo 🔍 Checking for processes on port 5004...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5004') do (
+    echo 🗑️ Killing process %%a on port 5004...
     taskkill /F /PID %%a >nul 2>&1
 )
 
@@ -66,10 +66,10 @@ echo ========================================
 echo    🎉 ALL SERVICES STARTED!
 echo ========================================
 echo.
-echo ✅ Backend Server: http://localhost:5002
-echo ✅ React Dev Server: http://localhost:5002
+echo ✅ Backend Server: http://localhost:5004
+echo ✅ React Dev Server: http://localhost:5004
 echo ✅ Electron App: Starting...
-echo ✅ WebSocket Chat: ws://localhost:5002/chat
+echo ✅ WebSocket Chat: ws://localhost:5004/chat
 echo.
 echo 🎯 Your Akash Share app should now be running!
 echo    - The Electron window should open automatically

@@ -1,0 +1,34 @@
+{
+  "installation": {
+    "defaultLocation": "C:\\Program Files\\Akash Share",
+    "userLocation": "%LOCALAPPDATA%\\Programs\\Akash Share",
+    "portableLocation": "./Akash Share",
+    "allowCustomLocation": true,
+    "requireAdminRights": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "createQuickLaunchShortcut": false,
+    "runAfterInstall": true,
+    "autoUpdate": true
+  },
+  "directories": {
+    "appData": "%APPDATA%\\Akash Share",
+    "logs": "%APPDATA%\\Akash Share\\logs",
+    "config": "%APPDATA%\\Akash Share\\config",
+    "temp": "%TEMP%\\Akash Share",
+    "cache": "%LOCALAPPDATA%\\Akash Share\\cache"
+  },
+  "registry": {
+    "uninstallKey": "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Akash Share",
+    "appKey": "SOFTWARE\\Akash Share",
+    "versionKey": "SOFTWARE\\Akash Share\\Version"
+  },
+  "features": {
+    "fileAssociation": true,
+    "contextMenu": false,
+    "autoStart": false,
+    "backgroundService": false,
+    "firewallException": false
+  }
+}
+

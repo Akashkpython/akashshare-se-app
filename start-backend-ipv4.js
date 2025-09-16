@@ -4,14 +4,14 @@ import { spawn } from 'child_process';
 console.log('🔧 Starting backend server with IPv4 binding...');
 
 // Set environment variable to force IPv4
-process.env.HOST = '127.0.0.1';
+process.env.HOST = '0.0.0.0';
 
 // Start the backend server
 const backend = spawn('node', ['backend/server.js'], {
   stdio: 'inherit',
   env: {
     ...process.env,
-    HOST: '127.0.0.1'
+    HOST: '0.0.0.0'
   }
 });
 

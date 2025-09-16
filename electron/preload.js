@@ -43,15 +43,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return await ipcRenderer.invoke('window-minimize');
     } catch (error) {
       console.error('Error minimizing window:', error);
-      return null;
+      return { success: false, error: error.message };
     }
   },
   maximize: async () => {
     try {
-      return await ipcRenderer.invoke('window-maximize');
+      const result = await ipcRenderer.invoke('window-maximize');
+      return result;
     } catch (error) {
       console.error('Error maximizing window:', error);
-      return null;
+      return { success: false, error: error.message };
     }
   },
   close: async () => {
@@ -59,7 +60,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return await ipcRenderer.invoke('window-close');
     } catch (error) {
       console.error('Error closing window:', error);
-      return null;
+      return { success: false, error: error.message };
     }
   },
   
@@ -113,40 +114,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }
 });
 
-// Handle window control events
-window.addEventListener('DOMContentLoaded', () => {
-  // Add window control event listeners if needed
-  const minimizeBtn = document.getElementById('minimize-btn');
-  const maximizeBtn = document.getElementById('maximize-btn');
-  const closeBtn = document.getElementById('close-btn');
-  
-  if (minimizeBtn) {
-    minimizeBtn.addEventListener('click', async () => {
-      try {
-        await ipcRenderer.invoke('window-minimize');
-      } catch (error) {
-        console.error('Error minimizing window:', error);
-      }
-    });
-  }
-  
-  if (maximizeBtn) {
-    maximizeBtn.addEventListener('click', async () => {
-      try {
-        await ipcRenderer.invoke('window-maximize');
-      } catch (error) {
-        console.error('Error maximizing window:', error);
-      }
-    });
-  }
-  
-  if (closeBtn) {
-    closeBtn.addEventListener('click', async () => {
-      try {
-        await ipcRenderer.invoke('window-close');
-      } catch (error) {
-        console.error('Error closing window:', error);
-      }
-    });
-  }
-});
+// Remove the DOMContentLoaded event listener as we're using React event handlers
+// The window control event listeners are now handled in the React components

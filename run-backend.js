@@ -15,8 +15,8 @@ const backendPath = path.join(__dirname, 'backend');
 // Set environment variables
 const env = {
   ...process.env,
-  HOST: 'localhost',
-  PORT: '5002',
+  HOST: '0.0.0.0',
+  PORT: '5004',
   NODE_ENV: 'development',
   START_SERVER: 'true'  // Ensure server starts
 };

@@ -1,0 +1,27 @@
+{
+  "appId": "com.akashshare.app",
+  "productName": "Akash Share",
+  "copyright": "Copyright © 2024 Akash Share Team",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "dist-final/Akash Share-win32-x64/**/*"
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "build-resources/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Akash Share",
+    "installerIcon": "build-resources/icon.ico",
+    "uninstallerIcon": "build-resources/icon.ico",
+    "deleteAppDataOnUninstall": false,
+    "artifactName": "AkashShareUserSetup-x64.exe"
+  }
+}

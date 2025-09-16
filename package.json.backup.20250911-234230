@@ -1,0 +1,140 @@
+{
+  "name": "akash-share",
+  "version": "1.0.5",
+  "description": "Akash Share - Professional File Sharing Application",
+  "main": "electron/main.js",
+  "author": "Akash Share Team",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@testing-library/jest-dom": "^5.16.4",
+    "@testing-library/react": "^13.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "axios": "^1.6.2",
+    "clsx": "^2.1.1",
+    "concurrently": "^9.2.1",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.6.2",
+    "eslint-config-prettier": "^10.1.8",
+    "express-rate-limit": "^7.1.5",
+    "framer-motion": "^6.5.1",
+    "lucide-react": "^0.263.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.8.1",
+    "react-scripts": "^5.0.1",
+    "recharts": "^3.1.2",
+    "tailwind-merge": "^3.3.1",
+    "tailwindcss-animate": "^1.0.7",
+    "wait-on": "^8.0.4",
+    "web-vitals": "^2.1.4",
+    "ws": "^8.14.2",
+    "zustand": "^4.4.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.6",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/preset-env": "^7.23.6",
+    "@babel/preset-react": "^7.23.3",
+    "@babel/preset-typescript": "^7.23.3",
+    "cross-env": "^7.0.3",
+    "electron": "^38.1.0",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2",
+    "tailwindcss": "^3.4.17"
+  },
+  "scripts": {
+    "start": "cross-env PORT=5002 react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "electron": "cross-env NODE_ENV=development electron .",
+    "electron-dev": "concurrently --kill-others-on-fail \"wait-on http://localhost:5003/health && cross-env PORT=5002 react-scripts start\" \"cross-env PORT=5003 node backend/server.js\"",
+    "electron:copy": "node scripts/copy-electron.js",
+    "electron-build": "electron-builder build -mwl",
+    "dist": "npm run build && electron-builder",
+    "build:clean": "scripts\\clean-dist-folder.bat && npm run build",
+    "dist:clean": "scripts\\kill-electron-processes.bat && scripts\\clean-dist-folder.bat && npm run build && electron-builder",
+    "dist:force": "scripts\\force-cleanup.bat && npm run build && electron-builder",
+    "pack": "electron-builder --dir",
+    "build-electron": "npm run build && npm run electron-build",
+    "build:win": "npm run build && electron-builder --win --publish=never",
+    "postinstall": "electron-builder install-app-deps",
+    "clean": "scripts\\clean-dist-folder.bat",
+    "kill-processes": "scripts\\kill-electron-processes.bat"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "rules": {
+      "no-console": "warn",
+      "no-debugger": "warn"
+    }
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "build": {
+    "appId": "com.akashshare.app",
+    "productName": "Akash Share",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "**/*.node",
+      "**/*.dll",
+      "**/backend/**/*",
+      "**/node_modules/**/*"
+    ],
+    "files": [
+      "build/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "!node_modules/.cache/**/*",
+      "!node_modules/electron/**/*",
+      "!**/*.map",
+      "!src/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": ["**/*", "!node_modules", "!uploads/*", "!*.log"]
+      }
+    ],
+    "mac": {
+      "icon": "build-resources/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "icon": "build-resources/icon.ico",
+      "target": "nsis"
+    },
+    "linux": {
+      "icon": "build-resources/icon.png",
+      "target": "AppImage"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "AkashShareUserSetup-x64.${ext}"
+    }
+  },
+  "resolutions": {
+    "motion-utils": "10.18.0",
+    "react-transition-group": "^4.4.5"
+  }
+}

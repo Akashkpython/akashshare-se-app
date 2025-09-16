@@ -10,15 +10,15 @@ const __dirname = path.dirname(__filename);
 console.log('🚀 Starting Akash Share Development Environment...');
 
 // Start the backend server
-console.log('🔧 Starting backend server on port 5003...');
+console.log('🔧 Starting backend server on port 5004...');
 const backend = spawn('node', ['server.js'], {
   cwd: path.join(__dirname, 'backend'),
   stdio: 'pipe',
   env: {
     ...process.env,
     NODE_ENV: 'development',
-    PORT: '5003',
-    HOST: 'localhost'
+    PORT: '5004',
+    HOST: '0.0.0.0'
   }
 });
 
@@ -48,15 +48,15 @@ backend.on('close', (code) => {
 
 // Function to start frontend after backend is ready
 function startFrontend() {
-  console.log('🔧 Starting frontend on port 5002...');
+  console.log('🔧 Starting frontend on port 5004...');
   const frontend = spawn('npm', ['start'], {
     cwd: __dirname,
     stdio: 'pipe',
     env: {
       ...process.env,
       NODE_ENV: 'development',
-      PORT: '5002',
-      REACT_APP_API_URL: 'http://localhost:5003'
+      PORT: '5004',
+      REACT_APP_API_URL: 'http://localhost:5004'
     }
   });
 
@@ -78,5 +78,5 @@ function startFrontend() {
 }
 
 console.log('⏳ Please wait for both backend and frontend to start...');
-console.log('🔗 Backend will be available at http://localhost:5003');
-console.log('🔗 Frontend will be available at http://localhost:5002');
+console.log('🔗 Backend will be available at http://localhost:5004');
+console.log('🔗 Frontend will be available at http://localhost:5004');

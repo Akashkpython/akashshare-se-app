@@ -114,14 +114,14 @@ class Environment implements EnvironmentConfig {
     if (this.isDevelopment) {
       const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       if (isDev) {
-        return 'http://localhost:5002';
+        return 'http://localhost:5004';
       }
     }
     
     // Production/Network mode - use same host as frontend
     const protocol = window.location.protocol;
     const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:5002`;
+    return `${protocol}//${hostname}:5004`;
   }
 }
 

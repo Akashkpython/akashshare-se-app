@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akash Share - Uninstall Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .warning {
+            color: #d32f2f;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+        .button:hover {
+            background: #5a6fd8;
+        }
+        .button.danger {
+            background: #d32f2f;
+        }
+        .button.danger:hover {
+            background: #b71c1c;
+        }
+        .instructions {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Uninstall Akash Share</h1>
+        
+        <div class="warning">
+            ⚠️ This action cannot be undone!
+        </div>
+        
+        <div class="instructions">
+            To confirm uninstall, type <strong>"AkAsH"</strong> exactly (case-sensitive):
+        </div>
+        
+        <input type="text" id="confirmInput" placeholder="Type AkAsH here" autocomplete="off">
+        
+        <div>
+            <button class="button" onclick="confirmUninstall()">Confirm Uninstall</button>
+            <button class="button danger" onclick="cancelUninstall()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        function confirmUninstall() {
+            const input = document.getElementById('confirmInput').value;
+            
+            if (input === 'AkAsH') {
+                // Create a file to indicate successful confirmation
+                const link = document.createElement('a');
+                link.href = 'data:text/plain,CONFIRMED';
+                link.download = 'uninstall_confirmed.txt';
+                link.click();
+                
+                alert('Uninstall confirmed! You can now close this window and continue with the uninstall process.');
+                window.close();
+            } else {
+                alert('Incorrect! You must type "AkAsH" exactly (case-sensitive).');
+                document.getElementById('confirmInput').value = '';
+                document.getElementById('confirmInput').focus();
+            }
+        }
+        
+        function cancelUninstall() {
+            if (confirm('Are you sure you want to cancel the uninstall?')) {
+                window.close();
+            }
+        }
+        
+        // Focus on input field when page loads
+        document.getElementById('confirmInput').focus();
+        
+        // Handle Enter key
+        document.getElementById('confirmInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmUninstall();
+            }
+        });
+    </script>
+</body>
+</html>

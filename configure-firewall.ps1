@@ -35,8 +35,8 @@ try {
     }
 
     # Add firewall rule for backend (WebSocket and API server)
-    Write-Host "🔧 Adding firewall rule for Backend (port 5002)..." -ForegroundColor Cyan
-    netsh advfirewall firewall add rule name="Akash Share Backend" dir=in action=allow protocol=TCP localport=5002
+    Write-Host "🔧 Adding firewall rule for Backend (port 5004)..." -ForegroundColor Cyan
+    netsh advfirewall firewall add rule name="Akash Share Backend" dir=in action=allow protocol=TCP localport=5004
     
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Backend firewall rule added successfully!" -ForegroundColor Green
@@ -49,7 +49,7 @@ try {
     Write-Host ""
     Write-Host "📱 You can now access Akash Share from mobile devices on the same WiFi network:" -ForegroundColor Yellow
     Write-Host "   👉 Frontend: http://$ipAddress`:3001" -ForegroundColor White
-    Write-Host "   👉 Backend:  http://$ipAddress`:5002" -ForegroundColor White
+    Write-Host "   👉 Backend:  http://$ipAddress`:5004" -ForegroundColor White
     Write-Host ""
     Write-Host "💡 If the IP address above is incorrect, find your local IP by running 'ipconfig' in Command Prompt" -ForegroundColor Yellow
     Write-Host ""
@@ -71,7 +71,7 @@ try {
     Write-Host "2. Click 'Inbound Rules' → 'New Rule...'" -ForegroundColor White
     Write-Host "3. Select 'Port' → TCP → Specific ports: 3001" -ForegroundColor White
     Write-Host "4. Allow the connection → All profiles → Name: 'Akash Share Frontend'" -ForegroundColor White
-    Write-Host "5. Repeat for port 5002 with name 'Akash Share Backend'" -ForegroundColor White
+    Write-Host "5. Repeat for port 5004 with name 'Akash Share Backend'" -ForegroundColor White
 }
 
 Write-Host ""

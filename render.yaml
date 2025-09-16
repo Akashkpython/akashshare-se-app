@@ -12,7 +12,8 @@ services:
     buildCommand: |
       cd backend
       rm -rf node_modules package-lock.json
-      npm install --production
+      
+npm install --production
       npm install mime@^2.6.0 mime-types@^2.1.35 mime-db@^1.52.0 mongodb@^6.3.0 debug@^4.3.4 --save
       npm list express-rate-limit
       npm list mime
@@ -22,7 +23,7 @@ services:
       npm list mongoose
       npm list debug
       echo "✅ All dependencies installed successfully"
-    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5003 node start-production.js
+    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5004 node start-production.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -30,13 +31,13 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: PORT
-        value: 5003
+        value: 5004
       - key: MONGO_URI
         value: mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
       - key: JWT_SECRET
         value: f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09
       - key: ALLOWED_FILE_TYPES
-        value: image/jpeg,image/png,image/gif,image/webp,text/plain,application/pdf
+        value: image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/x-icon,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-rar-compressed,application/x-7z-compressed,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,audio/mpeg,audio/wav,audio/mp4,audio/aac,application/json,application/xml,application/javascript,text/html,text/css,application/vnd.openxmlformats-officedocument.presentationml.slideshow,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,application/x-tar,application/gzip,text/markdown,application/rtf
       - key: FILE_SIZE_LIMIT
         value: 10485760
       - key: RATE_LIMIT_MAX_REQUESTS

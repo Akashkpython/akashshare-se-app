@@ -17,7 +17,7 @@ export MONGO_URI="mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.
 export JWT_SECRET="f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09"
 
 # File Upload Configuration
-export ALLOWED_FILE_TYPES="image/jpeg,image/png,image/gif,image/webp,text/plain,application/pdf"
+export ALLOWED_FILE_TYPES="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/x-icon,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-rar-compressed,application/x-7z-compressed,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,audio/mpeg,audio/wav,audio/mp4,audio/aac,application/json,application/xml,application/javascript,text/html,text/css,application/vnd.openxmlformats-officedocument.presentationml.slideshow,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,application/x-tar,application/gzip,text/markdown,application/rtf"
 export FILE_SIZE_LIMIT="10485760"
 
 # Rate Limiting Configuration

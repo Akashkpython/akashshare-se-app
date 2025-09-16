@@ -46,7 +46,7 @@ NODE_ENV=production
 
 # File upload limits
 FILE_SIZE_LIMIT=10485760
-ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp,text/plain,application/pdf
+ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml,image/x-icon,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-rar-compressed,application/x-7z-compressed,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,audio/mpeg,audio/wav,audio/mp4,audio/aac,application/json,application/xml,application/javascript,text/html,text/css,application/vnd.openxmlformats-officedocument.presentationml.slideshow,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,application/x-tar,application/gzip,text/markdown,application/rtf
 
 # Security settings
 RATE_LIMIT_WINDOW_MS=900000

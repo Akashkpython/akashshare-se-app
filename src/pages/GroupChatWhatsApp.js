@@ -2,1319 +2,1238 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Send, 
-  Users, 
   Paperclip, 
   Smile,
-  Check,
-  CheckCheck
+  Users, 
+  MoreVertical, 
+  X, 
+  Reply,
+  MoreHorizontal,
+  Sparkles,
+  Settings,
+  Bell,
+  Crown
 } from 'lucide-react';
-import useStore from '../store/useStore.js';
 
-// Format time for chat messages (WhatsApp style)
-const formatTime = (date) => {
-  return new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
+// Modern emoji picker with black theme
+const EmojiPicker = ({ onEmojiSelect, onClose, position = { x: 0, y: 0 } }) => {
+  const emojiCategories = [
+    { name: 'Recent', emojis: ['😀', '😂', '❤️', '👍', '😢', '😮'], icon: '⭐' },
+    { name: 'Smileys', emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳'], icon: '😊' },
+    { name: 'People', emojis: ['👋', '🤚', '🖐', '✋', '🖖', '👌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕', '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜', '👏', '🙌', '👐', '🤲', '🤝', '🙏'], icon: '👋' },
+    { name: 'Hearts', emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟'], icon: '❤️' },
+    { name: 'Objects', emojis: ['🎉', '🎊', '🎈', '🎁', '🎀', '🎂', '🍰', '🧁', '🍭', '🍬', '🍫', '🍩', '🍪', '🍯', '🍺', '🍻', '🥂', '🍷', '🍸', '🍹'], icon: '🎉' }
+  ];
 
-// Message status component
-const MessageStatus = ({ status, isSent }) => {
-  if (!isSent) return null;
-  
-  switch (status) {
-    case 'sending':
-      return <div className="w-4 h-4 border-2 border-gray-400 rounded-full border-t-transparent animate-spin"></div>;
-    case 'sent':
-      return <Check size={16} className="text-gray-400" />;
-    case 'delivered':
-      return <CheckCheck size={16} className="text-gray-400" />;
-    case 'read':
-      return <CheckCheck size={16} className="text-green-500" />;
-    case 'failed':
-      return <span className="text-xs text-red-400">⚠️</span>;
-    default:
-      return <Check size={16} className="text-gray-300" />;
-  }
-};
+  const [activeCategory, setActiveCategory] = useState('Recent');
 
-// Individual message component (WhatsApp style) - Memoized for performance
-const ChatMessage = React.memo(({ message, isOwn }) => {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}
+      initial={{ opacity: 0, scale: 0.8, y: 10 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.8, y: 10 }}
+      className="absolute z-50 bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl border border-gray-800 p-6"
+      style={{
+        left: position.x,
+        top: position.y - 320,
+        width: '340px',
+        height: '300px'
+      }}
     >
-      <div
-        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg relative ${
-          isOwn
-            ? 'text-white rounded-br-none'
-            : 'text-white rounded-bl-none shadow-sm'
-        }`}
-        style={isOwn 
-          ? {
-              background: 'linear-gradient(90deg, rgba(31, 41, 55, 0.9), rgba(18, 18, 18, 0.9))',
-              boxShadow: '0 0 15px rgba(31, 41, 55, 0.4)',
-              border: '1px solid rgba(55, 65, 81, 0.3)'
-            }
-          : {
-              background: 'linear-gradient(90deg, rgba(28, 28, 28, 0.9), rgba(18, 18, 18, 0.9))',
-              boxShadow: '0 0 10px rgba(0, 0, 0, 0.5)',
-              border: '1px solid rgba(55, 65, 81, 0.3)'
-            }
-        }
-      >
-        {/* Message content */}
-        {message.type === 'text' && (
-          <div>
-            <p className="text-sm">{message.content}</p>
-          </div>
-        )}
-        
-        {message.type === 'image' && (
-          <div>
-            <img 
-              src={message.imageUrl} 
-              alt="Shared image" 
-              className="h-auto max-w-full mb-1 rounded-lg"
-              style={{ maxHeight: '200px' }}
-            />
-            {message.caption && (
-              <p className="mt-1 text-sm">{message.caption}</p>
-            )}
-          </div>
-        )}
-
-        {/* Message metadata */}
-        <div className={`flex items-center justify-end mt-1 space-x-1 ${
-          isOwn ? 'text-gray-300' : 'text-gray-300'
-        }`}>
-          <span className="text-xs">{formatTime(message.timestamp)}</span>
-          <MessageStatus status={message.status} isSent={isOwn} />
+      {/* Header with black theme */}
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-700">
+        <div className="flex items-center space-x-2">
+          <Sparkles className="w-5 h-5 text-white" />
+          <span className="text-lg font-bold text-white">Reactions</span>
         </div>
+        <button
+          onClick={onClose}
+          className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+        >
+          <X size={18} className="text-gray-300" />
+        </button>
+          </div>
 
-        {/* Message tail */}
-        <div
-          className={`absolute bottom-0 ${
-            isOwn
-              ? 'right-0 transform translate-x-1 border-l-8 border-t-8 border-t-transparent'
-              : 'left-0 transform -translate-x-1 border-r-8 border-t-8 border-t-transparent'
-          }`}
-          style={isOwn 
-            ? { borderLeftColor: 'rgba(31, 41, 55, 0.9)', width: 0, height: 0 }
-            : { borderRightColor: 'rgba(28, 28, 28, 0.9)', width: 0, height: 0 }
-          }
-        />
+      {/* Category tabs with black theme */}
+      <div className="flex space-x-2 mb-4 overflow-x-auto">
+        {emojiCategories.map((category) => (
+          <button
+            key={category.name}
+            onClick={() => setActiveCategory(category.name)}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap ${
+              activeCategory === category.name
+                ? 'bg-white text-black shadow-lg'
+                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+            }`}
+          >
+            <span className="text-lg">{category.icon}</span>
+            <span>{category.name}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Emoji grid with black theme */}
+      <div className="grid grid-cols-8 gap-2 h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+        {emojiCategories
+          .find(cat => cat.name === activeCategory)
+          ?.emojis.map((emoji, index) => (
+            <button
+              key={index}
+              onClick={() => onEmojiSelect(emoji)}
+              className="p-3 hover:bg-gray-800 rounded-xl transition-all duration-200 text-xl hover:scale-110 hover:shadow-lg"
+            >
+              {emoji}
+            </button>
+          ))}
       </div>
     </motion.div>
   );
-});
+};
 
-ChatMessage.displayName = 'ChatMessage';
+// Message component with black theme
+const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [emojiPosition, setEmojiPosition] = useState({ x: 0, y: 0 });
+  const messageRef = useRef(null);
 
-// Notification component - Memoized for performance
-const NotificationMessage = React.memo(({ notification }) => {
-  const getNotificationStyle = (type) => {
-    switch (type) {
-      case 'join':
-        return {
-          background: 'linear-gradient(90deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))',
-          border: '1px solid rgba(34, 197, 94, 0.3)',
-          color: 'rgb(34, 197, 94)'
-        };
-      case 'leave':
-        return {
-          background: 'linear-gradient(90deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.2))',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          color: 'rgb(239, 68, 68)'
-        };
-      case 'online':
-        return {
-          background: 'linear-gradient(90deg, rgba(55, 65, 81, 0.2), rgba(31, 41, 55, 0.2))',
-          border: '1px solid rgba(55, 65, 81, 0.3)',
-          color: 'rgb(156, 163, 175)'
-        };
-      case 'warning':
-        return {
-          background: 'linear-gradient(90deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2))',
-          border: '1px solid rgba(245, 158, 11, 0.3)',
-          color: 'rgb(245, 158, 11)'
-        };
-      default:
-        return {
-          background: 'linear-gradient(90deg, rgba(156, 163, 175, 0.2), rgba(107, 114, 128, 0.2))',
-          border: '1px solid rgba(156, 163, 175, 0.3)',
-          color: 'rgb(156, 163, 175)'
-        };
+  const isOwnMessage = message.username === currentUser;
+  const isSystemMessage = message.type === 'system';
+  const isFileShare = message.type === 'file_share';
+  const reactions = message.reactions || {};
+
+  const handleReactionClick = () => {
+    const rect = messageRef.current.getBoundingClientRect();
+    setEmojiPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top
+    });
+    setShowEmojiPicker(true);
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    onReaction(message.id, emoji);
+    setShowEmojiPicker(false);
+  };
+
+  const handleFileDownload = () => {
+    if (message.fileUrl) {
+      const link = document.createElement('a');
+      link.href = message.fileUrl;
+      link.download = message.fileName || 'download';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.8 }}
-      className="flex justify-center mb-2"
-    >
-      <div
-        className="px-3 py-1 text-xs font-medium rounded-full"
-        style={getNotificationStyle(notification.type)}
-      >
-        {notification.message}
-      </div>
-    </motion.div>
-  );
-});
+  const formatTime = (timestamp) => {
+    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
-NotificationMessage.displayName = 'NotificationMessage';
+  // Special rendering for system messages
+  if (isSystemMessage) {
+    return (
+      <div className="flex justify-center mb-4">
+        <div className="bg-gray-800/50 text-gray-300 px-4 py-2 rounded-full text-sm border border-gray-700/50">
+          {message.content}
+        </div>
+      </div>
+    );
+  }
+
+  // Special rendering for file share messages
+  if (isFileShare) {
+    const isImage = message.fileType?.startsWith('image/');
+    const isVideo = message.fileType?.startsWith('video/');
+    const isAudio = message.fileType?.startsWith('audio/');
+    
+    return (
+      <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4 group`}>
+        <div className={`relative max-w-xs lg:max-w-md`}>
+          <div className={`relative px-5 py-3 rounded-3xl ${
+            isOwnMessage
+              ? 'bg-white text-black rounded-br-lg shadow-lg'
+              : 'bg-gray-800 text-white rounded-bl-lg shadow-lg border border-gray-700'
+          }`}>
+            {/* File preview */}
+            <div className="mb-3">
+              {isImage ? (
+                <img 
+                  src={message.fileUrl} 
+                  alt={message.fileName}
+                  className="w-full h-48 object-cover rounded-lg cursor-pointer"
+                  onClick={handleFileDownload}
+                />
+              ) : isVideo ? (
+                <video 
+                  src={message.fileUrl} 
+                  controls
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              ) : isAudio ? (
+                <audio 
+                  src={message.fileUrl} 
+                  controls
+                  className="w-full"
+                />
+              ) : (
+                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+                  <div className="text-4xl mb-2">📄</div>
+                  <div className="text-sm font-medium">{message.fileName}</div>
+                </div>
+              )}
+            </div>
+            
+            {/* File info */}
+            <div className="text-sm">
+              <div className="font-medium mb-1">{message.fileName}</div>
+              <div className="text-xs opacity-70">
+                {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
+              </div>
+            </div>
+            
+            {/* Download button */}
+            <button
+              onClick={handleFileDownload}
+              className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 px-3 rounded-lg transition-colors"
+            >
+              💾 Save to PC
+            </button>
+            
+            {/* Expiration notice */}
+            {message.expiresAt && (
+              <div className="text-xs opacity-50 mt-2 text-center">
+                ⏰ Expires in 10 minutes
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={messageRef}
+      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} mb-4 group`}
+    >
+      <div className={`relative max-w-xs lg:max-w-md`}>
+        {/* Reply context with black theme */}
+        {message.replyTo && (
+          <div className={`mb-2 p-3 rounded-2xl bg-gray-800 border-l-4 ${
+            isOwnMessage ? 'border-white' : 'border-gray-500'
+          }`}>
+            <div className="text-sm font-semibold text-gray-300">
+              {message.replyTo.username}
+            </div>
+            <div className="text-sm text-gray-400 truncate">
+              {message.replyTo.content}
+            </div>
+          </div>
+        )}
+
+        {/* Message bubble with black theme */}
+        <div
+          className={`relative px-5 py-3 rounded-3xl ${
+            isOwnMessage
+              ? 'bg-white text-black rounded-br-lg shadow-lg'
+              : 'bg-gray-800 text-white rounded-bl-lg shadow-lg border border-gray-700'
+          }`}
+      >
+        {/* Message content */}
+          <div className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </div>
+
+          {/* Timestamp and status with black theme */}
+          <div className={`flex items-center justify-end mt-2 space-x-2 ${
+            isOwnMessage ? 'text-gray-600' : 'text-gray-400'
+          }`}>
+            <span className="text-xs font-medium">
+              {formatTime(message.timestamp)}
+            </span>
+            {isOwnMessage && (
+              <div className="flex space-x-1">
+                <div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
+                <div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Reactions with black theme */}
+        {Object.keys(reactions).length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {Object.entries(reactions).map(([emoji, users]) => (
+              <div
+                key={emoji}
+                className="flex items-center space-x-1 bg-gray-800 rounded-full px-3 py-1 shadow-lg border border-gray-700"
+              >
+                <span className="text-sm">{emoji}</span>
+                <span className="text-xs text-gray-300 font-medium">{users.length}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Message actions with black theme */}
+        <div className={`absolute top-0 ${
+          isOwnMessage ? '-left-20' : '-right-20'
+        } opacity-0 group-hover:opacity-100 transition-all duration-300`}>
+          <div className="flex space-x-2">
+            <button
+              onClick={handleReactionClick}
+              className="p-2 bg-gray-900 rounded-full shadow-xl hover:bg-gray-800 transition-all duration-200 hover:scale-110 border border-gray-800"
+              title="React"
+            >
+              <Smile size={16} className="text-gray-300" />
+            </button>
+            <button
+              onClick={() => onReply(message)}
+              className="p-2 bg-gray-900 rounded-full shadow-xl hover:bg-gray-800 transition-all duration-200 hover:scale-110 border border-gray-800"
+              title="Reply"
+            >
+              <Reply size={16} className="text-gray-300" />
+            </button>
+            <button className="p-2 bg-gray-900 rounded-full shadow-xl hover:bg-gray-800 transition-all duration-200 hover:scale-110 border border-gray-800">
+              <MoreHorizontal size={16} className="text-gray-300" />
+            </button>
+          </div>
+        </div>
+        </div>
+
+      {/* Emoji picker */}
+      <AnimatePresence>
+        {showEmojiPicker && (
+          <EmojiPicker
+            onEmojiSelect={handleEmojiSelect}
+            onClose={() => setShowEmojiPicker(false)}
+            position={emojiPosition}
+          />
+        )}
+      </AnimatePresence>
+      </div>
+  );
+};
+
+// Small sidebar component
+const SmallSidebar = ({ 
+  onlineMembers, 
+  isAdmin, 
+  onShowSettings, 
+  onShowMembers, 
+  onShowNotifications, 
+  onShowAdminPanel,
+  onShowEmojiPicker,
+  isConnected 
+}) => {
+  return (
+    <div className="w-16 bg-black border-r border-gray-900 flex flex-col items-center py-4 space-y-4 h-screen overflow-hidden">
+      {/* Online Members */}
+      <div className="relative group">
+        <button 
+          onClick={onShowMembers}
+          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+        >
+          <Users className="w-5 h-5 text-white" />
+        </button>
+        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="text-sm font-semibold text-white mb-2">Online Members</div>
+          <div className="text-xs text-gray-300">{onlineMembers.length} online</div>
+        </div>
+      </div>
+
+      {/* Emoji Picker */}
+      <div className="relative group">
+        <button 
+          onClick={onShowEmojiPicker}
+          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+        >
+          <Smile className="w-5 h-5 text-white" />
+        </button>
+        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="text-sm font-semibold text-white">Emoji Picker</div>
+      </div>
+      </div>
+
+      {/* Settings */}
+      <div className="relative group">
+        <button 
+          onClick={onShowSettings}
+          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+        >
+          <Settings className="w-5 h-5 text-white" />
+        </button>
+        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="text-sm font-semibold text-white">Settings</div>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="relative group">
+        <button 
+          onClick={onShowNotifications}
+          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+        >
+          <Bell className="w-5 h-5 text-white" />
+        </button>
+        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="text-sm font-semibold text-white">Notifications</div>
+        </div>
+      </div>
+
+      {/* Admin Panel */}
+      {isAdmin && (
+        <div className="relative group">
+          <button 
+            onClick={onShowAdminPanel}
+            className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+          >
+            <Crown className="w-5 h-5 text-yellow-400" />
+          </button>
+          <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+            <div className="text-sm font-semibold text-white">Admin Panel</div>
+          </div>
+        </div>
+      )}
+
+      {/* Connection Status */}
+      <div className="relative group mt-auto">
+        <div className="p-3 bg-gray-800 rounded-full">
+          <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+        </div>
+        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="text-sm font-semibold text-white">{isConnected ? 'Connected' : 'Disconnected'}</div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const GroupChatWhatsApp = () => {
-  const { addNotification } = useStore();
+  // State management
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [username, setUsername] = useState('');
-  const [tempUsername, setTempUsername] = useState('');
-  const [showNameModal, setShowNameModal] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [currentRoom, setCurrentRoom] = useState('general'); // eslint-disable-line no-unused-vars
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [imageCaption, setImageCaption] = useState('');
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [, setIsConnecting] = useState(false);
   const [onlineMembers, setOnlineMembers] = useState([]);
-  const [roomInfo, setRoomInfo] = useState({ name: 'Akash Share Group Chat', memberCount: 0 });
-  
+  const [ws, setWs] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+  const [showMembersPanel, setShowMembersPanel] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [adminKey, setAdminKey] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [, setMutedMembers] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+
+  // Refs
   const messagesEndRef = useRef(null);
-  const wsRef = useRef(null);
   const fileInputRef = useRef(null);
-  const isMountedRef = useRef(true);
-  const connectionLockRef = useRef(false); // Global lock to prevent multiple simultaneous connections
-  const maxReconnectAttempts = 5;
-  // Prevent duplicate notifications and noisy UI
-  const hasAnnouncedConnectionRef = useRef(false);
-  const lastOnlineCountRef = useRef(null);
-  const notificationCacheRef = useRef(new Set());
-  const lastNotificationTimeRef = useRef(new Map());
+  const sendingMessageRef = useRef(false);
+  const connectionLockRef = useRef(false);
 
-  // Log component mount/unmount
-  useEffect(() => {
-    // Component mounted
-    isMountedRef.current = true;
-    
-    return () => {
-      // Component unmounting
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  // Add notification helper with aggressive deduplication
-  const addNotificationMessage = useCallback((message, type = 'info') => {
-    const now = Date.now();
-    const messageKey = `${type}:${message}`;
-    
-    // Check if we've shown this exact notification recently (within 10 seconds)
-    const lastTime = lastNotificationTimeRef.current.get(messageKey);
-    if (lastTime && (now - lastTime) < 10000) {
-      console.log('🚫 Skipping duplicate notification:', message);
-      return;
-    }
-    
-    // Aggressive deduplication: check if notification already exists in current list
-    const currentNotifications = notifications;
-    if (currentNotifications.some(n => n.message === message && n.type === type)) {
-      console.log('🚫 Notification already in queue:', message);
-      return;
-    }
-    
-    // Cache this notification
-    lastNotificationTimeRef.current.set(messageKey, now);
-    notificationCacheRef.current.add(messageKey);
-    
-    const notification = {
-      id: Date.now() + Math.random(),
-      message,
-      type,
-      timestamp: new Date()
-    };
-    setNotifications(prev => {
-      // Double-check for duplicates before adding
-      if (prev.some(n => n.message === message && n.type === type)) {
-        console.log('🚫 Last-second duplicate check blocked:', message);
-        return prev;
-      }
-      return [...prev, notification];
-    });
-    
-    // Auto-remove notification after 3 seconds
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== notification.id));
-    }, 3000);
-    
-    // Clean up old cache entries after 15 seconds
-    setTimeout(() => {
-      lastNotificationTimeRef.current.delete(messageKey);
-      notificationCacheRef.current.delete(messageKey);
-    }, 15000);
-  }, [notifications]);
-
-  // Handle joining chat with username
-  const handleJoinChat = useCallback(() => {
-    if (!tempUsername.trim()) return;
-    
-    console.log('🔧 handleJoinChat called with username:', tempUsername.trim());
-    setUsername(tempUsername.trim());
-    setShowNameModal(false);
-  }, [tempUsername]);
-
-  // Handle name input key press
-  const handleNameKeyPress = useCallback((e) => {
-    if (e.key === 'Enter') {
-      handleJoinChat();
-    }
-  }, [handleJoinChat]);
-
-  // Scroll to bottom of messages
+  // Auto-scroll function
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  // WebSocket connection with improved stability
+  const connectWebSocket = useCallback(() => {
+    if (connectionLockRef.current || !username.trim()) return;
+    
+    connectionLockRef.current = true;
+    setIsConnecting(true);
+    
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.hostname === 'localhost' ? '127.0.0.1:5004' : '127.0.0.1:5004';
+      const wsUrl = `${protocol}//${host}/chat?username=${encodeURIComponent(username)}&room=general`;
+      
+      console.log('🔌 Connecting to WebSocket:', wsUrl);
+      
+      const websocket = new WebSocket(wsUrl);
+      
+      websocket.onopen = () => {
+        console.log('✅ WebSocket connected');
+        setIsConnected(true);
+        setIsConnecting(false);
+        connectionLockRef.current = false;
+        setWs(websocket);
+      };
+
+      websocket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📨 Received message:', data);
+
+          if (data.type === 'message') {
+            setMessages(prev => [...prev, data]);
+            scrollToBottom();
+          } else if (data.type === 'userList') {
+            console.log('📋 Received userList:', data);
+            console.log('📋 data.users type:', typeof data.users);
+            console.log('📋 data.users value:', data.users);
+            console.log('📋 data.users isArray:', Array.isArray(data.users));
+            setOnlineMembers(data.users || []);
+          } else if (data.type === 'user_joined') {
+            console.log('👤 Received user_joined:', data);
+            console.log('👤 data.username:', data.username);
+            console.log('👤 data.username type:', typeof data.username);
+            setOnlineMembers(prev => {
+              const newMembers = [...prev, data.username];
+              console.log('👤 Updated onlineMembers:', newMembers);
+              return newMembers;
+            });
+            // Add join notification message
+            const joinMessage = {
+              type: 'system',
+              username: 'System',
+              content: `${data.username} joined the chat`,
+              timestamp: new Date().toISOString(),
+              id: `join_${Date.now()}`
+            };
+            setMessages(prev => [...prev, joinMessage]);
+            scrollToBottom();
+          } else if (data.type === 'user_left') {
+            setOnlineMembers(prev => prev.filter(member => member !== data.username));
+            // Add leave notification message
+            const leaveMessage = {
+              type: 'system',
+              username: 'System',
+              content: `${data.username} left the chat`,
+              timestamp: new Date().toISOString(),
+              id: `leave_${Date.now()}`
+            };
+            setMessages(prev => [...prev, leaveMessage]);
+            scrollToBottom();
+          } else if (data.type === 'reaction') {
+            setMessages(prev => prev.map(msg => 
+              msg.id === data.messageId 
+                ? { ...msg, reactions: { ...msg.reactions, [data.emoji]: data.users } }
+                : msg
+            ));
+          } else if (data.type === 'file_share') {
+            setMessages(prev => [...prev, data]);
+            scrollToBottom();
+          }
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error);
+        }
+      };
+
+      websocket.onclose = (event) => {
+        console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+        setIsConnected(false);
+        setIsConnecting(false);
+        connectionLockRef.current = false;
+        setWs(null);
+        
+        // Only auto-reconnect if it wasn't a normal closure
+        if (event.code !== 1000) {
+          setTimeout(() => {
+            if (!connectionLockRef.current && username.trim()) {
+              console.log('🔄 Attempting to reconnect...');
+              connectWebSocket();
+            }
+          }, 3000);
+        }
+      };
+
+      websocket.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        setIsConnecting(false);
+        connectionLockRef.current = false;
+      };
+      
+    } catch (error) {
+      console.error('❌ WebSocket connection error:', error);
+      setIsConnecting(false);
+      connectionLockRef.current = false;
+    }
+  }, [username, scrollToBottom]);
+
+  // Send message function
+  const sendMessage = useCallback(() => {
+    if (!newMessage.trim() || !isConnected || sendingMessageRef.current) return;
+
+    sendingMessageRef.current = true;
+    const messageData = {
+      type: 'message',
+      content: newMessage.trim(),
+      username,
+      timestamp: new Date().toISOString(),
+      id: Date.now().toString(),
+      replyTo
+    };
+
+    try {
+      ws.send(JSON.stringify(messageData));
+      
+      // Add message locally for immediate display
+      setMessages(prev => [...prev, messageData]);
+      setNewMessage('');
+      setReplyTo(null);
+      scrollToBottom();
+    } catch (error) {
+      console.error('❌ Error sending message:', error);
+    } finally {
+      sendingMessageRef.current = false;
+    }
+  }, [newMessage, isConnected, username, ws, replyTo, scrollToBottom]);
+
+  // Handle reaction
+  const handleReaction = useCallback((messageId, emoji) => {
+    if (!isConnected) return;
+
+    const reactionData = {
+      type: 'reaction',
+      messageId,
+      emoji,
+      username
+    };
+
+    try {
+      ws.send(JSON.stringify(reactionData));
+    } catch (error) {
+      console.error('❌ Error sending reaction:', error);
+    }
+  }, [isConnected, username, ws]);
+
+  // Handle reply
+  const handleReply = useCallback((message) => {
+    setReplyTo({
+      id: message.id,
+      username: message.username,
+      content: message.content
+    });
+  }, []);
+
+  // Handle file upload
+  const handleFileUpload = useCallback((event) => {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+      return;
+    }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      console.log('📤 Uploading file to group chat:', file.name, file.type, file.size);
+
+      fetch('http://127.0.0.1:5004/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        console.log('📤 Upload response status:', response.status);
+        if (!response.ok) {
+          throw new Error(`Upload failed with status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('📤 Upload response data:', data);
+        
+        // Backend returns: { code, filename, size, message }
+        if (data.code && data.filename) {
+          const fileUrl = `http://127.0.0.1:5004/download/${data.code}`;
+          
+          // Send file share message via WebSocket
+          const fileShareData = {
+            type: 'file_share',
+            username,
+            fileUrl,
+            fileName: data.filename,
+            fileType: file.type,
+            fileSize: file.size,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+          };
+          
+          console.log('📤 Sending file share message:', fileShareData);
+          
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(fileShareData));
+            console.log('✅ File share message sent successfully');
+          } else {
+            console.error('❌ WebSocket not connected, cannot send file share message');
+            alert('File uploaded but cannot share in chat (WebSocket not connected)');
+          }
+          
+          // Also add as file share message for display
+          const fileMessage = {
+            type: 'file_share',
+      username,
+            content: `📎 ${data.filename}`,
+      timestamp: new Date().toISOString(),
+            id: Date.now().toString(),
+            fileUrl,
+            fileName: data.filename,
+            fileType: file.type,
+            fileSize: file.size,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString()
+          };
+          
+          setMessages(prev => [...prev, fileMessage]);
+        } else {
+          console.error('❌ Invalid upload response:', data);
+          alert('File upload failed: Invalid response from server');
+        }
+      })
+      .catch(error => {
+        console.error('❌ File upload error:', error);
+        alert(`Failed to upload file: ${error.message}`);
+      });
+    });
+
+    event.target.value = '';
+  }, [username, ws]);
+
+  // Effects
+  useEffect(() => {
+    if (username.trim()) {
+      connectWebSocket();
+    }
+  }, [username, connectWebSocket]);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // WebSocket connection (temporary storage - clears when app closes)
-  const connectToChat = useCallback(() => {
-    console.log('🔧 connectToChat called with username:', username);
-    console.log('🔧 Component mounted:', isMountedRef.current);
-    
-    // Reset connection state if there was an error
-    if (!username) {
-      console.log('❌ No username provided, skipping connection');
-      return;
-    }
-    
-    // Check if component is still mounted
-    if (!isMountedRef.current) {
-      console.log('❌ Component not mounted, skipping connection');
-      return;
-    }
-
-    // Prevent rapid reconnections - debounce mechanism
-    const now = Date.now();
-    if (now - (wsRef.current?.lastConnectionAttempt || 0) < 2000) {
-      console.log('🔧 Debouncing connection attempt (too soon since last attempt)');
-      return;
-    }
-    
-    // GLOBAL CONNECTION LOCK - prevent any new connections if one is in progress
-    if (connectionLockRef.current) {
-      console.log('🚫 CONNECTION BLOCKED: Global connection lock is active');
-      return;
-    }
-    
-    // Prevent connection if already connecting or connected
-    if (isConnecting) {
-      console.log('🔧 Already connecting, skipping new connection attempt');
-      return;
-    }
-    
-    if (isConnected && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log('🔧 Already connected and WebSocket is open, skipping new connection attempt');
-      return;
-    }
-    
-    // Check if there's already an active WebSocket
-    if (wsRef.current && wsRef.current.readyState !== WebSocket.CLOSED) {
-      console.log('🔧 WebSocket already exists and not closed, skipping new connection');
-      return;
-    }
-    
-    // Acquire global connection lock
-    connectionLockRef.current = true;
-    console.log('🔒 CONNECTION LOCK ACQUIRED');
-    
-    // Check if we've exceeded max reconnect attempts
-    if (reconnectAttempts >= maxReconnectAttempts) {
-      console.log(`❌ Akash Share Group Chat: Max reconnect attempts (${maxReconnectAttempts}) reached`);
-      setIsConnecting(false);
-      addNotification({
-        type: 'error',
-        title: 'Connection Failed',
-        message: `Failed to connect after ${maxReconnectAttempts} attempts. Please refresh the page.`
-      });
-      return;
-    }
-    
-    // Only prevent reconnection if we're actually connected
-    if (isConnected && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      console.log('🔗 General Chat: Already connected, skipping reconnection');
-      setReconnectAttempts(0); // Reset reconnect attempts on successful connection
-      return;
-    }
-    
-    // If we're in the middle of connecting, don't start another connection
-    if (isConnecting) {
-      console.log('🔗 General Chat: Already connecting, skipping reconnection');
-      return;
-    }
-
-    // Close existing connection if any
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
-    // Clear any existing notifications
-    setNotifications([]);
-    
-    setIsConnecting(true);
-    
-    try {
-      // Force WebSocket to connect to backend on port 5003
-      const protocol = 'ws:'; // Always use ws for local development
-      const host = 'localhost:5003'; // Force localhost:5003 for backend
-      const wsUrl = `${protocol}//${host}/chat?username=${encodeURIComponent(username)}&room=${encodeURIComponent(currentRoom)}`;
-      
-      console.log('🔗 Connecting to WebSocket:', wsUrl);
-      console.log('🔧 Frontend location:', window.location.href);
-      console.log('🔧 Browser info:', navigator.userAgent);
-      console.log('🔧 Current connection state:', { isConnected, isConnecting, reconnectAttempts });
-      
-      // Check if WebSocket is supported
-      if (typeof WebSocket === 'undefined') {
-        throw new Error('WebSocket is not supported in this browser');
-      }
-      
-      const ws = new WebSocket(wsUrl);
-      
-      // Track connection attempt timestamp for debouncing
-      ws.lastConnectionAttempt = Date.now();
-      
-      // Log WebSocket events for debugging
-      console.log('🔧 WebSocket object created:', ws.constructor.name);
-      console.log('🔧 WebSocket readyState:', ws.readyState);
-      
-      // Add a flag to track if we've already handled the connection result
-      let connectionHandled = false;
-
-      ws.onopen = () => {
-        console.log('🔧 WebSocket onopen event triggered');
-        console.log('🔧 WebSocket readyState in onopen:', ws.readyState);
-        
-        if (connectionHandled) {
-          console.log('🔧 Connection already handled, skipping onopen');
-          return;
-        }
-        connectionHandled = true;
-        
-        if (!isMountedRef.current) {
-          console.log('🔧 Component not mounted, skipping onopen');
-          return;
-        }
-        setIsConnected(true);
-        setIsConnecting(false);
-        setReconnectAttempts(0); // Reset reconnect attempts on successful connection
-        
-        // Release connection lock on successful connection
-        connectionLockRef.current = false;
-        console.log('🔓 CONNECTION LOCK RELEASED (success)');
-        // Announce connection only once until a disconnect happens
-        if (!hasAnnouncedConnectionRef.current) {
-          addNotificationMessage(`Connected to Akash Share Group Chat as ${username} 🎓`, 'online');
-          // Use a deduplication key for store notifications too
-          const connectKey = `connect-${username}-${Date.now()}`;
-          if (!notificationCacheRef.current.has(connectKey)) {
-            addNotification({
-              type: 'success',
-              title: 'Connected',
-              message: 'Connected to group chat'
-            });
-            notificationCacheRef.current.add(connectKey);
-            setTimeout(() => notificationCacheRef.current.delete(connectKey), 5000);
-          }
-          hasAnnouncedConnectionRef.current = true;
-        }
-        console.log('✅ Connected to Akash Share Group Chat System - isConnected:', true);
-        console.log('✅ Chat input should now be enabled');
-      };
-
-      ws.onmessage = (event) => {
-        if (!isMountedRef.current) return;
-        
-        try {
-          const data = JSON.parse(event.data);
-          
-          switch (data.type) {
-            case 'message': {
-              const receivedMessage = {
-                id: data.messageId || Date.now() + Math.random(),
-                content: data.message,
-                username: data.username,
-                timestamp: data.timestamp || new Date().toISOString(),
-                type: 'text',
-                status: 'delivered',
-                ai: data.ai || {}
-              };
-              
-              setMessages(prev => [...prev, receivedMessage]);
-              console.log('📨 Message received from:', data.username);
-              break;
-            }
-              
-            case 'image':
-              setMessages(prev => [...prev, {
-                id: data.messageId || Date.now() + Math.random(),
-                imageUrl: data.imageUrl,
-                caption: data.caption || '',
-                username: data.username,
-                timestamp: data.timestamp || new Date().toISOString(),
-                type: 'image',
-                status: 'delivered',
-                ai: data.ai || {}
-              }]);
-              break;
-              
-            case 'userJoined':
-              if (data.username && data.username !== username) {
-                addNotificationMessage(`${data.username} joined the chat`, 'join');
-              }
-              break;
-              
-            case 'userLeft':
-              if (data.username && data.username !== username) {
-                addNotificationMessage(`${data.username} left the chat`, 'leave');
-              }
-              break;
-              
-            case 'messageHistory':
-              if (data.messages && Array.isArray(data.messages)) {
-                const historyMessages = data.messages.map(msg => ({
-                  id: msg.id || Date.now() + Math.random(),
-                  content: msg.content,
-                  imageUrl: msg.imageUrl,
-                  caption: msg.caption,
-                  username: msg.username,
-                  timestamp: msg.timestamp,
-                  type: msg.type || 'text',
-                  status: 'delivered',
-                  ai: msg.ai || {}
-                }));
-                setMessages(prev => [...historyMessages, ...prev]);
-              }
-              break;
-              
-            case 'aiWelcome':
-              console.log('🎓 Akash Share Group Chat Features enabled:', data.features);
-              addNotificationMessage(`Akash Share Group Chat Features: ${data.features.join(', ')} 🎓`, 'online');
-              break;
-              
-            case 'userList':
-              if (data.users && Array.isArray(data.users)) {
-                const count = data.users.length;
-                setOnlineMembers(data.users);
-                setRoomInfo(prev => ({ ...prev, memberCount: count }));
-                // Only announce when the count changes to avoid spam
-                if (lastOnlineCountRef.current !== count) {
-                  addNotificationMessage(`Online members: ${count}${count > 0 ? ` (${data.users.slice(0, 3).join(', ')}${count > 3 ? '...' : ''})` : ''}`, 'online');
-                  lastOnlineCountRef.current = count;
-                }
-              }
-              break;
-              
-            case 'roomInfo':
-              if (data.roomName && data.memberCount) {
-                setRoomInfo({ name: data.roomName, memberCount: data.memberCount });
-                addNotificationMessage(`Room: ${data.roomName} - ${data.memberCount} members`, 'online');
-              }
-              break;
-              
-            case 'messageBlocked':
-              addNotificationMessage(`Message blocked: ${data.reason} - ${data.suggestion}`, 'warning');
-              break;
-          }
-        } catch (error) {
-          console.error('Failed to parse message:', error);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.log('🔧 WebSocket onerror event triggered');
-        console.log('🔧 WebSocket readyState in onerror:', ws.readyState);
-        
-        if (connectionHandled) {
-          console.log('🔧 Connection already handled, skipping onerror');
-          return;
-        }
-        connectionHandled = true;
-        
-        if (!isMountedRef.current) {
-          console.log('🔧 Component not mounted, skipping onerror');
-          return;
-        }
-        setIsConnected(false);
-        setIsConnecting(false);
-        hasAnnouncedConnectionRef.current = false;
-        
-        // Release connection lock on error
-        connectionLockRef.current = false;
-        console.log('🔓 CONNECTION LOCK RELEASED (error)');
-        console.error('❌ WebSocket connection error:', error);
-        console.error('❌ WebSocket connection error type:', error.constructor.name);
-        console.error('❌ WebSocket connection error message:', error.message);
-        console.error('❌ WebSocket connection error code:', error.code);
-        
-        // Only show error notification if this isn't a quick retry
-        if (reconnectAttempts > 2) {
-          // Try to get more detailed error information
-          let errorMessage = 'Unknown error';
-          if (error.message) {
-            errorMessage = error.message;
-          } else if (error.constructor.name !== 'Event') {
-            errorMessage = error.constructor.name;
-          }
-          
-          addNotification({
-            type: 'error',
-            title: 'Connection Error',
-            message: `Failed to connect to Akash Share Group Chat: ${errorMessage}`
-          });
-        }
-        
-        // DISABLED: Auto-reconnection to prevent loops
-        // setTimeout(() => {
-        //   if (isMountedRef.current && username && !isConnecting && reconnectAttempts < maxReconnectAttempts) {
-        //     console.log('🔁 General Chat: Attempting to reconnect after error...');
-        //     setReconnectAttempts(prev => prev + 1);
-        //     connectToChat();
-        //   }
-        // }, 5000);
-      };
-
-      ws.onclose = () => {
-        console.log('🔧 WebSocket onclose event triggered');
-        console.log('🔧 WebSocket readyState in onclose:', ws.readyState);
-        
-        if (connectionHandled) {
-          console.log('🔧 Connection already handled, skipping onclose');
-          return;
-        }
-        connectionHandled = true;
-        
-        if (!isMountedRef.current) {
-          console.log('🔧 Component not mounted, skipping onclose');
-          return;
-        }
-        const wasConnected = isConnected;
-        setIsConnected(false);
-        setIsConnecting(false);
-        hasAnnouncedConnectionRef.current = false;
-        
-        // Release connection lock on close
-        connectionLockRef.current = false;
-        console.log('🔓 CONNECTION LOCK RELEASED (close)');
-        if (!wasConnected) {
-          setReconnectAttempts(prev => prev + 1); // Increment reconnect attempts only if we weren't connected
-        }
-        console.log('🔌 WebSocket connection closed');
-        
-        // Only show notification if we were actually connected
-        if (wasConnected) {
-          addNotification({
-            type: 'warning',
-            title: 'Disconnected',
-            message: 'Lost connection to group chat'
-          });
-        }
-        
-        // Auto-reconnect after 3 seconds if component is still mounted and not already connecting
-        // DISABLED: Auto-reconnection to prevent loops
-        // if (wasConnected) {
-        //   setTimeout(() => {
-        //     if (isMountedRef.current && username && !isConnecting && reconnectAttempts < maxReconnectAttempts) {
-        //       console.log('🔁 General Chat: Attempting to reconnect...');
-        //       setReconnectAttempts(prev => prev + 1);
-        //       connectToChat();
-        //     }
-        //   }, 3000);
-        // }
-      };
-
-      wsRef.current = ws;
-      
-      // Connection timeout fallback - reduced to 5 seconds for faster feedback
-      const timeoutId = setTimeout(() => {
-        if (!connectionHandled && ws.readyState === WebSocket.CONNECTING) {
-          connectionHandled = true;
-          console.error('❌ WebSocket connection timeout after 5 seconds');
-          setIsConnecting(false);
-          setIsConnected(false);
-          hasAnnouncedConnectionRef.current = false;
-          
-          // Release connection lock on timeout
-          connectionLockRef.current = false;
-          console.log('🔓 CONNECTION LOCK RELEASED (timeout)');
-          ws.close();
-          
-          // Don't show timeout error on first attempt
-          if (reconnectAttempts > 0) {
-            addNotification({
-              type: 'error',
-              title: 'Connection Timeout',
-              message: 'Connection to Akash Share Group Chat timed out'
-            });
-          }
-          
-          // Try to reconnect immediately for first few attempts
-          // DISABLED: Auto-reconnection to prevent loops
-          // if (reconnectAttempts < 3) {
-          //   setTimeout(() => {
-          //     if (isMountedRef.current && username && !isConnecting && reconnectAttempts < maxReconnectAttempts) {
-          //       console.log('🔁 Akash Share Group Chat: Quick reconnect attempt...');
-          //       setReconnectAttempts(prev => prev + 1);
-          //       connectToChat();
-          //     }
-          //   }, 1000); // Quick retry for first attempts
-          // }
-        }
-      }, 5000);
-      
-      // Clear timeout on successful connection
-      ws.addEventListener('open', () => clearTimeout(timeoutId));
-      ws.addEventListener('error', () => clearTimeout(timeoutId));
-      ws.addEventListener('close', () => clearTimeout(timeoutId));
-      
-    } catch (error) {
-      setIsConnecting(false);
-      setIsConnected(false);
-      setReconnectAttempts(prev => prev + 1); // Increment reconnect attempts
-      hasAnnouncedConnectionRef.current = false;
-      
-      // Release connection lock on exception
-      connectionLockRef.current = false;
-      console.log('🔓 CONNECTION LOCK RELEASED (exception)');
-      console.error('❌ Failed to create WebSocket connection:', error);
-      
-      // Try to get more detailed error information
-      let errorMessage = 'Unknown error';
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.constructor.name !== 'Error') {
-        errorMessage = error.constructor.name;
-      }
-      
-      addNotification({
-        type: 'error',
-        title: 'Connection Failed',
-        message: `Failed to establish connection to group chat: ${errorMessage}`
-      });
-      
-      // DISABLED: Auto-reconnection to prevent loops
-      // setTimeout(() => {
-      //   if (isMountedRef.current && username && !isConnecting && reconnectAttempts < maxReconnectAttempts) {
-      //     console.log('🔁 General Chat: Attempting to reconnect after exception...');
-      //     setReconnectAttempts(prev => prev + 1);
-      //     connectToChat();
-      //   }
-      // }, 5000);
-    }
-  }, [username, currentRoom, isConnecting, isConnected, addNotification, addNotificationMessage, reconnectAttempts, maxReconnectAttempts]);
-
-  // Send text message
-  const sendMessage = useCallback(() => {
-    if (!newMessage.trim() || !isConnected || !wsRef.current) return;
-
-    const messageData = {
-      type: 'message',
-      message: newMessage.trim(),
-      room: currentRoom,
-      timestamp: new Date().toISOString()
-    };
-
-    // Add to local messages immediately (optimistic update)
-    const localMessage = {
-      id: Date.now() + Math.random(),
-      content: newMessage.trim(),
-      username,
-      timestamp: new Date().toISOString(),
-      type: 'text',
-      status: 'sending'
-    };
-    
-    setMessages(prev => [...prev, localMessage]);
-    
-    try {
-      wsRef.current.send(JSON.stringify(messageData));
-      // Update message status to sent
-      setMessages(prev => prev.map(msg => 
-        msg.id === localMessage.id ? { ...msg, status: 'sent' } : msg
-      ));
-      console.log('✅ Message sent successfully');
-    } catch (error) {
-      console.error('❌ Failed to send message:', error);
-      // Update message status to failed
-      setMessages(prev => prev.map(msg => 
-        msg.id === localMessage.id ? { ...msg, status: 'failed' } : msg
-      ));
-      addNotification({
-        type: 'error',
-        title: 'Send Failed',
-        message: 'Failed to send message'
-      });
-    }
-    
-    setNewMessage('');
-  }, [newMessage, isConnected, currentRoom, username, addNotification]);
-
-  // Handle image selection
-  const handleImageSelect = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      addNotification({
-        type: 'error',
-        title: 'Invalid File',
-        message: 'Please select an image file'
-      });
-      return;
-    }
-
-    // Check file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
-      addNotification({
-        type: 'error',
-        title: 'File Too Large',
-        message: 'Image must be smaller than 5MB'
-      });
-      return;
-    }
-
-    setSelectedImage(file);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target.result);
-      setShowImageModal(true);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Send image message
-  const sendImage = useCallback(() => {
-    if (!selectedImage || !isConnected || !wsRef.current) return;
-
-    // For demo purposes, we'll use the image preview as URL
-    // In a real app, you'd upload to a server first
-    const imageData = {
-      type: 'image',
-      imageUrl: imagePreview,
-      caption: imageCaption.trim(),
-      room: currentRoom,
-      timestamp: new Date().toISOString()
-    };
-
-    // Add to local messages immediately
-    const localMessage = {
-      id: Date.now() + Math.random(),
-      imageUrl: imagePreview,
-      caption: imageCaption.trim(),
-      username,
-      timestamp: new Date().toISOString(),
-      type: 'image',
-      status: 'sent'
-    };
-    
-    setMessages(prev => [...prev, localMessage]);
-    wsRef.current.send(JSON.stringify(imageData));
-    
-    // Reset image state
-    setSelectedImage(null);
-    setImagePreview(null);
-    setImageCaption('');
-    setShowImageModal(false);
-    
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [selectedImage, imagePreview, imageCaption, isConnected, currentRoom, username]);
-
-  // Handle Enter key press
-  const handleKeyPress = useCallback((event) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage();
-    }
-  }, [sendMessage]);
-
-  // Reset connection state when component mounts
-  // CONSOLIDATED EFFECT: Handle both mount/unmount and username connection
-  // We intentionally depend only on username to avoid reconnection loops caused by
-  // changing function identities. The connection routine is accessed via refs.
+  // Show username modal if user hasn't joined yet
   useEffect(() => {
-    console.log('🔧 Akash Share Group Chat effect running - username:', username);
-    isMountedRef.current = true;
-    
-    // Capture refs at effect start to avoid lint warnings in cleanup
-    const notificationCache = notificationCacheRef.current;
-    const lastNotificationTime = lastNotificationTimeRef.current;
-    
-    // Reset states
-    setIsConnected(false);
-    setIsConnecting(false);
-    setReconnectAttempts(0);
-    
-    let connectTimer = null;
-    
-    // Connect if we have a username
-    if (username && username.trim()) {
-      console.log('🔧 Starting connection for username:', username);
-      console.log('🔧 Initial connection state - isConnected:', false, 'isConnecting:', false);
-      
-      connectTimer = setTimeout(() => {
-        if (isMountedRef.current && username) {
-          console.log('🔧 Attempting connection...');
-          console.log('🔧 Pre-connection state - isConnected:', isConnected, 'isConnecting:', isConnecting);
-          connectToChat();
-        }
-      }, 500); // Increased delay to ensure state is stable
+    if (!username.trim()) {
+      setShowUsernameModal(true);
     }
-    
-    // Cleanup function
-    return () => {
-      console.log('🔧 Akash Share Group Chat cleanup running');
-      isMountedRef.current = false;
-      
-      // Reset all connection states
-      setIsConnected(false);
-      setIsConnecting(false);
-      hasAnnouncedConnectionRef.current = false;
-      connectionLockRef.current = false;
-      
-      if (connectTimer) {
-        clearTimeout(connectTimer);
-      }
-      
-      if (wsRef.current) {
-        console.log('🔧 Closing WebSocket in cleanup');
-        wsRef.current.close();
-        wsRef.current = null;
-      }
-      
-      // Clear notification caches using captured refs
-      if (notificationCache) notificationCache.clear();
-      if (lastNotificationTime) lastNotificationTime.clear();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username]); // Only depend on username to prevent loops
+  }, [username]);
 
-  // Clear everything when app closes/page unloads
+  // Clean up expired files every minute
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      console.log('🔧 handleBeforeUnload called - clearing data');
-      // Clear all temporary data
-      setMessages([]);
-      if (wsRef.current) {
-        wsRef.current.close();
-      }
-    };
+    const cleanupInterval = setInterval(() => {
+      setMessages(prev => prev.filter(message => {
+        if (message.type === 'file_share' && message.expiresAt) {
+          const now = new Date();
+          const expiresAt = new Date(message.expiresAt);
+          return now < expiresAt;
+        }
+        return true;
+      }));
+    }, 60000); // Check every minute
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      console.log('🔧 Removing beforeunload listener');
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      handleBeforeUnload(); // Also clear on component unmount
-    };
+    return () => clearInterval(cleanupInterval);
   }, []);
 
+  // Admin panel handlers
+  const handleAdminLogin = () => {
+    if (adminKey === 'Akshatha2004') {
+      setIsAdmin(true);
+      setShowAdminPanel(false);
+    } else {
+      alert('Invalid admin key');
+    }
+  };
+
+  const muteMember = (member) => {
+    setMutedMembers(prev => [...prev, member]);
+  };
+
+  // Sidebar handlers
+  const handleShowMembers = () => {
+    setShowMembersPanel(!showMembersPanel);
+  };
+
+  const handleShowEmojiPicker = () => {
+    setShowEmojiPicker(!showEmojiPicker);
+  };
+
+  const handleShowSettings = () => {
+    setShowSettings(!showSettings);
+  };
+
+  const handleShowNotifications = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  const handleShowAdminPanel = () => {
+    setShowAdminPanel(!showAdminPanel);
+  };
+
+  // Handle joining chat with username
+  const handleJoinChat = () => {
+    if (username.trim()) {
+      setShowUsernameModal(false);
+      // Send join notification via WebSocket if connected
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const joinData = {
+          type: 'user_joined',
+          username: username.trim(),
+          timestamp: new Date().toISOString()
+        };
+        ws.send(JSON.stringify(joinData));
+      }
+    }
+  };
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'A') {
+        event.preventDefault();
+        setShowAdminPanel(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+
+  // Don't show main chat if username modal is open
+  if (showUsernameModal) {
   return (
-    <div 
-      className="flex flex-col h-screen"
-      style={{
-        background: 'linear-gradient(180deg, #000000 0%, #121212 50%, #1C1C1C 100%)'
-      }}
-    >
-      {/* Header with connection status and member count - redesigned with black theme */}
-      <div 
-        className="flex items-center justify-between p-4 border-b border-gray-800"
-        style={{
-          background: 'linear-gradient(90deg, rgba(18, 18, 18, 0.9), rgba(31, 31, 31, 0.9))'
-        }}
-      >
-        <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+      <div className="flex h-screen bg-black overflow-hidden">
+        {/* Username Modal with Windows 11-style blur */}
+        <AnimatePresence>
+          {showUsernameModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
+              >
+                <h3 className="text-2xl font-bold text-white mb-6">Join Group Chat</h3>
+                
+                <div className="space-y-6">
           <div>
-            <h2 className="text-lg font-bold text-white">🎓 {roomInfo.name}</h2>
-            <p className="text-sm text-gray-300">
-              {isConnected ? (
-                `${roomInfo.memberCount} members online`
-              ) : isConnecting ? (
-                'Connecting...'
-              ) : (
-                'Disconnected'
-              )}
-            </p>
-          </div>
+                    <label className="block text-sm font-semibold text-gray-300 mb-3">
+                      Enter your username
+                    </label>
+                    <input
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleJoinChat()}
+                      placeholder="Type your username..."
+                      className="w-full px-4 py-3 bg-gray-800/80 backdrop-blur-lg border border-gray-600 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                      autoFocus
+                    />
         </div>
         
-        <div className="flex items-center space-x-2">
-          <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-            isConnected ? 'bg-green-900/20 text-green-300 border border-green-700/30' :
-            isConnecting ? 'bg-yellow-900/20 text-yellow-300 border border-yellow-700/30' :
-            'bg-red-900/20 text-red-300 border border-red-700/30'
-          }`}>
-            {isConnected ? '🟢 Online' : isConnecting ? '🟡 Connecting' : '🔴 Offline'}
-          </div>
-          {onlineMembers.length > 0 && (
-            <div className="text-xs text-gray-300">
-              👥 {onlineMembers.slice(0, 3).join(', ')}{onlineMembers.length > 3 ? '...' : ''}
-            </div>
-          )}
-          {!isConnected && !isConnecting && username && (
-            <div className="flex space-x-2">
+                  <div className="flex space-x-4">
               <button
-                onClick={() => {
-                  setReconnectAttempts(0);
-                  setNotifications([]);
-                  connectToChat();
-                }}
-                className="px-3 py-1 text-xs font-medium text-white transition-all bg-gray-800 rounded-full hover:bg-gray-700"
-              >
-                🔄 Reconnect
+                      onClick={handleJoinChat}
+                      disabled={!username.trim()}
+                      className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg"
+                    >
+                      Join Chat
               </button>
-              {notifications.length > 0 && (
-                <button
-                  onClick={() => setNotifications([])}
-                  className="px-2 py-1 text-xs font-medium text-white transition-all bg-red-800 rounded-full hover:bg-red-700"
-                >
-                  ✕ Clear Errors
-                </button>
-              )}
             </div>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
+        </AnimatePresence>
         </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen bg-black overflow-hidden relative">
+      {/* Natural blur background effect */}
+      <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm"></div>
+      {/* Small Sidebar - Fixed */}
+      <div className="flex-shrink-0 relative z-10">
+        <SmallSidebar 
+          onlineMembers={onlineMembers}
+          isAdmin={isAdmin}
+          onShowSettings={handleShowSettings}
+          onShowMembers={handleShowMembers}
+          onShowNotifications={handleShowNotifications}
+          onShowAdminPanel={handleShowAdminPanel}
+          onShowEmojiPicker={handleShowEmojiPicker}
+          isConnected={isConnected}
+        />
       </div>
 
-      {/* Messages Area */}
-      <div 
-        className="flex-1 p-4 space-y-2 overflow-y-auto"
-        style={{
-          background: 'linear-gradient(180deg, rgba(18, 18, 18, 0.9) 0%, rgba(28, 28, 28, 0.9) 100%)'
-        }}
-      >
-        <AnimatePresence>
-          {/* Show notifications */}
-          {notifications.map((notification) => (
-            <NotificationMessage
-              key={notification.id}
-              notification={notification}
-            />
-          ))}
-          
+      {/* Main Chat Area - Fixed height */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
+        {/* Messages Area - Only this should scroll */}
+        <div className="flex-1 overflow-y-auto bg-black/80 backdrop-blur-sm p-6" style={{ height: 'calc(100vh - 120px)' }}>
+          <div className="max-w-4xl mx-auto">
             {messages.length === 0 ? (
-              <div className="mt-8 text-center text-gray-400">
-                <Users size={48} className="mx-auto mb-4 text-gray-500" />
-                {isConnected ? (
-                  <>
-                    <p>Welcome to Akash Share Group Chat! 🎓</p>
-                    <p className="mt-2 text-sm">Start chatting with your classmates!</p>
-                  </>
-                ) : isConnecting ? (
-                  <>
-                    <p>Connecting to Akash Share Group Chat...</p>
-                    <div className="inline-block w-4 h-4 mt-2 border-2 border-gray-400 rounded-full border-t-transparent animate-spin"></div>
-                  </>
-                ) : (
-                  <>
-                    <p>Disconnected from Akash Share Group Chat</p>
-                    <p className="mt-2 text-sm">Click the Reconnect button above</p>
-                  </>
-                )}
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gray-800/80 backdrop-blur-lg rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg border border-gray-600">
+                  <Sparkles className="w-10 h-10 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-3">Welcome to Group Chat!</h3>
+                <p className="text-gray-400 text-lg">Start a conversation by sending a message below.</p>
               </div>
             ) : (
             messages.map((message) => (
               <ChatMessage
                 key={message.id}
                 message={message}
-                isOwn={message.username === username}
+                  onReaction={handleReaction}
+                  onReply={handleReply}
+                  currentUser={username}
               />
             ))
           )}
-        </AnimatePresence>
         <div ref={messagesEndRef} />
+          </div>
       </div>
 
-      {/* Message Input Area (WhatsApp style) */}
-      <div 
-        className="p-4 border-t border-gray-800"
-        style={{
-          background: 'linear-gradient(90deg, rgba(18, 18, 18, 0.95), rgba(28, 28, 28, 0.95))'
-        }}
-      >
-        <div className="flex items-end space-x-3">
-          {/* Attachment button */}
+        {/* Reply indicator with black theme - Fixed above input */}
+        {replyTo && (
+          <div className="bg-gray-900 border-l-4 border-white px-6 py-3 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-white">Replying to {replyTo.username}</div>
+                <div className="text-sm text-gray-300 truncate">{replyTo.content}</div>
+              </div>
+              <button
+                onClick={() => setReplyTo(null)}
+                className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Message Input with black theme - Fixed at bottom */}
+        <div className="bg-black/80 backdrop-blur-lg border-t border-gray-700 p-6 flex-shrink-0" style={{ height: '120px' }}>
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-end space-x-4">
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-gray-400 transition-colors rounded-full"
-            style={{
-              background: 'rgba(31, 41, 55, 0.1)'
-            }}
-            onMouseEnter={(e) => {
-              e.target.style.background = 'rgba(31, 41, 55, 0.3)';
-              e.target.style.color = 'rgba(156, 163, 175, 1)';
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = 'rgba(31, 41, 55, 0.1)';
-              e.target.style.color = 'rgb(156, 163, 175)';
-            }}
-            title="Attach image"
-          >
-            <Paperclip size={20} />
+                className="p-3 hover:bg-gray-800 rounded-full transition-all duration-200 hover:scale-110"
+              >
+                <Paperclip className="w-5 h-5 text-white" />
           </button>
 
-          {/* Message input */}
-          <div 
-            className="flex items-center flex-1 px-4 py-2 space-x-2 rounded-full"
-            style={{
-              background: 'linear-gradient(90deg, rgba(28, 28, 28, 0.8), rgba(18, 18, 18, 0.8))',
-              border: '1px solid rgba(55, 65, 81, 0.3)'
-            }}
-          >
+              <div className="flex-1 relative">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-                placeholder={isConnected ? "Type a message in Akash Share Group Chat..." : isConnecting ? "Connecting..." : "Disconnected - Please rejoin"}
+                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  placeholder={isConnected ? "Type a message..." : "Connecting..."}
                 disabled={!isConnected}
-                className="flex-1 text-white placeholder-gray-400 bg-transparent outline-none"
-                onFocus={() => console.log('🔧 Input focused - isConnected:', isConnected, 'disabled:', !isConnected)}
+                  className="w-full px-6 py-4 bg-gray-800/80 backdrop-blur-lg border border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent disabled:opacity-50 text-white placeholder-gray-400 text-lg"
             />
             <button 
-              className="p-1 text-gray-400 transition-colors rounded"
-              onMouseEnter={(e) => {
-                e.target.style.color = 'rgba(156, 163, 175, 1)';
-                e.target.style.background = 'rgba(31, 41, 55, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.color = 'rgb(156, 163, 175)';
-                e.target.style.background = 'transparent';
-              }}
-            >
-              <Smile size={18} />
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-800 rounded-full transition-colors"
+                >
+                  <Smile className="w-5 h-5 text-white" />
             </button>
           </div>
 
-          {/* Send button */}
           <button
             onClick={sendMessage}
             disabled={!newMessage.trim() || !isConnected}
-            className="p-2 text-white transition-colors rounded-full"
-            style={newMessage.trim() && isConnected
-              ? {
-                  background: 'linear-gradient(45deg, rgba(31, 41, 55, 0.8), rgba(18, 18, 18, 0.8))',
-                  boxShadow: '0 0 15px rgba(31, 41, 55, 0.4)',
-                  border: '1px solid rgba(55, 65, 81, 0.3)'
-                }
-              : {
-                  background: 'rgba(55, 65, 81, 0.5)',
-                  color: 'rgba(156, 163, 175, 0.8)',
-                  cursor: 'not-allowed'
-                }
-            }
-          >
-            <Send size={20} />
+                className="p-4 bg-white text-black rounded-2xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110"
+              >
+                <Send className="w-5 h-5" />
           </button>
         </div>
+          </div>
+        </div>
+        </div>
 
-        {/* Hidden file input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleImageSelect}
-          className="hidden"
-        />
+      {/* Members Panel with black theme */}
+      <AnimatePresence>
+        {showMembersPanel && (
+          <motion.div
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            className="w-80 bg-black border-l border-gray-900 flex flex-col shadow-2xl h-screen overflow-hidden"
+          >
+            <div className="p-6 border-b border-gray-900">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">Members</h3>
+                <button
+                  onClick={() => setShowMembersPanel(false)}
+                  className="p-2 hover:bg-gray-900 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
       </div>
 
-      {/* Image Preview Modal */}
+            <div className="flex-1 overflow-y-auto p-6" style={{ height: 'calc(100vh - 120px)' }}>
+              <div className="space-y-4">
+                {console.log('🔍 Rendering onlineMembers:', onlineMembers)}
+                {onlineMembers.map((member, index) => (
+                  <div key={index} className="flex items-center space-x-4 p-3 hover:bg-gray-900 rounded-2xl transition-all duration-200">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                      <span className="text-black text-sm font-bold">
+                        {member.charAt(0).toUpperCase()}
+                      </span>
+              </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-semibold text-white">{member}</div>
+                      <div className="text-xs text-green-400 flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span>Online</span>
+                      </div>
+                    </div>
+                    {isAdmin && (
+                      <div className="flex space-x-2">
+                <button
+                          onClick={() => muteMember(member)}
+                          className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+                          title="Mute"
+                        >
+                          <MoreVertical className="w-4 h-4 text-gray-400" />
+                </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Admin Panel Modal with black theme */}
       <AnimatePresence>
-        {showImageModal && (
+        {showAdminPanel && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md p-6 mx-4 rounded-lg"
-            style={{
-              background: 'linear-gradient(180deg, rgba(18, 18, 18, 0.95), rgba(28, 28, 28, 0.95))',
-              border: '1px solid rgba(55, 65, 81, 0.3)',
-              boxShadow: '0 0 30px rgba(0, 0, 0, 0.8)'
-            }}
+              className="bg-black rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-900 shadow-2xl"
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white">Send Image</h3>
-                <button
-                  onClick={() => {
-                    setShowImageModal(false);
-                    setSelectedImage(null);
-                    setImagePreview(null);
-                    setImageCaption('');
-                  }}
-                  className="text-gray-400 hover:text-gray-200"
-                >
-                  ×
-                </button>
-              </div>
-
-              {/* Image preview */}
-              {imagePreview && (
-                <div className="mb-4">
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    className="object-cover w-full h-48 rounded-lg"
+              <h3 className="text-2xl font-bold text-white mb-6">Admin Panel</h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                    Admin Key
+                  </label>
+                  <input
+                    type="password"
+                    value={adminKey}
+                    onChange={(e) => setAdminKey(e.target.value)}
+                    placeholder="Enter admin key"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white text-white placeholder-gray-400"
                   />
                 </div>
-              )}
 
-              {/* Caption input */}
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={imageCaption}
-                  onChange={(e) => setImageCaption(e.target.value)}
-                  placeholder="Add a caption..."
-                  className="w-full p-2 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-600"
-                  style={{
-                    background: 'linear-gradient(90deg, rgba(28, 28, 28, 0.8), rgba(18, 18, 18, 0.8))',
-                    border: '1px solid rgba(55, 65, 81, 0.3)'
-                  }}
-                />
-              </div>
-
-              {/* Send button */}
-              <div className="flex justify-end space-x-2">
+                <div className="flex space-x-4">
                 <button
-                  onClick={() => {
-                    setShowImageModal(false);
-                    setSelectedImage(null);
-                    setImagePreview(null);
-                    setImageCaption('');
-                  }}
-                  className="px-4 py-2 text-gray-400 hover:text-gray-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={sendImage}
-                  disabled={!isConnected}
-                  className="px-6 py-2 text-white transition-all rounded-lg"
-                  style={isConnected
-                    ? {
-                        background: 'linear-gradient(45deg, rgba(31, 41, 55, 0.8), rgba(18, 18, 18, 0.8))',
-                        boxShadow: '0 0 15px rgba(31, 41, 55, 0.4)',
-                        border: '1px solid rgba(55, 65, 81, 0.3)'
-                      }
-                    : {
-                        background: 'rgba(55, 65, 81, 0.5)',
-                        color: 'rgba(156, 163, 175, 0.8)',
-                        cursor: 'not-allowed'
-                      }
-                  }
-                >
-                  Send
+                    onClick={handleAdminLogin}
+                    className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
+                  >
+                    Login
+              </button>
+                  <button
+                    onClick={() => setShowAdminPanel(false)}
+                    className="flex-1 bg-gray-800 text-white py-3 rounded-2xl hover:bg-gray-700 transition-all duration-200 font-semibold"
+                  >
+                    Cancel
                 </button>
               </div>
+                </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Name Input Modal */}
+      {/* Settings Modal with blur */}
       <AnimatePresence>
-        {showNameModal && (
+        {showSettings && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75"
+            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="w-full max-w-md p-8 mx-4 rounded-lg"
-              style={{
-                background: 'linear-gradient(180deg, rgba(18, 18, 18, 0.95), rgba(28, 28, 28, 0.95))',
-                border: '1px solid rgba(55, 65, 81, 0.3)',
-                boxShadow: '0 0 30px rgba(0, 0, 0, 0.8)'
-              }}
-              onClick={(e) => e.stopPropagation()}
+              className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
             >
-              <div className="mb-6 text-center">
-                <Users size={48} className="mx-auto mb-4 text-gray-400" />
-                <h2 className="mb-2 text-2xl font-bold text-white">Join Group Chat</h2>
-                <p className="text-gray-300">Enter your name to start chatting</p>
-              </div>
-
-              <div className="mb-6">
+              <h3 className="text-2xl font-bold text-white mb-6">Settings</h3>
+              
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                    Username
+                  </label>
                 <input
                   type="text"
-                  value={tempUsername}
-                  onChange={(e) => setTempUsername(e.target.value)}
-                  onKeyPress={handleNameKeyPress}
-                  placeholder="Your name..."
-                  autoFocus
-                  className="w-full p-3 text-center text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-600"
-                  style={{
-                    background: 'linear-gradient(90deg, rgba(28, 28, 28, 0.8), rgba(18, 18, 18, 0.8))',
-                    border: '1px solid rgba(55, 65, 81, 0.3)'
-                  }}
+                    value={username}
+                    disabled
+                    className="w-full px-4 py-3 bg-gray-800/80 backdrop-blur-lg border border-gray-600 rounded-2xl text-white"
                 />
               </div>
 
-              <button
-                onClick={handleJoinChat}
-                disabled={!tempUsername.trim()}
-                className="w-full py-3 font-medium text-white transition-all rounded-lg"
-                style={tempUsername.trim()
-                  ? {
-                      background: 'linear-gradient(45deg, rgba(31, 41, 55, 0.8), rgba(18, 18, 18, 0.8))',
-                      boxShadow: '0 0 15px rgba(31, 41, 55, 0.4)',
-                      border: '1px solid rgba(55, 65, 81, 0.3)'
-                    }
-                  : {
-                      background: 'rgba(55, 65, 81, 0.5)',
-                      color: 'rgba(156, 163, 175, 0.8)',
-                      cursor: 'not-allowed'
-                    }
-                }
-              >
-                Join Chat
-              </button>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                    Connection Status
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <span className="text-white">{isConnected ? 'Connected' : 'Disconnected'}</span>
+                  </div>
+                </div>
 
-              <p className="mt-4 text-xs text-center text-gray-400">
-                Press Enter to join quickly
-              </p>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                    Online Members
+                  </label>
+                  <span className="text-white">{onlineMembers.length} members online</span>
+                </div>
+                
+                <div className="flex space-x-4">
+                <button
+                    onClick={() => setShowSettings(false)}
+                    className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
+                  >
+                    Close
+                </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Connection status */}
-      {!isConnected && username && !showNameModal && (
-        <div className="absolute px-4 py-2 text-white transform -translate-x-1/2 bg-red-900 rounded-lg shadow-lg top-16 left-1/2">
-          {isConnecting ? 'Connecting...' : 'Disconnected'}
-        </div>
-      )}
+      {/* Notifications Modal with blur */}
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
+            >
+              <h3 className="text-2xl font-bold text-white mb-6">Notifications</h3>
+              
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-gray-600">
+                    <span className="text-white">Message Notifications</span>
+                    <div className="w-12 h-6 bg-green-500 rounded-full relative">
+                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+                    </div>
+                </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-gray-600">
+                    <span className="text-white">Sound Notifications</span>
+                    <div className="w-12 h-6 bg-green-500 rounded-full relative">
+                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
+                    </div>
+                </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-gray-600">
+                    <span className="text-white">Desktop Notifications</span>
+                    <div className="w-12 h-6 bg-gray-800 rounded-full relative">
+                      <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex space-x-4">
+                <button
+                    onClick={() => setShowNotifications(false)}
+                    className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
+                  >
+                    Close
+                </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Emoji Picker Modal with blur */}
+      <AnimatePresence>
+        {showEmojiPicker && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
+            >
+              <h3 className="text-2xl font-bold text-white mb-6">Choose Emoji</h3>
+              
+              <div className="grid grid-cols-8 gap-4 mb-6">
+                {['😀', '😂', '😍', '🥰', '😎', '🤔', '😮', '😢', '😡', '👍', '👎', '❤️', '🔥', '💯', '🎉', '👏', '🙌', '🤝', '💪', '🎯', '⭐', '✨', '💫', '🌟', '💎', '🏆', '🎊', '🎈', '🎁', '🍕', '🍔', '🍰', '☕', '🍺', '🚀', '💻', '📱', '🎮', '🎵', '🎬', '📚', '🏠', '🌍', '🌙', '☀️', '🌈', '⚡', '❄️', '🔥', '💧', '🌊', '🏔️', '🌺', '🌸', '🌻', '🌹', '🌷', '🍀', '🌿', '🌱', '🌳', '🌲', '🌴', '🌵', '🌾', '🌽', '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐', '🥖', '🍞', '🥨', '🥯', '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🫓', '🥙', '🌮', '🌯', '🫔', '🥗', '🥘', '🫕', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🥜', '🍯'].map((emoji, index) => (
+                <button
+                    key={index}
+                  onClick={() => {
+                      setNewMessage(prev => prev + emoji);
+                      setShowEmojiPicker(false);
+                  }}
+                    className="text-2xl p-2 hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                    {emoji}
+                </button>
+                ))}
+                </div>
+
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setShowEmojiPicker(false)}
+                  className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
+                >
+                  Close
+              </button>
+            </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        onChange={handleFileUpload}
+        className="hidden"
+      />
     </div>
   );
 };

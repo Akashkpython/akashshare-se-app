@@ -155,6 +155,57 @@ export function initializeGroupChat(wss) {
               })();
               break;
               
+            case 'reaction': {
+              // Handle message reactions
+              if (!message.messageId || !message.emoji) {
+                console.warn(`⚠️ Invalid reaction from ${username}: missing messageId or emoji`);
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'Invalid reaction format'
+                }));
+                return;
+              }
+              
+              // Broadcast reaction to room
+              broadcastToRoom(room, {
+                type: 'reaction',
+                messageId: message.messageId,
+                emoji: message.emoji,
+                username,
+                timestamp: new Date().toISOString()
+              });
+              
+              console.log(`😊 ${username} reacted with ${message.emoji} to message ${message.messageId}`);
+              break;
+            }
+              
+            case 'file_share': {
+              // Handle file sharing
+              if (!message.fileUrl || !message.fileName || !message.fileType) {
+                console.warn(`⚠️ Invalid file share from ${username}: missing fileUrl, fileName, or fileType`);
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  message: 'Invalid file share format'
+                }));
+                return;
+              }
+              
+              // Broadcast file share to room
+              broadcastToRoom(room, {
+                type: 'file_share',
+                username,
+                fileUrl: message.fileUrl,
+                fileName: message.fileName,
+                fileType: message.fileType,
+                fileSize: message.fileSize,
+                timestamp: new Date().toISOString(),
+                expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+              });
+              
+              console.log(`📁 ${username} shared file: ${message.fileName} (${message.fileType})`);
+              break;
+            }
+              
             case 'switchRoom': {
               try {
                 // Validate new room name

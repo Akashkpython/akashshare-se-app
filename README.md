@@ -1,192 +1,185 @@
-# Akash Share - Professional File Sharing Application
+# Akash Share - Peer-to-Peer File Sharing Application
 
-Akash Share is a modern, secure, and efficient file sharing application built with Electron, React, and Node.js. It allows users to easily share files across devices with a simple 4-digit share code system.
+Akash Share is a peer-to-peer file sharing application built with Electron, React, and Node.js. It allows users to share files directly between devices without requiring a central server.
 
 ## Features
 
-- **Secure File Transfer**: Share files securely with 4-digit codes
-- **Group Chat**: Real-time messaging with WebSocket support
-- **Cross-Platform**: Works on Windows, macOS, and Linux
-- **Modern UI**: Dark theme interface with smooth animations
-- **Auto-Updates**: Seamless application updates
-- **File Validation**: Comprehensive file type and size validation
+- 🚀 Fast peer-to-peer file transfers
+- 💬 Real-time chat functionality
+- 🔒 Secure file sharing with encryption
+- 📱 Cross-platform support (Windows, macOS, Linux)
+- 🎨 Modern UI with dark/light themes
 
 ## Prerequisites
 
-- Node.js v16 or higher
-- npm v7 or higher
-- MongoDB Atlas account (for production)
+- Node.js (v14 or higher)
+- MongoDB
+- npm or yarn
 
 ## Installation
 
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd akashshare-se
+   cd akash-share
    ```
 
 2. Install dependencies:
    ```bash
    npm install
-   cd backend
-   npm install
-   cd ..
    ```
 
-3. Configure environment variables:
-   - Copy `backend/.env.example` to `backend/.env`
-   - Update `MONGO_URI` with your MongoDB connection string
-   - Update `JWT_SECRET` with a secure secret key
+3. Set up environment variables:
+   Create a `.env` file in the `backend` directory with the following:
+   ```
+   PORT=5004
+   MONGODB_URI=mongodb://localhost:27017/akashshare
+   JWT_SECRET=your-secret-key
+   ```
 
-## Development
+## Starting the Application
 
-### Starting the Development Environment
+You have several options to start the application:
 
-For Electron development, use the new unified script that starts both frontend and backend in the correct order:
-
-```bash
-# Using the new script (recommended)
-npm run electron-dev
-
-# Or using the batch file on Windows
-start-electron-dev.bat
+### Option 1: PowerShell Script (Recommended for PowerShell users)
+```powershell
+.\start-app.ps1
 ```
 
-This will:
-1. Start the backend server on port 5003
-2. Start the frontend development server on port 5002
-3. Ensure proper synchronization between both services
-
-### Traditional Development Commands
-
-```bash
-# Start frontend only (port 5002)
-npm start
-
-# Start backend only (port 5003)
-cd backend
-node server.js
+### Option 2: Batch File (Recommended for Command Prompt users)
+```cmd
+.\fixed-start-app.bat
 ```
 
-### Port Configuration
-
-- **Frontend**: http://localhost:5002
-- **Backend API**: http://localhost:5003
-- **WebSocket Chat**: ws://localhost:5003/chat
-
-## Building for Production
-
+### Option 3: Node.js Script (Cross-platform)
 ```bash
-# Build React frontend
-npm run build
-
-# Build Electron app
-npm run electron-build
+node start-fixed-app.js
 ```
 
-## Running the Production App
-
-After building, you can run the production app:
-
+### Option 4: Pre-built Executable
 ```bash
-npm run electron
+.\AkashShare-Portable.exe
 ```
+
+### Option 5: Manual Start
+1. Start the backend server:
+   ```bash
+   cd backend
+   npm start
+   ```
+
+2. In a new terminal, start the Electron app:
+   ```bash
+   npm run electron
+   ```
 
 ## Project Structure
 
+- `backend/` - Node.js Express server
+- `electron/` - Electron main process files
+- `public/` - Static assets
+- `src/` - React frontend components
+- `uploads/` - Temporary file storage
+
+## WebSocket Implementation
+
+Akash Share features a robust WebSocket-based real-time chat system:
+
+- **Real-time Messaging**: Instant message delivery between users
+- **Room-based Chat**: Organize conversations in different chat rooms
+- **User Presence**: Track online users and their status
+- **Message Moderation**: AI-powered content filtering
+- **Connection Management**: Rate limiting and abuse prevention
+
+For detailed information about the WebSocket implementation, see [WEBSOCKET_IMPLEMENTATION_SUMMARY.md](file:///D:/5th%20sem/project/akashshare-se/WEBSOCKET_IMPLEMENTATION_SUMMARY.md).
+
+## Setup.exe and Electron Connection
+
+The application includes a pre-built portable executable ([AkashShare-Portable.exe](file:///D:/5th%20sem/project/akashshare-se/AkashShare-Portable.exe)) that properly connects the Electron frontend to the backend services:
+
+- **Single Executable**: No installation required
+- **Automatic Backend Connection**: Electron app automatically connects to backend services
+- **Health Checks**: Built-in verification of component connectivity
+- **Process Management**: Proper handling of multiple processes
+
+For detailed information about the setup and connection verification, see [SETUP_AND_ELECTRON_CONNECTION_VERIFICATION.md](file:///D:/5th%20sem/project/akashshare-se/SETUP_AND_ELECTRON_CONNECTION_VERIFICATION.md).
+
+## Development
+
+To run the app in development mode:
+
+1. Start the backend:
+   ```bash
+   cd backend
+   npm run dev
+   ```
+
+2. Start the frontend:
+   ```bash
+   npm start
+   ```
+
+3. Start Electron:
+   ```bash
+   npm run electron-dev
+   ```
+
+## Building for Production
+
+To build the application for production:
+
+```bash
+npm run build
+npm run electron-build
 ```
-akashshare-se/
-├── backend/              # Node.js backend server
-│   ├── middleware/       # Express middleware
-│   ├── routes/           # API routes
-│   ├── services/         # Business logic services
-│   ├── utils/            # Utility functions
-│   └── server.js         # Main server file
-├── electron/             # Electron main and preload processes
-├── public/               # Static assets
-├── scripts/              # Utility scripts
-├── src/                  # React frontend
-│   ├── components/       # React components
-│   ├── config/           # Configuration files
-│   ├── pages/            # Page components
-│   ├── store/            # Zustand store
-│   └── App.js            # Main App component
-└── tests/                # Test files
-```
-
-## Key Components
-
-### File Sharing
-- Upload files with drag & drop or file selection
-- Generate 4-digit share codes
-- Download files using share codes
-- Automatic file expiration (24 hours)
-
-### Group Chat
-- Real-time WebSocket-based messaging
-- Online user tracking
-- Message history
-- Responsive design
-
-### Settings
-- Theme customization
-- Performance monitoring
-- Connection management
-
-## Environment Variables
-
-### Backend (.env)
-- `MONGO_URI`: MongoDB connection string
-- `JWT_SECRET`: Secret key for JWT tokens
-- `PORT`: Server port (default: 5003)
-- `HOST`: Server host (default: localhost)
-
-### Frontend
-- `REACT_APP_API_URL`: Backend API URL (default: http://localhost:5003)
 
 ## Troubleshooting
 
+### Common Issues and Solutions
+
+1. **Backend Server Crash**: 
+   - Ensure MongoDB is running
+   - Check that port 5004 is not in use
+   - Verify environment variables in `.env` file
+
+2. **PowerShell Syntax Errors**:
+   - Use the provided `start-app.ps1` script which has proper PowerShell syntax
+   - Alternatively, use the batch file `fixed-start-app.bat`
+
+3. **Multiple Electron Processes**:
+   - The new startup scripts automatically kill existing processes
+   - If issues persist, manually kill Electron processes in Task Manager
+
+4. **Memory Leaks**:
+   - The application now properly cleans up resources on exit
+   - If you experience high memory usage, restart the application
+
 ### Port Conflicts
+
 If you encounter port conflicts:
-1. Check if services are already running:
-   ```bash
-   # Windows
-   netstat -ano | findstr :5002
-   netstat -ano | findstr :5003
-   ```
-2. Kill conflicting processes:
-   ```bash
-   taskkill /PID <process-id> /F
-   ```
+1. The startup scripts automatically kill processes on ports 5004 and 3000
+2. You can manually change the ports in the `.env` file and [backend/server.js](file:///D:/5th%20sem/project/akashshare-se/backend/server.js)
 
-### MongoDB Connection Issues
-1. Verify your `MONGO_URI` in `backend/.env`
-2. Ensure your IP is whitelisted in MongoDB Atlas
-3. Check your network connection
+## Recent Fixes
 
-### Electron App Issues
-1. Clear Electron cache:
-   ```bash
-   npm run electron-builder -- --reset-cache
-   ```
-2. Reinstall dependencies:
-   ```bash
-   rm -rf node_modules
-   npm install
-   ```
+All critical issues have been resolved:
+
+1. ✅ Backend Server Crash - Fixed IPv4 binding and health checks
+2. ✅ PowerShell Syntax Errors - Created new PowerShell script with proper syntax
+3. ✅ React Server Issues - Resolved IPv6 binding problems
+4. ✅ Multiple Electron Processes - Enhanced process management
+5. ✅ Memory Leaks - Implemented proper resource cleanup
+
+See [COMPLETE_FIX_VERIFICATION.md](file:///D:/5th%20sem/project/akashshare-se/COMPLETE_FIX_VERIFICATION.md) for detailed information about the fixes.
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
+2. Create a feature branch
 3. Commit your changes
 4. Push to the branch
-5. Open a pull request
+5. Create a pull request
 
 ## License
 
 This project is licensed under the MIT License.
-
-## Author
-
-Akash Share Team

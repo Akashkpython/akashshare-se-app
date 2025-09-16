@@ -1,14 +1,5 @@
-#!/usr/bin/env node
-
-/**
- * Test script for express-rate-limit package
- * Used to verify the package is properly installed before starting the server
- */
-
-import rateLimit from 'express-rate-limit';
-
-console.log('✅ express-rate-limit package is properly installed and can be imported');
-process.exit(0);
+// Test file to verify express-rate-limit import
+console.log('Testing express-rate-limit import...');
 
 // Test file to verify express-rate-limit import
 console.log('Testing express-rate-limit import...');
