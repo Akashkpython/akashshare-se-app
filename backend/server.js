@@ -729,15 +729,42 @@ app.get("/download/:code", validateDownload, asyncErrorHandler(async (req, res) 
 // Serve static files from the React app build directory in production
 // This must come AFTER all API routes to avoid conflicts
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '../build');
-  console.log('🗂️  Serving React build files from:', buildPath);
-  app.use(express.static(buildPath));
+  // Try multiple possible build paths for different deployment scenarios
+  const possibleBuildPaths = [
+    path.join(__dirname, '../build'),           // Local development
+    path.join(__dirname, '../src/build'),       // Render deployment
+    path.join(process.cwd(), 'build'),          // Alternative path
+    path.join(process.cwd(), 'src/build')       // Render alternative
+  ];
   
-  // Catch-all handler to serve the React app for any non-API routes
-  // This must come AFTER all API routes to avoid conflicts
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
+  let buildPath = null;
+  for (const testPath of possibleBuildPaths) {
+    if (fs.existsSync(testPath)) {
+      buildPath = testPath;
+      break;
+    }
+  }
+  
+  if (buildPath) {
+    console.log('🗂️  Serving React build files from:', buildPath);
+    app.use(express.static(buildPath));
+    
+    // Catch-all handler to serve the React app for any non-API routes
+    // This must come AFTER all API routes to avoid conflicts
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(buildPath, 'index.html'));
+    });
+  } else {
+    console.log('⚠️  No React build directory found, serving API only');
+    // Serve a simple message for non-API routes
+    app.get('*', (req, res) => {
+      res.json({ 
+        message: 'Akash Share Backend API', 
+        status: 'running',
+        note: 'Frontend build files not found - API only mode'
+      });
+    });
+  }
 } else {
   // In development, still serve static files from public directory
   const publicPath = path.join(__dirname, '../public');
