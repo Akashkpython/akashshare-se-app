@@ -239,16 +239,9 @@ function createWindow() {
       minWidth: 800,
       minHeight: 600,
       backgroundColor: '#0f0f0f', // Dark background to match app
-      // Use custom title bar to control its color
-      frame: false,
-      titleBarStyle: 'hidden',
-      titleBarOverlay: {
-        color: '#000000', // Dark title bar to match app
-        symbolColor: '#ffffff', // White symbols
-        height: 32
-      },
-      // Hide default window controls to avoid duplicates
-      trafficLightPosition: { x: -1000, y: -1000 },
+      // Use standard Windows title bar to avoid duplicates
+      frame: true,
+      titleBarStyle: 'default',
       webPreferences: {
         preload: app.isPackaged 
           ? path.join(process.resourcesPath, 'preload.js')
@@ -600,7 +593,7 @@ async function checkIfBackendIsRunning() {
     const options = {
       hostname: 'localhost',
       port: 5004,
-      path: '/health',
+      path: '/',
       method: 'GET',
       timeout: 3000
     };
@@ -742,19 +735,20 @@ async function createBackendProcess() {
   log.info('🔧 Starting backend server process...');
   const backendStartTime = Date.now();
   
-  // Always start a new backend process for packaged app
-  if (app.isPackaged) {
-    log.info('📦 Packaged app detected - starting fresh backend process');
-    // Force kill any existing backend processes
-    await killPortProcess(5004);
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced wait time for faster startup
-  } else {
-    // Check if backend is already running on port 5004 (only in development)
-    const isBackendRunning = await checkIfBackendIsRunning();
-    if (isBackendRunning) {
-      log.info('✅ Backend server is already running on port 5004, using existing instance');
-      return Promise.resolve(null);
-    }
+  // Check if we should use local backend or public backend
+  const backendMode = process.env.BACKEND_MODE || 'local';
+  
+  // If using public backend, we don't need to start a local backend process
+  if (backendMode === 'public') {
+    log.info('🌐 Using public backend, skipping local backend startup');
+    return Promise.resolve(null);
+  }
+  
+  // Always check if backend is already running first
+  const isBackendRunning = await checkIfBackendIsRunning();
+  if (isBackendRunning) {
+    log.info('✅ Backend server is already running on port 5004, using existing instance');
+    return Promise.resolve(null);
   }
   
   // Try to kill any process using port 5004
@@ -809,6 +803,15 @@ async function createBackendProcess() {
   // Check if backend file exists
   if (!fs.existsSync(backendPath)) {
     log.error(`❌ Backend server file not found: ${backendPath}`);
+    log.error(`❌ Available files in backend directory:`);
+    try {
+      const files = fs.readdirSync(backendDir);
+      files.forEach(file => {
+        log.error(`   - ${file}`);
+      });
+    } catch (err) {
+      log.error(`❌ Could not read backend directory: ${err.message}`);
+    }
     return null;
   }
   
@@ -837,7 +840,23 @@ async function createBackendProcess() {
   log.info(`📁 Working directory: ${backendDir}`);
   log.info(`📄 Script path: ${backendPath}`);
   
-  const backendProcess = spawn('node', [backendPath], {
+  log.info('🚀 Spawning backend process with the following configuration:');
+  log.info(`   - Command: node ${backendPath}`);
+  log.info(`   - Working directory: ${backendDir}`);
+  log.info(`   - NODE_ENV: ${isDev ? 'development' : 'production'}`);
+  log.info(`   - PORT: 5004`);
+  log.info(`   - HOST: 0.0.0.0`);
+  log.info(`   - MONGO_URI: set`);
+  log.info(`   - JWT_SECRET: set`);
+
+  // Use simple backend for guaranteed reliability
+  let backendProcess;
+  const simpleBackendPath = path.join(backendDir, 'simple-backend.js');
+  
+  // Check if simple backend exists, otherwise fall back to complex server.js
+  if (fs.existsSync(simpleBackendPath)) {
+    log.info('🚀 Starting simple backend for guaranteed reliability...');
+    backendProcess = spawn('node', [simpleBackendPath], {
     cwd: backendDir,
     env: {
       ...process.env,
@@ -860,12 +879,44 @@ async function createBackendProcess() {
       RATE_LIMIT_MAX_REQUESTS: '100',
       AI_CLASSIFY_ENABLED: 'true'
     },
-    stdio: ['ignore', 'pipe', 'pipe'],
-    // Add process options for better stability
-    detached: false,
-    windowsHide: true,
-    shell: true // Use shell for better Windows compatibility
-  });
+      stdio: ['ignore', 'pipe', 'pipe'],
+      // Add process options for better stability
+      detached: false,
+      windowsHide: true,
+      shell: true // Use shell for better Windows compatibility
+    });
+  } else {
+    log.info('🚀 Simple backend not found, using complex server.js...');
+    backendProcess = spawn('node', [backendPath], {
+      cwd: backendDir,
+      env: {
+        ...process.env,
+        // Inject parsed backend env (if any)
+        ...backendEnvCache,
+        // Ensure these are set explicitly
+        NODE_ENV: isDev ? 'development' : 'production',
+        PORT: '5004',
+        HOST: '0.0.0.0',
+        // Add additional environment variables for better debugging
+        DEBUG: isDev ? '*' : undefined,
+        LOG_LEVEL: isDev ? 'debug' : 'info',
+        // Ensure MongoDB connection works
+        MONGO_URI: 'mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare',
+        JWT_SECRET: 'f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09',
+        // Additional required environment variables
+        TRUST_PROXY: 'true',
+        FILE_SIZE_LIMIT: '10485760',
+        RATE_LIMIT_WINDOW_MS: '900000',
+        RATE_LIMIT_MAX_REQUESTS: '100',
+        AI_CLASSIFY_ENABLED: 'true'
+      },
+        stdio: ['ignore', 'pipe', 'pipe'],
+        // Add process options for better stability
+        detached: false,
+        windowsHide: true,
+        shell: true // Use shell for better Windows compatibility
+      });
+  }
 
   // Performance tracking
   const processCreateTime = Date.now();
@@ -877,15 +928,25 @@ async function createBackendProcess() {
     log.info(`[Backend] ${output}`);
     
     // Performance tracking for backend startup
-    if (output.includes('Server running on')) {
+    if (output.includes('Server running on') || output.includes('listening on') || output.includes('started on')) {
       const serverStartTime = Date.now();
       log.info(`✅ Backend server started successfully in ${serverStartTime - backendStartTime}ms`);
       log.info('🎉 Backend server is now online and ready to handle requests');
     }
     
+    // Check for MongoDB connection success
+    if (output.includes('MongoDB connected successfully') || output.includes('Connected to MongoDB')) {
+      log.info('✅ MongoDB connection established successfully');
+    }
+    
     // Check for MongoDB connection errors
-    if (output.includes('MongoDB Connection Error') || output.includes('MongoNetworkError')) {
+    if (output.includes('MongoDB Connection Error') || output.includes('MongoNetworkError') || output.includes('MongoError')) {
       log.error('❌ MongoDB connection failed. Please check your MONGO_URI in the backend .env file.');
+    }
+    
+    // Check for any other errors
+    if (output.includes('Error:') || output.includes('error:') || output.includes('ERROR:')) {
+      log.error(`❌ Backend error detected: ${output}`);
     }
   });
 
@@ -975,7 +1036,34 @@ async function createBackendProcess() {
     backendProcess.stdout.on('data', handleOutput);
     backendProcess.stderr.on('data', handleOutput);
     
-    // Timeout if backend doesn't start in 20 seconds (optimized for faster startup)
+  // Handle process errors
+  backendProcess.on('error', (error) => {
+    log.error('❌ Backend process error:', error);
+    log.error('❌ Error details:', {
+      code: error.code,
+      errno: error.errno,
+      syscall: error.syscall,
+      path: error.path,
+      message: error.message
+    });
+    if (!backendStarted) {
+      backendStarted = true;
+      clearTimeout(startupTimeout);
+      resolve(null);
+    }
+  });
+    
+    // Handle process exit
+    backendProcess.on('exit', (code, signal) => {
+      log.error(`❌ Backend process exited with code ${code} and signal ${signal}`);
+      if (!backendStarted) {
+        backendStarted = true;
+        clearTimeout(startupTimeout);
+        resolve(null);
+      }
+    });
+    
+    // Timeout if backend doesn't start in 30 seconds (increased for reliability)
     const startupTimeout = setTimeout(() => {
       if (!backendStarted) {
         log.error('❌ Backend server startup timeout. The backend process did not start in time.');
@@ -992,7 +1080,7 @@ async function createBackendProcess() {
         
         resolve(null);
       }
-    }, 20000);
+    }, 30000);
     
     // Store timeout reference for potential cleanup
     backendProcess.startupTimeout = startupTimeout;
@@ -1130,61 +1218,76 @@ app.whenReady().then(async () => {
   log.info(`   Architecture: ${process.arch}`);
   log.info(`   App Path: ${app.getAppPath()}`);
   log.info(`   User Data Path: ${app.getPath('userData')}`);
+  log.info(`   Backend Mode: ${process.env.BACKEND_MODE || 'local'}`);
   
   try {
-    // Create backend process first and wait for it to start
-    log.info('🔧 Initializing backend server...');
-    backendProcess = await createBackendProcess();
-    
-    // Wait for backend to be fully ready
-    if (backendProcess) {
-      log.info('⏳ Waiting for backend server to initialize...');
+    // Create backend process first and wait for it to start (only if using local mode)
+    const backendMode = process.env.BACKEND_MODE || 'local';
+    if (backendMode !== 'public') {
+      log.info('🔧 Initializing local backend server...');
+      backendProcess = await createBackendProcess();
       
-      // Wait for backend to be ready with health checks
-      let backendReady = false;
-      let attempts = 0;
-      const maxAttempts = 15; // 15 attempts = 15 seconds max (faster startup)
-      
-      while (!backendReady && attempts < maxAttempts) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3000);
-          
-          const response = await fetch('http://localhost:5004/health', {
-            method: 'GET',
-            signal: controller.signal,
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json'
+      // Wait for backend to be fully ready
+      if (backendProcess) {
+        log.info('⏳ Waiting for backend server to initialize...');
+        
+        // Wait for backend to be ready with health checks
+        let backendReady = false;
+        let attempts = 0;
+        const maxAttempts = 45; // 45 attempts = 45 seconds max (increased for better reliability)
+        
+        while (!backendReady && attempts < maxAttempts) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased timeout to 5 seconds
+            
+            const response = await fetch('http://localhost:5004/health', {
+              method: 'GET',
+              signal: controller.signal,
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'AkashShare-Electron/1.0.5'
+              }
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.status === 'OK') {
+                backendReady = true;
+                log.info('✅ Backend health check successful - backend is ready!');
+                log.info('🎉 Backend server is now fully operational and ready to handle requests');
+              } else {
+                log.info(`⏳ Backend health check returned status: ${data.status}, waiting...`);
+              }
+            } else {
+              log.info(`⏳ Backend responded with status ${response.status}, waiting...`);
             }
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (response.ok) {
-            const data = await response.json();
-            log.info('✅ Backend server is ready and responding!', data);
-            backendReady = true;
-          } else {
-            log.info(`⏳ Backend responded with status ${response.status}, waiting...`);
+          } catch (error) {
+            // Backend not ready yet, continue waiting
+            if (error.name === 'AbortError') {
+              log.info(`⏳ Backend health check timed out (attempt ${attempts + 1})`);
+            } else {
+              log.info(`⏳ Backend health check failed (attempt ${attempts + 1}):`, error.message);
+            }
           }
-        } catch (error) {
-          // Backend not ready yet, continue waiting
-          log.info(`⏳ Backend health check failed (attempt ${attempts + 1}):`, error.message);
+          
+          if (!backendReady) {
+            attempts++;
+            log.info(`⏳ Backend not ready yet (attempt ${attempts}/${maxAttempts}), waiting...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
         }
         
         if (!backendReady) {
-          attempts++;
-          log.info(`⏳ Backend not ready yet (attempt ${attempts}/${maxAttempts}), waiting...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          log.warn('⚠️ Backend server may not be fully ready, but continuing...');
         }
+        
+        log.info('✅ Backend server initialization complete');
       }
-      
-      if (!backendReady) {
-        log.warn('⚠️ Backend server may not be fully ready, but continuing...');
-      }
-      
-      log.info('✅ Backend server initialization complete');
+    } else {
+      log.info('🌐 Using public backend, skipping local backend initialization');
     }
     
     // Now create the main window
@@ -1347,63 +1450,6 @@ ipcMain.handle('get-platform', () => {
   }
 });
 
-// Window control handlers for custom title bar
-ipcMain.handle('window-minimize', () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    try {
-      const minimizeStartTime = Date.now();
-      mainWindow.minimize();
-      console.log(`⏱️ Window minimized in ${Date.now() - minimizeStartTime}ms`);
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error minimizing window:', error);
-      return { success: false, error: error.message };
-    }
-  } else {
-    console.warn('⚠️ No main window to minimize');
-    return { success: false, error: 'No main window' };
-  }
-});
-
-ipcMain.handle('window-maximize', () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    try {
-      const maximizeStartTime = Date.now();
-      if (mainWindow.isMaximized()) {
-        mainWindow.unmaximize();
-        console.log(`⏱️ Window unmaximized in ${Date.now() - maximizeStartTime}ms`);
-        return { success: true, maximized: false };
-      } else {
-        mainWindow.maximize();
-        console.log(`⏱️ Window maximized in ${Date.now() - maximizeStartTime}ms`);
-        return { success: true, maximized: true };
-      }
-    } catch (error) {
-      console.error('❌ Error (un)maximizing window:', error);
-      return { success: false, error: error.message };
-    }
-  } else {
-    console.warn('⚠️ No main window to (un)maximize');
-    return { success: false, error: 'No main window' };
-  }
-});
-
-ipcMain.handle('window-close', () => {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    try {
-      const closeStartTime = Date.now();
-      // Always close the window properly
-      mainWindow.close();
-      console.log(`⏱️ Window closed in ${Date.now() - closeStartTime}ms`);
-      return { success: true, action: 'closed' };
-    } catch (error) {
-      console.error('❌ Error closing window:', error);
-      return { success: false, error: error.message };
-    }
-  } else {
-    console.warn('⚠️ No main window to close');
-    return { success: false, error: 'No main window' };
-  }
-});
+// Using standard Windows title bar - no custom window controls needed
 
 })();

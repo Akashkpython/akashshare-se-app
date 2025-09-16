@@ -1,19 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Send, 
-  Paperclip, 
-  Smile,
-  Users, 
-  MoreVertical, 
-  X, 
-  Reply,
-  MoreHorizontal,
-  Sparkles,
-  Settings,
-  Bell,
-  Crown
-} from 'lucide-react';
+import { Send, Paperclip, Smile, X, Sparkles, Bell, MoreVertical, Users, Settings, Crown, Reply, MoreHorizontal } from 'lucide-react';
+
+// Import the new API configuration
+import { getApiBaseUrl } from '../config/api.js';
 
 // Modern emoji picker with black theme
 const EmojiPicker = ({ onEmojiSelect, onClose, position = { x: 0, y: 0 } }) => {
@@ -431,6 +421,11 @@ const GroupChatWhatsApp = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
 
+  // Add state for backend mode
+  const [backendMode, setBackendMode] = useState(() => {
+    return localStorage.getItem("backendMode") || "public";
+  });
+
   // Refs
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -451,8 +446,9 @@ const GroupChatWhatsApp = () => {
     
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.hostname === 'localhost' ? '127.0.0.1:5004' : '127.0.0.1:5004';
-      const wsUrl = `${protocol}//${host}/chat?username=${encodeURIComponent(username)}&room=general`;
+      // Use the API base URL to determine WebSocket connection
+      const baseUrl = getApiBaseUrl();
+      const wsUrl = `${protocol}//${new URL(baseUrl).host}/chat?username=${encodeURIComponent(username)}&room=general`;
       
       console.log('🔌 Connecting to WebSocket:', wsUrl);
       
@@ -621,15 +617,17 @@ const GroupChatWhatsApp = () => {
     files.forEach(file => {
       if (file.size > 10 * 1024 * 1024) {
         alert('File size must be less than 10MB');
-      return;
-    }
+        return;
+      }
 
       const formData = new FormData();
       formData.append('file', file);
 
       console.log('📤 Uploading file to group chat:', file.name, file.type, file.size);
 
-      fetch('http://127.0.0.1:5004/upload', {
+      // Use the API base URL for file uploads
+      const baseUrl = getApiBaseUrl();
+      fetch(`${baseUrl}/upload`, {
         method: 'POST',
         body: formData
       })
@@ -645,7 +643,8 @@ const GroupChatWhatsApp = () => {
         
         // Backend returns: { code, filename, size, message }
         if (data.code && data.filename) {
-          const fileUrl = `http://127.0.0.1:5004/download/${data.code}`;
+          const baseUrl = getApiBaseUrl();
+          const fileUrl = `${baseUrl}/download/${data.code}`;
           
           // Send file share message via WebSocket
           const fileShareData = {
@@ -954,8 +953,8 @@ const GroupChatWhatsApp = () => {
         </div>
           </div>
         </div>
-        </div>
-
+      </div>
+      
       {/* Members Panel with black theme */}
       <AnimatePresence>
         {showMembersPanel && (
@@ -975,7 +974,7 @@ const GroupChatWhatsApp = () => {
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
-      </div>
+            </div>
 
             <div className="flex-1 overflow-y-auto p-6" style={{ height: 'calc(100vh - 120px)' }}>
               <div className="space-y-4">
@@ -986,7 +985,7 @@ const GroupChatWhatsApp = () => {
                       <span className="text-black text-sm font-bold">
                         {member.charAt(0).toUpperCase()}
                       </span>
-              </div>
+                    </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold text-white">{member}</div>
                       <div className="text-xs text-green-400 flex items-center space-x-1">
@@ -996,19 +995,19 @@ const GroupChatWhatsApp = () => {
                     </div>
                     {isAdmin && (
                       <div className="flex space-x-2">
-                <button
+                        <button
                           onClick={() => muteMember(member)}
                           className="p-2 hover:bg-gray-800 rounded-full transition-colors"
                           title="Mute"
                         >
                           <MoreVertical className="w-4 h-4 text-gray-400" />
-                </button>
+                        </button>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
-              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1045,186 +1044,190 @@ const GroupChatWhatsApp = () => {
                 </div>
 
                 <div className="flex space-x-4">
-                <button
+                  <button
                     onClick={handleAdminLogin}
-                    className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
+                    className="flex-1 bg-white text-black py-3 rounded-2xl font-semibold hover:bg-gray-200 transition-colors"
                   >
                     Login
-              </button>
+                  </button>
                   <button
                     onClick={() => setShowAdminPanel(false)}
-                    className="flex-1 bg-gray-800 text-white py-3 rounded-2xl hover:bg-gray-700 transition-all duration-200 font-semibold"
+                    className="flex-1 bg-gray-800 text-white py-3 rounded-2xl font-semibold hover:bg-gray-700 transition-colors"
                   >
                     Cancel
-                </button>
-              </div>
+                  </button>
                 </div>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Settings Modal with blur */}
+      {/* Settings Panel */}
       <AnimatePresence>
         {showSettings && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            className="w-80 bg-black border-l border-gray-900 flex flex-col shadow-2xl h-screen overflow-hidden"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
-            >
-              <h3 className="text-2xl font-bold text-white mb-6">Settings</h3>
-              
+            <div className="p-6 border-b border-gray-900">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">Settings</h3>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-2 hover:bg-gray-900 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-300 mb-3">
                     Username
                   </label>
-                <input
-                  type="text"
+                  <input
+                    type="text"
                     value={username}
-                    disabled
-                    className="w-full px-4 py-3 bg-gray-800/80 backdrop-blur-lg border border-gray-600 rounded-2xl text-white"
-                />
-              </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-3">
-                    Connection Status
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-white">{isConnected ? 'Connected' : 'Disconnected'}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-3">
-                    Online Members
-                  </label>
-                  <span className="text-white">{onlineMembers.length} members online</span>
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white text-white"
+                  />
                 </div>
                 
-                <div className="flex space-x-4">
-                <button
-                    onClick={() => setShowSettings(false)}
-                    className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
-                  >
-                    Close
-                </button>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                    Backend Mode
+                  </label>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => {
+                        setBackendMode("public");
+                        localStorage.setItem("backendMode", "public");
+                      }}
+                      className={`flex-1 py-2 rounded-xl font-semibold transition-colors ${
+                        backendMode === "public" 
+                          ? "bg-white text-black" 
+                          : "bg-gray-800 text-white hover:bg-gray-700"
+                      }`}
+                    >
+                      Public
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBackendMode("local");
+                        localStorage.setItem("backendMode", "local");
+                      }}
+                      className={`flex-1 py-2 rounded-xl font-semibold transition-colors ${
+                        backendMode === "local" 
+                          ? "bg-white text-black" 
+                          : "bg-gray-800 text-white hover:bg-gray-700"
+                      }`}
+                    >
+                      Local
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">
+                    {backendMode === "public" 
+                      ? "Using public Render backend for internet access" 
+                      : "Using local backend for LAN-only access"}
+                  </p>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                    Theme
+                  </label>
+                  <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white text-white">
+                    <option>Dark</option>
+                    <option>Light</option>
+                  </select>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-300">Notifications</span>
+                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-700">
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1"></span>
+                  </button>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-gray-300">Sound</span>
+                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-700">
+                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1"></span>
+                  </button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Notifications Modal with blur */}
+      {/* Notifications Panel */}
       <AnimatePresence>
         {showNotifications && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            className="w-80 bg-black border-l border-gray-900 flex flex-col shadow-2xl h-screen overflow-hidden"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
-            >
-              <h3 className="text-2xl font-bold text-white mb-6">Notifications</h3>
-              
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-gray-600">
-                    <span className="text-white">Message Notifications</span>
-                    <div className="w-12 h-6 bg-green-500 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </div>
-                </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-gray-600">
-                    <span className="text-white">Sound Notifications</span>
-                    <div className="w-12 h-6 bg-green-500 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute right-0.5 top-0.5"></div>
-                    </div>
-                </div>
-
-                  <div className="flex items-center justify-between p-3 bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-gray-600">
-                    <span className="text-white">Desktop Notifications</span>
-                    <div className="w-12 h-6 bg-gray-800 rounded-full relative">
-                      <div className="w-5 h-5 bg-white rounded-full absolute left-0.5 top-0.5"></div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex space-x-4">
+            <div className="p-6 border-b border-gray-900">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-white">Notifications</h3>
                 <button
-                    onClick={() => setShowNotifications(false)}
-                    className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
-                  >
-                    Close
+                  onClick={() => setShowNotifications(false)}
+                  className="p-2 hover:bg-gray-900 rounded-full transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
                 </button>
-                </div>
               </div>
-            </motion.div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="text-center py-16">
+                <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Bell className="w-10 h-10 text-gray-500" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">No notifications</h3>
+                <p className="text-gray-400">You&#39;re all caught up!</p>
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Emoji Picker Modal with blur */}
+      {/* Emoji Picker */}
       <AnimatePresence>
         {showEmojiPicker && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="absolute bottom-32 right-6 z-20"
           >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
-            >
-              <h3 className="text-2xl font-bold text-white mb-6">Choose Emoji</h3>
-              
-              <div className="grid grid-cols-8 gap-4 mb-6">
-                {['😀', '😂', '😍', '🥰', '😎', '🤔', '😮', '😢', '😡', '👍', '👎', '❤️', '🔥', '💯', '🎉', '👏', '🙌', '🤝', '💪', '🎯', '⭐', '✨', '💫', '🌟', '💎', '🏆', '🎊', '🎈', '🎁', '🍕', '🍔', '🍰', '☕', '🍺', '🚀', '💻', '📱', '🎮', '🎵', '🎬', '📚', '🏠', '🌍', '🌙', '☀️', '🌈', '⚡', '❄️', '🔥', '💧', '🌊', '🏔️', '🌺', '🌸', '🌻', '🌹', '🌷', '🍀', '🌿', '🌱', '🌳', '🌲', '🌴', '🌵', '🌾', '🌽', '🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑', '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐', '🥖', '🍞', '🥨', '🥯', '🧀', '🥚', '🍳', '🧈', '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭', '🍔', '🍟', '🍕', '🫓', '🥙', '🌮', '🌯', '🫔', '🥗', '🥘', '🫕', '🥫', '🍝', '🍜', '🍲', '🍛', '🍣', '🍱', '🥟', '🦪', '🍤', '🍙', '🍚', '🍘', '🍥', '🥠', '🥮', '🍢', '🍡', '🍧', '🍨', '🍦', '🥧', '🧁', '🍰', '🎂', '🍮', '🍭', '🍬', '🍫', '🍿', '🍩', '🍪', '🌰', '🥜', '🍯'].map((emoji, index) => (
-                <button
+            <div className="bg-black border border-gray-700 rounded-2xl shadow-2xl p-4">
+              <div className="grid grid-cols-8 gap-2 max-w-xs">
+                {['😀', '😂', '😍', '🥰', '😎', '🤩', '🥳', '😭', '😡', '🤯', '🥶', '😱', '👍', '👎', '❤️', '🔥'].map((emoji, index) => (
+                  <button
                     key={index}
-                  onClick={() => {
+                    onClick={() => {
                       setNewMessage(prev => prev + emoji);
                       setShowEmojiPicker(false);
-                  }}
-                    className="text-2xl p-2 hover:bg-gray-800 rounded-lg transition-colors"
-                >
+                    }}
+                    className="text-2xl p-2 hover:bg-gray-800 rounded-xl transition-colors"
+                  >
                     {emoji}
-                </button>
+                  </button>
                 ))}
-                </div>
-
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setShowEmojiPicker(false)}
-                  className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 transition-all duration-200 font-semibold shadow-lg"
-                >
-                  Close
-              </button>
+              </div>
             </div>
-            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-
 
       {/* Hidden file input */}
       <input

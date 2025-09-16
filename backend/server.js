@@ -238,6 +238,11 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Allow app://. origins for Electron
+    if (origin.startsWith('app://.')) {
+      return callback(null, true);
+    }
+    
     // Allow null origins
     if (origin === 'null') {
       return callback(null, true);
@@ -246,9 +251,18 @@ app.use(cors({
     // Allow specific production origins
     const allowedOrigins = [
       'https://akashshare-se.onrender.com',
-      'https://akashshare-se-backend.onrender.com',
-      'http://44.229.227.142:5004'
+      'https://akash-share-backend.onrender.com',
+      'http://44.229.227.142:5004',
+      // Allow local network IPs for LAN access
+      'http://192.168.0.185:3000',
+      'http://192.0.0.185:3001',
+      'http://192.168.0.185:5004'
     ];
+    
+    // Allow any local network IP
+    if (origin.match(/^http:\/\/192\.168\.\d+\.\d+:(3000|3001|5004)$/)) {
+      return callback(null, true);
+    }
     
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -440,7 +454,22 @@ const FileSchema = new mongoose.Schema({
 
 const File = mongoose.model("File", FileSchema);
 
-// Health check endpoint
+// Simple test endpoint
+app.get("/test", (req, res) => {
+  res.json({ message: "Backend is working!", timestamp: new Date().toISOString() });
+});
+
+// Simple status endpoint that will always work
+app.get("/status", (req, res) => {
+  res.json({ 
+    status: "online", 
+    message: "Backend is running", 
+    timestamp: new Date().toISOString(),
+    port: process.env.PORT || 5004
+  });
+});
+
+// Health check endpoints - defined before static file serving to avoid conflicts
 app.get("/health", (req, res) => {
   console.log('🔍 Health check request from:', req.get('Origin') || 'no-origin', req.ip);
   
@@ -751,13 +780,21 @@ if (process.env.NODE_ENV === 'production') {
     
     // Catch-all handler to serve the React app for any non-API routes
     // This must come AFTER all API routes to avoid conflicts
-    app.get('*', (req, res) => {
+    app.get('*', (req, res, next) => {
+      // Skip API routes
+      if (req.path.startsWith('/api/') || req.path.startsWith('/health') || req.path.startsWith('/electron-health') || req.path.startsWith('/debug/') || req.path.startsWith('/upload') || req.path.startsWith('/download') || req.path.startsWith('/chat/')) {
+        return next();
+      }
       res.sendFile(path.join(buildPath, 'index.html'));
     });
   } else {
     console.log('⚠️  No React build directory found, serving API only');
     // Serve a simple message for non-API routes
-    app.get('*', (req, res) => {
+    app.get('*', (req, res, next) => {
+      // Skip API routes
+      if (req.path.startsWith('/api/') || req.path.startsWith('/health') || req.path.startsWith('/electron-health') || req.path.startsWith('/debug/') || req.path.startsWith('/upload') || req.path.startsWith('/download') || req.path.startsWith('/chat/')) {
+        return next();
+      }
       res.json({ 
         message: 'Akash Share Backend API', 
         status: 'running',
@@ -765,22 +802,8 @@ if (process.env.NODE_ENV === 'production') {
       });
     });
   }
-} else {
-  // In development, still serve static files from public directory
-  const publicPath = path.join(__dirname, '../public');
-  console.log('🗂️  Serving static files from:', publicPath);
-  app.use(express.static(publicPath));
-  
-  // Debug route to test static file serving
-  app.get('/debug/static', (req, res) => {
-    const akashPath = path.join(publicPath, 'akash.jpg');
-    res.json({
-      publicPath,
-      akashExists: fs.existsSync(akashPath),
-      akashPath
-    });
-  });
 }
+
 
 // Summary endpoint: quick extractive summary for recent messages in a room
 app.get('/chat/:room/summary', (req, res) => {
@@ -851,13 +874,15 @@ if (shouldStartServer) {
     if (!process.env.PORT) {
       process.env.PORT = '5004';
     }
+    // Change HOST from '0.0.0.0' to '0.0.0.0' to accept connections from any IP
     if (!process.env.HOST) {
-      process.env.HOST = '0.0.0.0'; // Changed from 127.0.0.1 to 0.0.0.0 for Electron compatibility
+      process.env.HOST = '0.0.0.0'; // This allows connections from any IP address
     }
 
     // Start server regardless of DB status so Electron app can function (chat/UI)
     const PORT = process.env.PORT || 5004;
-    const HOST = process.env.HOST || '0.0.0.0';
+    // Change HOST to accept connections from any IP address
+    const HOST = process.env.HOST || '0.0.0.0'; // Changed from '127.0.0.1' to '0.0.0.0'
     console.log(`🔧 Configuring server to bind to ${HOST}:${PORT}`);
 
     server.listen(PORT, HOST, () => {

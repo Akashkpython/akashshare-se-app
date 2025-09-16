@@ -85,7 +85,11 @@
     "setup": "npm run build:win:custom",
     "installer": "npm run build:win:custom",
     "install:all": "npm install && npm run backend:install",
-    "start:all": "concurrently \"npm run backend\" \"npm start\""
+    "start:all": "concurrently \"npm run backend\" \"npm start\"",
+    "build:public": "node build-with-backend-mode.js public",
+    "build:local": "node build-with-backend-mode.js local",
+    "verify:backends": "node verify-backend-modes.js",
+    "verify:backends:complete": "node verify-backend-modes-complete.js"
   },
   "eslintConfig": {
     "extends": [
@@ -188,5 +192,8 @@
         "to": "preload.js"
       }
     ]
+  },
+  "env": {
+    "REACT_APP_DEFAULT_BACKEND": "public"
   }
 }

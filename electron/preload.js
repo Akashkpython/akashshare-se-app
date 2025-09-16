@@ -37,32 +37,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // App info
   appVersion: process.env.npm_package_version || '1.0.0',
   
-  // Window controls (for custom titlebar)
-  minimize: async () => {
-    try {
-      return await ipcRenderer.invoke('window-minimize');
-    } catch (error) {
-      console.error('Error minimizing window:', error);
-      return { success: false, error: error.message };
-    }
-  },
-  maximize: async () => {
-    try {
-      const result = await ipcRenderer.invoke('window-maximize');
-      return result;
-    } catch (error) {
-      console.error('Error maximizing window:', error);
-      return { success: false, error: error.message };
-    }
-  },
-  close: async () => {
-    try {
-      return await ipcRenderer.invoke('window-close');
-    } catch (error) {
-      console.error('Error closing window:', error);
-      return { success: false, error: error.message };
-    }
-  },
+  // Using standard Windows title bar - no custom window controls needed
   
   // Auto-update functions
   checkForUpdates: async () => {

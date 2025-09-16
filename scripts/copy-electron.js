@@ -101,8 +101,8 @@ try {
     const isDirectory = exists && stats.isDirectory();
     
     if (isDirectory) {
-      // Skip node_modules and uploads directories
-      if (path.basename(src) === 'node_modules' || path.basename(src) === 'uploads') {
+      // Skip uploads directory (but include node_modules for packaged app)
+      if (path.basename(src) === 'uploads') {
         return;
       }
       
@@ -121,9 +121,9 @@ try {
     }
   };
   
-  // Copy all backend files except node_modules and uploads
+  // Copy all backend files except uploads and test directories
   fs.readdirSync(backendSourceDir).forEach(item => {
-    if (item !== 'node_modules' && item !== 'uploads' && item !== 'test') {
+    if (item !== 'uploads' && item !== 'test') {
       const srcPath = path.join(backendSourceDir, item);
       const destPath = path.join(buildBackendDir, item);
       copyRecursiveSync(srcPath, destPath);
@@ -132,7 +132,7 @@ try {
   });
 
   console.log('🎉 Required files copied successfully!');
-  console.log('📝 Note: All dependencies from package.json will be installed during packaging');
+  console.log('📝 Note: Backend dependencies (node_modules) have been included in the build');
   
 } catch (error) {
   console.error('❌ Error copying files:', error.message);

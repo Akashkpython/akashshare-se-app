@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  X, 
   Search,
-  Minimize2,
-  Maximize2,
   Wifi,
   WifiOff,
   RefreshCw
 } from 'lucide-react';
 
 const Header = () => {
-  const [isMaximized, setIsMaximized] = useState(false);
   const [isElectron, setIsElectron] = useState(false);
   const [backendStatus, setBackendStatus] = useState('checking');
   const [lastHealthCheck, setLastHealthCheck] = useState(null);
@@ -32,73 +28,7 @@ const Header = () => {
     return assetPath;
   };
 
-  const handleWindowControl = async (action) => {
-    console.log(`🪟 Handling window control action: ${action}`);
-    console.log(`🪟 Electron API available:`, !!window.electronAPI);
-    console.log(`🪟 Current isElectron state:`, isElectron);
-    
-    if (window.electronAPI) {
-      try {
-        console.log(`🪟 Executing window control: ${action}`);
-        console.log('🪟 Electron API methods available:', Object.keys(window.electronAPI));
-        let result;
-        switch (action) {
-          case 'minimize':
-            console.log('🪟 Calling minimize method');
-            result = await window.electronAPI.minimize();
-            console.log('🪟 Minimize result:', result);
-            if (result && result.success) {
-              console.log('✅ Window minimized successfully');
-            } else {
-              console.error('❌ Failed to minimize window:', result);
-            }
-            break;
-          case 'maximize':
-            console.log('🪟 Calling maximize method');
-            result = await window.electronAPI.maximize();
-            console.log('🪟 Maximize result:', result);
-            // Toggle the maximize state for UI feedback if we got a proper response
-            if (result && typeof result.maximized === 'boolean') {
-              setIsMaximized(result.maximized);
-              console.log(`🪟 Window state updated to: ${result.maximized ? 'maximized' : 'normal'}`);
-            } else {
-              // Fallback to toggle if we don't get a specific state
-              setIsMaximized(prev => {
-                console.log(`🪟 Toggling maximize state from ${prev} to ${!prev}`);
-                return !prev;
-              });
-            }
-            if (result && result.success) {
-              console.log('✅ Window maximize/unmaximize successful');
-            } else {
-              console.error('❌ Failed to maximize/unmaximize window:', result);
-            }
-            break;
-          case 'close':
-            console.log('🪟 Calling close method');
-            result = await window.electronAPI.close();
-            console.log('🪟 Close result:', result);
-            if (result && result.success) {
-              console.log('✅ Window close action successful');
-            } else {
-              console.error('❌ Failed to close window:', result);
-            }
-            break;
-          default:
-            console.log('🪟 Unknown action:', action);
-            break;
-        }
-      } catch (error) {
-        console.error(`❌ Error performing window action ${action}:`, error);
-        // Show an alert to the user
-        alert(`Error performing window action ${action}: ${error.message}`);
-      }
-    } else {
-      console.warn('⚠️ Electron API not available');
-      // Show an alert to the user
-      alert('Electron API not available. This feature is only available in the desktop application.');
-    }
-  };
+  // Using standard Windows title bar - no custom window controls needed
 
   // Check if we're in an Electron environment
   useEffect(() => {
@@ -183,12 +113,11 @@ const Header = () => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        const response = await fetch(`${apiBaseUrl}/health`, {
+        const response = await fetch(`${apiBaseUrl}/`, {
           method: 'GET',
           signal: controller.signal,
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
           }
         });
         
@@ -239,12 +168,11 @@ const Header = () => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        const response = await fetch(`${apiBaseUrl}/health`, {
+        const response = await fetch(`${apiBaseUrl}/`, {
           method: 'GET',
           signal: controller.signal,
           headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
           }
         });
         
@@ -265,14 +193,14 @@ const Header = () => {
     await checkBackendHealth();
   };
 
+  // Show the header with backend status
   return (
     <motion.header
       initial={{ y: -50, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       className="flex items-center justify-between h-16 px-4 border-b border-gray-800"
       style={{
-        background: 'linear-gradient(90deg, #000000 0%, #121212 50%, #1C1C1C 100%)',
-        WebkitAppRegion: 'drag' // Make the header draggable
+        background: 'linear-gradient(90deg, #000000 0%, #121212 50%, #1C1C1C 100%)'
       }}
     >
       {/* Left Section */}
@@ -282,7 +210,7 @@ const Header = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="p-2 transition-colors rounded-xl hover:bg-white/10"
-          style={{ WebkitAppRegion: 'no-drag' }} // Make buttons non-draggable
+          // Using standard Windows title bar
         >
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -329,7 +257,7 @@ const Header = () => {
             type="text"
             placeholder="Search files, codes..."
             className="w-64 text-sm bg-transparent border-none outline-none text-foreground placeholder-foreground/60"
-            style={{ WebkitAppRegion: 'no-drag' }} // Make input non-draggable
+            // Using standard Windows title bar
           />
         </div>
       </div>
@@ -382,62 +310,7 @@ const Header = () => {
         </div>
 
         
-        {/* Window Controls - Custom title bar controls */}
-        {(isElectron || window.location.protocol === 'file:') && (
-          <div className="flex items-center ml-4 space-x-1" style={{ WebkitAppRegion: 'no-drag' }} id="window-controls">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                console.log('🪟 Minimize button clicked');
-                console.log('🪟 Electron API available:', !!window.electronAPI);
-                handleWindowControl('minimize');
-              }}
-              className="flex items-center justify-center w-8 h-8 p-1 transition-colors rounded hover:bg-gray-700/50 active:bg-gray-600/70"
-              aria-label="Minimize"
-              id="minimize-btn"
-              title="Minimize Window"
-            >
-              <Minimize2 className="w-4 h-4 text-white" />
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                console.log('🪟 Maximize button clicked');
-                handleWindowControl('maximize');
-              }}
-              className="flex items-center justify-center w-8 h-8 p-1 transition-colors rounded hover:bg-gray-700/50 active:bg-gray-600/70"
-              aria-label={isMaximized ? "Restore" : "Maximize"}
-              id="maximize-btn"
-              title={isMaximized ? "Restore Window" : "Maximize Window"}
-            >
-              {isMaximized ? (
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6h12v12H6z" />
-                </svg>
-              ) : (
-                <Maximize2 className="w-4 h-4 text-white" />
-              )}
-            </motion.button>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                console.log('🪟 Close button clicked');
-                handleWindowControl('close');
-              }}
-              className="flex items-center justify-center w-8 h-8 p-1 transition-colors rounded hover:bg-red-600/50 active:bg-red-500/70"
-              aria-label="Close"
-              id="close-btn"
-              title="Close Application"
-            >
-              <X className="w-4 h-4 text-white" />
-            </motion.button>
-          </div>
-        )}
+        {/* Using standard Windows title bar - no custom window controls needed */}
       </div>
     </motion.header>
   );
