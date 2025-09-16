@@ -9,8 +9,9 @@ import { WebSocketServer } from "ws";
 import http from "http";
 // shortid import removed as it is not used
 import mongoose from "mongoose";
+import { GridFSBucket } from "mongodb";
 import connectToMongoDB from "./mongo-connection.js";
-import { validateFile, sanitizeFilename } from "./utils/fileValidation.js";
+import { validateFile } from "./utils/fileValidation.js";
 // Rate limiting functions are now used in group.js module
 import { initializeGroupChat, getChatClients } from "./utils/group.js";
 import { 
@@ -22,7 +23,7 @@ import {
 import backendSecurityManager from "./utils/security.js";
 import backendPerformanceManager from "./utils/performance.js";
 import dotenv from "dotenv";
-import { tagFile, detectNSFW, runOCR, detectPII } from "./services/ai/classify.js";
+import { tagFile, detectNSFW } from "./services/ai/classify.js";
 import { summarizeMessages } from "./services/ai/summary.js";
 import { getRooms, getRoomHistory } from "./utils/group.js";
 
@@ -279,23 +280,21 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Storage (Multer)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = "uploads/";
-    // Ensure uploads directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    // Use enhanced filename sanitization
-    const sanitizedName = sanitizeFilename(file.originalname);
-    const uniqueName = `${Date.now()}_${sanitizedName}`;
-    cb(null, uniqueName);
+// GridFS Storage for Render deployment (persistent file storage)
+let gridFSBucket;
+
+// Initialize GridFS bucket when MongoDB connects
+const initializeGridFS = () => {
+  if (mongoose.connection.readyState === 1) {
+    gridFSBucket = new GridFSBucket(mongoose.connection.db, {
+      bucketName: 'files'
+    });
+    console.log('✅ GridFS bucket initialized for persistent file storage');
   }
-});
+};
+
+// Storage (Multer) - Memory storage for GridFS
+const storage = multer.memoryStorage();
 
 const upload = multer({ 
   storage,
@@ -375,7 +374,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// File Schema - Moved here to ensure it's defined before routes that use it
+// File Schema - Updated for GridFS storage
 const FileSchema = new mongoose.Schema({
   filename: {
     type: String,
@@ -389,9 +388,10 @@ const FileSchema = new mongoose.Schema({
     trim: true,
     maxlength: 255
   },
-  path: {
-    type: String,
-    required: true
+  gridFSId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    index: true
   },
   code: {
     type: String,
@@ -524,7 +524,7 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
     }
 
     // Sanitize filename
-    const sanitizedFilename = securityValidation.sanitizedFilename;
+    const sanitizedFilename = securityValidation.sanitizedFilename || req.file.originalname;
     
     console.log('Upload request received:', {
       filename: sanitizedFilename,
@@ -535,51 +535,86 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
       userAgent: req.get('User-Agent')
     });
 
-    // Check if file was actually saved to disk
-    if (!req.file || !fs.existsSync(req.file.path)) {
-      return res.status(500).json({ error: "File not saved to disk" });
+    // Check if file was received in memory
+    if (!req.file || !req.file.buffer) {
+      return res.status(500).json({ error: "File not received" });
+    }
+
+    // Store file in GridFS
+    if (!gridFSBucket) {
+      return res.status(500).json({ error: "File storage not initialized" });
     }
 
     // Generate a secure random code with retry logic to avoid duplicates
     let randomCode;
     let newFile;
+    let uploadStream = null;
     let attempts = 0;
     const maxAttempts = 5;
     
-    while (attempts < maxAttempts) {
-      randomCode = backendSecurityManager.generateSecureRandom(4, 'numeric');
-      
-      try {
-        newFile = new File({
-          filename: req.file.filename,
-          originalName: req.file.originalname,
-          path: req.file.path,
-          code: randomCode,
-          size: req.file.size,
-          mimetype: req.file.mimetype
-        });
+    try {
+      while (attempts < maxAttempts) {
+        randomCode = backendSecurityManager.generateSecureRandom(4, 'numeric');
         
-        await newFile.save();
-        break; // Success, exit the loop
-      } catch (saveErr) {
-        // Clean up the uploaded file if database save fails
         try {
-          if (req.file.path && fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
+          // Create upload stream for this attempt
+          uploadStream = gridFSBucket.openUploadStream(sanitizedFilename, {
+            metadata: {
+              originalName: req.file.originalname,
+              mimetype: req.file.mimetype,
+              uploadedAt: new Date()
+            }
+          });
+
+          // Write file to GridFS
+          await new Promise((resolve, reject) => {
+            uploadStream.end(req.file.buffer, (error) => {
+              if (error) reject(error);
+              else resolve();
+            });
+          });
+
+          newFile = new File({
+            filename: sanitizedFilename,
+            originalName: req.file.originalname,
+            gridFSId: uploadStream.id,
+            code: randomCode,
+            size: req.file.size,
+            mimetype: req.file.mimetype
+          });
+          
+          await newFile.save();
+          break; // Success, exit the loop
+        } catch (saveErr) {
+          // Clean up GridFS file if database save fails
+          try {
+            if (uploadStream && uploadStream.id) {
+              await gridFSBucket.delete(uploadStream.id);
+            }
+          } catch (cleanupErr) {
+            console.error('GridFS cleanup error:', cleanupErr);
           }
-        } catch (cleanupErr) {
-          console.error('Cleanup error:', cleanupErr);
-        }
-        
-        if (saveErr.code === 11000) { // Duplicate key error
-          attempts++;
-          if (attempts >= maxAttempts) {
-            throw new Error("Unable to generate unique code after multiple attempts");
+          
+          if (saveErr.code === 11000) { // Duplicate key error
+            attempts++;
+            if (attempts >= maxAttempts) {
+              throw new Error("Unable to generate unique code after multiple attempts");
+            }
+            continue; // Try again with a new code
           }
-          continue; // Try again with a new code
+          throw saveErr; // Some other error, re-throw
         }
-        throw saveErr; // Some other error, re-throw
       }
+    } catch (uploadErr) {
+      // Clean up GridFS file if upload fails
+      try {
+        if (uploadStream && uploadStream.id && gridFSBucket) {
+          await gridFSBucket.delete(uploadStream.id);
+        }
+      } catch (cleanupErr) {
+        console.error('GridFS cleanup error:', cleanupErr);
+      }
+      throw uploadErr;
     }
     
     const uploadDuration = performance.now() - uploadStartTime;
@@ -612,19 +647,20 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
         if (process.env.AI_CLASSIFY_ENABLED === 'false') return;
         const fileDoc = await File.findOne({ code: randomCode });
         if (!fileDoc) return;
-        const fullPath = path.isAbsolute(fileDoc.path) ? fileDoc.path : path.join(process.cwd(), fileDoc.path);
-        const tags = await tagFile({ originalName: fileDoc.originalName, mimetype: fileDoc.mimetype, filePath: fullPath });
+        
+        // For GridFS, we'll skip file-based AI analysis for now
+        // as it requires file content access which is more complex with GridFS
+        // This can be enhanced later with proper GridFS file reading
+        const tags = await tagFile({ originalName: fileDoc.originalName, mimetype: fileDoc.mimetype });
         const nsfw = await detectNSFW({ originalName: fileDoc.originalName, mimetype: fileDoc.mimetype });
-        const ocr = await runOCR({ mimetype: fileDoc.mimetype, filePath: fullPath });
-        const pii = await detectPII({ text: ocr.text });
-        const textPreview = (ocr.text || '').slice(0, 300);
+        
         await File.updateOne({ _id: fileDoc._id }, {
           $set: {
             ai: {
               tags,
               nsfw: { flag: !!nsfw.nsfw, confidence: Number(nsfw.confidence || 0) },
-              ocr: { performed: !!ocr.performed, textPreview },
-              pii: { performed: !!pii.performed, items: pii.pii || [] }
+              ocr: { performed: false, textPreview: '' },
+              pii: { performed: false, items: [] }
             }
           }
         });
@@ -635,15 +671,6 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
   } catch (err) {
     console.error('Upload error:', err);
     
-    // Clean up uploaded file if it exists
-    try {
-      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-    } catch (cleanupErr) {
-      console.error('Cleanup error:', cleanupErr);
-    }
-    
     if (err.name === 'MongoNetworkError' || err.name === 'MongooseServerSelectionError') {
       return res.status(500).json({ error: "Database connection failed. Please check MongoDB Atlas connection and network access." });
     }
@@ -651,7 +678,7 @@ app.post("/upload", validateUpload, asyncErrorHandler(async (req, res) => {
   }
 }, { fileOperation: 'upload' }));
 
-// Download Route with enhanced error handling
+// Download Route with GridFS support
 app.get("/download/:code", validateDownload, asyncErrorHandler(async (req, res) => {
   const { code } = req.params;
   
@@ -660,22 +687,40 @@ app.get("/download/:code", validateDownload, asyncErrorHandler(async (req, res) 
     return res.status(404).json({ error: "File not found or code is invalid" });
   }
 
-  // Check if file exists on disk
-  if (!fs.existsSync(file.path)) {
-    await File.deleteOne({ _id: file._id });
-    return res.status(404).json({ error: "File not found on server" });
+  if (!gridFSBucket) {
+    return res.status(500).json({ error: "File storage not initialized" });
   }
 
-  // Set cache headers for better performance
-  res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
-  res.setHeader('ETag', file.code);
-  
-  res.download(file.path, file.originalName || file.filename, (err) => {
-    if (err) {
-      console.error('Download error:', err);
-      res.status(500).json({ error: "Download failed" });
+  try {
+    // Check if file exists in GridFS
+    const gridFSFile = await gridFSBucket.find({ _id: file.gridFSId }).toArray();
+    if (gridFSFile.length === 0) {
+      await File.deleteOne({ _id: file._id });
+      return res.status(404).json({ error: "File not found in storage" });
     }
-  });
+
+    // Set response headers
+    res.setHeader('Content-Type', file.mimetype);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.originalName || file.filename}"`);
+    res.setHeader('Content-Length', file.size);
+    res.setHeader('Cache-Control', 'public, max-age=3600'); // Cache for 1 hour
+    res.setHeader('ETag', file.code);
+
+    // Stream file from GridFS
+    const downloadStream = gridFSBucket.openDownloadStream(file.gridFSId);
+    
+    downloadStream.on('error', (error) => {
+      console.error('GridFS download error:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Download failed" });
+      }
+    });
+
+    downloadStream.pipe(res);
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ error: "Download failed" });
+  }
 }, { fileOperation: 'download' }));
 
 // Serve static files from the React app build directory in production
@@ -764,6 +809,8 @@ if (shouldStartServer) {
     try {
       await connectToMongoDB();
       dbConnected = true;
+      // Initialize GridFS after successful MongoDB connection
+      initializeGridFS();
     } catch (error) {
       console.error("❌ MongoDB connection failed:", error.message);
       console.error("🔧 Continuing to start HTTP/WebSocket server in degraded mode.");
