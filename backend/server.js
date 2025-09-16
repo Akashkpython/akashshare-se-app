@@ -11,6 +11,9 @@ import http from "http";
 import mongoose from "mongoose";
 import { GridFSBucket } from "mongodb";
 import connectToMongoDB from "./mongo-connection.js";
+
+// Suppress Mongoose deprecation warning for strictQuery
+mongoose.set('strictQuery', false);
 import { validateFile } from "./utils/fileValidation.js";
 // Rate limiting functions are now used in group.js module
 import { initializeGroupChat, getChatClients } from "./utils/group.js";
