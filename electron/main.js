@@ -238,10 +238,17 @@ function createWindow() {
       height: windowHeight,
       minWidth: 800,
       minHeight: 600,
-      backgroundColor: '#0f0f0f',
-      // Use custom title bar with window controls
+      backgroundColor: '#0f0f0f', // Dark background to match app
+      // Use custom title bar to control its color
       frame: false,
       titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        color: '#000000', // Dark title bar to match app
+        symbolColor: '#ffffff', // White symbols
+        height: 32
+      },
+      // Hide default window controls to avoid duplicates
+      trafficLightPosition: { x: -1000, y: -1000 },
       webPreferences: {
         preload: app.isPackaged 
           ? path.join(process.resourcesPath, 'preload.js')
@@ -253,9 +260,13 @@ function createWindow() {
         // Add performance optimizations
         devTools: isDev, // Only enable dev tools in development
         backgroundThrottling: false, // Prevent throttling when window is not focused
+        webSecurity: false, // Allow localhost connections
       },
       // Add window icon for Windows
-      icon: path.join(__dirname, '../public/Akashshareicon.png')
+      icon: path.join(__dirname, '../public/Akashshareicon.png'),
+      // Ensure window controls work properly
+      show: false, // Don't show until ready
+      autoHideMenuBar: true
     });
 
   // Remove default menu bar
@@ -311,6 +322,12 @@ function createWindow() {
   // Performance tracking
   const loadUrlTime = Date.now();
   log.info(`⏱️ URL loading started in ${loadUrlTime - windowCreateTime}ms`);
+
+  // Show window when ready
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    log.info('✅ Main window shown');
+  });
 
   // Handle page load events
   mainWindow.webContents.on('did-finish-load', () => {
@@ -537,12 +554,18 @@ async function ensureBackendEnv() {
         log.warn('⚠️ No .env.example found, creating minimal .env file...');
         
         // Create a minimal .env file with required variables
-        const minimalEnv = `# Auto-generated .env file - SECURITY WARNING: Update these values!
+        const minimalEnv = `# Auto-generated .env file for Akash Share
 MONGO_URI=mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
 PORT=5004
 HOST=0.0.0.0
 JWT_SECRET=f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09
 NODE_ENV=production
+TRUST_PROXY=true
+FILE_SIZE_LIMIT=10485760
+ALLOWED_FILE_TYPES=image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/csv,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/zip,application/x-rar-compressed,application/x-7z-compressed,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,audio/mpeg,audio/wav,audio/mp4,audio/aac,application/json,application/xml,application/javascript,text/html,text/css,application/vnd.openxmlformats-officedocument.presentationml.slideshow,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,application/x-tar,application/gzip,text/markdown,application/rtf
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+AI_CLASSIFY_ENABLED=true
 `;
         fs.writeFileSync(envPath, minimalEnv);
         log.info('✅ Created minimal backend .env file');
@@ -719,11 +742,19 @@ async function createBackendProcess() {
   log.info('🔧 Starting backend server process...');
   const backendStartTime = Date.now();
   
-  // Check if backend is already running on port 5004
-  const isBackendRunning = await checkIfBackendIsRunning();
-  if (isBackendRunning) {
-    log.info('✅ Backend server is already running on port 5004, using existing instance');
-    return Promise.resolve(null);
+  // Always start a new backend process for packaged app
+  if (app.isPackaged) {
+    log.info('📦 Packaged app detected - starting fresh backend process');
+    // Force kill any existing backend processes
+    await killPortProcess(5004);
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced wait time for faster startup
+  } else {
+    // Check if backend is already running on port 5004 (only in development)
+    const isBackendRunning = await checkIfBackendIsRunning();
+    if (isBackendRunning) {
+      log.info('✅ Backend server is already running on port 5004, using existing instance');
+      return Promise.resolve(null);
+    }
   }
   
   // Try to kill any process using port 5004
@@ -814,16 +845,26 @@ async function createBackendProcess() {
       ...backendEnvCache,
       // Ensure these are set explicitly
       NODE_ENV: isDev ? 'development' : 'production',
-      PORT: backendEnvCache.PORT || process.env.PORT || '5004',
-      HOST: backendEnvCache.HOST || '0.0.0.0',
+      PORT: '5004',
+      HOST: '0.0.0.0',
       // Add additional environment variables for better debugging
       DEBUG: isDev ? '*' : undefined,
-      LOG_LEVEL: isDev ? 'debug' : 'info'
+      LOG_LEVEL: isDev ? 'debug' : 'info',
+      // Ensure MongoDB connection works
+      MONGO_URI: 'mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare',
+      JWT_SECRET: 'f8e7d6c5b4a39281706f5e4d3c2b1a0987654321fedcba0987654321fedcba0987654321fedcba0987654321fedcba09',
+      // Additional required environment variables
+      TRUST_PROXY: 'true',
+      FILE_SIZE_LIMIT: '10485760',
+      RATE_LIMIT_WINDOW_MS: '900000',
+      RATE_LIMIT_MAX_REQUESTS: '100',
+      AI_CLASSIFY_ENABLED: 'true'
     },
     stdio: ['ignore', 'pipe', 'pipe'],
     // Add process options for better stability
     detached: false,
-    windowsHide: true
+    windowsHide: true,
+    shell: true // Use shell for better Windows compatibility
   });
 
   // Performance tracking
@@ -917,7 +958,9 @@ async function createBackendProcess() {
           output.includes('Server started') || 
           output.includes('Listening on port') ||
           output.includes('WebSocket server is listening') ||
-          output.includes('🚀 Server running on')) {
+          output.includes('🚀 Server running on') ||
+          output.includes('Server running on http://') ||
+          output.includes('✅ Server running on')) {
         backendStarted = true;
         log.info('✅ Backend server confirmed running');
         
@@ -932,7 +975,7 @@ async function createBackendProcess() {
     backendProcess.stdout.on('data', handleOutput);
     backendProcess.stderr.on('data', handleOutput);
     
-    // Timeout if backend doesn't start in 30 seconds (increased for better reliability)
+    // Timeout if backend doesn't start in 20 seconds (optimized for faster startup)
     const startupTimeout = setTimeout(() => {
       if (!backendStarted) {
         log.error('❌ Backend server startup timeout. The backend process did not start in time.');
@@ -941,6 +984,7 @@ async function createBackendProcess() {
         log.error('   - Port 5004 already in use');
         log.error('   - MongoDB connection issues');
         log.error('   - Invalid environment configuration');
+        log.error('   - Network connectivity issues');
         
         // Remove listeners
         backendProcess.stdout.removeListener('data', handleOutput);
@@ -948,7 +992,7 @@ async function createBackendProcess() {
         
         resolve(null);
       }
-    }, 30000);
+    }, 20000);
     
     // Store timeout reference for potential cleanup
     backendProcess.startupTimeout = startupTimeout;
@@ -1099,17 +1143,34 @@ app.whenReady().then(async () => {
       // Wait for backend to be ready with health checks
       let backendReady = false;
       let attempts = 0;
-      const maxAttempts = 20; // 20 attempts = 20 seconds max
+      const maxAttempts = 15; // 15 attempts = 15 seconds max (faster startup)
       
       while (!backendReady && attempts < maxAttempts) {
         try {
-          const response = await fetch('http://localhost:5004/health');
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000);
+          
+          const response = await fetch('http://localhost:5004/health', {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
           if (response.ok) {
+            const data = await response.json();
+            log.info('✅ Backend server is ready and responding!', data);
             backendReady = true;
-            log.info('✅ Backend server is ready and responding!');
+          } else {
+            log.info(`⏳ Backend responded with status ${response.status}, waiting...`);
           }
         } catch (error) {
           // Backend not ready yet, continue waiting
+          log.info(`⏳ Backend health check failed (attempt ${attempts + 1}):`, error.message);
         }
         
         if (!backendReady) {
@@ -1286,9 +1347,9 @@ ipcMain.handle('get-platform', () => {
   }
 });
 
-// Window control handlers with performance tracking
+// Window control handlers for custom title bar
 ipcMain.handle('window-minimize', () => {
-  if (mainWindow) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
     try {
       const minimizeStartTime = Date.now();
       mainWindow.minimize();
@@ -1305,7 +1366,7 @@ ipcMain.handle('window-minimize', () => {
 });
 
 ipcMain.handle('window-maximize', () => {
-  if (mainWindow) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
     try {
       const maximizeStartTime = Date.now();
       if (mainWindow.isMaximized()) {
@@ -1328,26 +1389,19 @@ ipcMain.handle('window-maximize', () => {
 });
 
 ipcMain.handle('window-close', () => {
-  if (mainWindow) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
     try {
       const closeStartTime = Date.now();
-      // In a packaged app, we want to hide the window but keep the app running in the tray
-      // In development, we can close the window
-      if (app.isPackaged) {
-        mainWindow.hide(); // Hide instead of close to keep app running in tray
-        console.log(`⏱️ Window hidden in ${Date.now() - closeStartTime}ms`);
-        return { success: true, action: 'hidden' };
-      } else {
-        mainWindow.close();
-        console.log(`⏱️ Window closed in ${Date.now() - closeStartTime}ms`);
-        return { success: true, action: 'closed' };
-      }
+      // Always close the window properly
+      mainWindow.close();
+      console.log(`⏱️ Window closed in ${Date.now() - closeStartTime}ms`);
+      return { success: true, action: 'closed' };
     } catch (error) {
-      console.error('❌ Error closing/hiding window:', error);
+      console.error('❌ Error closing window:', error);
       return { success: false, error: error.message };
     }
   } else {
-    console.warn('⚠️ No main window to close/hide');
+    console.warn('⚠️ No main window to close');
     return { success: false, error: 'No main window' };
   }
 });

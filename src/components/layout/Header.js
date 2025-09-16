@@ -171,12 +171,8 @@ const Header = () => {
   useEffect(() => {
     const checkBackendHealth = async () => {
       try {
-        // Determine API base URL based on environment
-        const apiBaseUrl = (typeof window !== 'undefined' && window.location.protocol === 'file:') 
-          ? 'http://localhost:5004' 
-          : (process.env.NODE_ENV === 'production' 
-              ? 'https://akashshare-se-backend.onrender.com'
-              : 'http://localhost:5004');
+        // Always use localhost for Electron app
+        const apiBaseUrl = 'http://localhost:5004';
 
         console.log('🔍 Backend health check debug info:');
         console.log('  - Window protocol:', typeof window !== 'undefined' ? window.location.protocol : 'undefined');
@@ -184,15 +180,26 @@ const Header = () => {
         console.log('  - API Base URL:', apiBaseUrl);
         console.log('  - Full URL:', `${apiBaseUrl}/health`);
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
         const response = await fetch(`${apiBaseUrl}/health`, {
           method: 'GET',
-          signal: AbortSignal.timeout(5000)
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
         });
+        
+        clearTimeout(timeoutId);
         
         console.log('  - Response status:', response.status);
         console.log('  - Response ok:', response.ok);
         
         if (response.ok) {
+          const data = await response.json();
+          console.log('  - Response data:', data);
           setBackendStatus('online');
           setLastHealthCheck(new Date());
           console.log('✅ Backend is online');
@@ -210,10 +217,16 @@ const Header = () => {
     // Initial check
     checkBackendHealth();
 
-    // Check every 30 seconds
-    const interval = setInterval(checkBackendHealth, 30000);
+    // Additional check after 1 second for faster detection
+    const initialRetry = setTimeout(checkBackendHealth, 1000);
 
-    return () => clearInterval(interval);
+    // Check every 5 seconds for faster detection
+    const interval = setInterval(checkBackendHealth, 5000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(initialRetry);
+    };
   }, []);
 
   const handleRetryBackend = async () => {
@@ -221,16 +234,21 @@ const Header = () => {
     // Trigger immediate health check
     const checkBackendHealth = async () => {
       try {
-        const apiBaseUrl = (typeof window !== 'undefined' && window.location.protocol === 'file:') 
-          ? 'http://localhost:5004' 
-          : (process.env.NODE_ENV === 'production' 
-              ? 'https://akashshare-se-backend.onrender.com'
-              : 'http://localhost:5004');
+        const apiBaseUrl = 'http://localhost:5004';
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
 
         const response = await fetch(`${apiBaseUrl}/health`, {
           method: 'GET',
-          signal: AbortSignal.timeout(5000)
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           setBackendStatus('online');

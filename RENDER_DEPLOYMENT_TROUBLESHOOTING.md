@@ -70,7 +70,7 @@ npm install mime@^1.6.0 mime-types@^2.1.35 mime-db@^1.52.0 --save
 ### **Step 2: Update Start Command**
 Make sure the **"Start Command"** is:
 ```bash
-cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5003 node start-production.js
+cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5004 node start-production.js
 ```
 
 ### **Step 3: Save and Deploy**

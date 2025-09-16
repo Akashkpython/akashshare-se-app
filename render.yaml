@@ -90,7 +90,7 @@ npm install --production
     staticPublishPath: ./build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://akashshare-backend.onrender.com
+        value: https://akashshare-se-backend.onrender.com
       - key: REACT_APP_ENV
         value: production
       - key: REACT_APP_DEBUG

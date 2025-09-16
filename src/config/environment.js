@@ -82,45 +82,58 @@ const environment = {
 
   // Computed values
   get baseApiUrl() {
-    // Always prefer localhost:5004 for local development and Electron
-    if (this.isDevelopment) {
-      return 'http://localhost:5004';
-    }
-
-    // Prefer local backend in packaged/Electron
+    // CRITICAL: Always use localhost:5004 for Electron (file:// protocol)
+    // This ensures Electron app uses its own local backend, not Render
     if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+      console.log('🔧 Electron detected - using localhost:5004 for local backend');
       return 'http://localhost:5004';
     }
 
-    // Use explicit API URL if set
+    // Always prefer localhost:5004 for local development
+    if (this.isDevelopment) {
+      console.log('🔧 Development mode - using localhost:5004');
+      return 'http://localhost:5004';
+    }
+
+    // Use explicit API URL if set (but not for Electron)
     if (this.apiUrl) {
+      console.log('🔧 Using explicit API URL:', this.apiUrl);
       return this.apiUrl;
     }
 
-    // Production web deployment fallback (Render)
+    // Production web deployment fallback (Render) - uses port 5003
+    console.log('🔧 Production web mode - using Render backend');
     return 'https://akashshare-se-backend.onrender.com';
   },
 
   // Get dynamic WebSocket URL based on current context
   getWebSocketUrl: (username, room) => {
-    // Always prefer localhost:5004 for local development and Electron
-    if (environment.isDevelopment) {
-      return `ws://localhost:5004/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    // CRITICAL: Always use localhost:5004 for Electron (file:// protocol)
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+      const wsUrl = `ws://localhost:5004/chat?username=${encodeURIComponent(username)}&room=${room}`;
+      console.log('🔧 Electron WebSocket - using localhost:5004:', wsUrl);
+      return wsUrl;
     }
 
-    // Prefer local ws in Electron
-    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
-      return `ws://localhost:5004/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    // Always prefer localhost:5004 for local development
+    if (environment.isDevelopment) {
+      const wsUrl = `ws://localhost:5004/chat?username=${encodeURIComponent(username)}&room=${room}`;
+      console.log('🔧 Development WebSocket - using localhost:5004:', wsUrl);
+      return wsUrl;
     }
 
     // Use explicit API URL if set
     if (environment.apiUrl) {
       const wsUrl = environment.apiUrl.replace(/^http/, 'ws');
-      return `${wsUrl}/chat?username=${encodeURIComponent(username)}&room=${room}`;
+      const fullWsUrl = `${wsUrl}/chat?username=${encodeURIComponent(username)}&room=${room}`;
+      console.log('🔧 Custom WebSocket URL:', fullWsUrl);
+      return fullWsUrl;
     }
 
-    // Production web fallback (Render)
-    return `wss://akashshare-se-backend.onrender.com/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    // Production web fallback (Render) - uses port 5003
+    const renderWsUrl = `wss://akashshare-se-backend.onrender.com/chat?username=${encodeURIComponent(username)}&room=${room}`;
+    console.log('🔧 Production WebSocket - using Render:', renderWsUrl);
+    return renderWsUrl;
   }
 };
 

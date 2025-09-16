@@ -6,7 +6,7 @@
 ```
 NODE_ENV = production
 HOST = 0.0.0.0
-PORT = 5003
+PORT = 5004
 ```
 
 ### **Database Configuration:**

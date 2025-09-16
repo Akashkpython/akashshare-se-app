@@ -36,8 +36,8 @@ node test-mongodb.js
 
 ## Additional Configuration Changes Made
 
-1. Updated Render configuration to use consistent port (5003)
-2. Updated backend start script to use port 5003
+1. Updated Render configuration to use consistent port (5004)
+2. Updated backend start script to use port 5004
 3. Committed and pushed changes to GitHub repository
 
 ## Render Deployment URL
