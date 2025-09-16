@@ -220,7 +220,7 @@ app.options('*', (req, res) => {
 });
 
 app.use(cors({
-  origin: function (origin, callback) {
+  origin: (origin, callback) => {
     // Allow requests with no origin (Electron, mobile apps, curl)
     if (!origin) return callback(null, true);
     
