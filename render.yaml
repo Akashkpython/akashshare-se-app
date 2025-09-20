@@ -23,7 +23,7 @@ npm install --production
       npm list mongoose
       npm list debug
       echo "✅ All dependencies installed successfully"
-    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5004 node start-production.js
+    startCommand: cd backend && NODE_ENV=production HOST=0.0.0.0 PORT=5005 node start-production.js
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -31,7 +31,7 @@ npm install --production
       - key: HOST
         value: 0.0.0.0
       - key: PORT
-        value: 5004
+        value: 5005
       - key: MONGO_URI
         value: mongodb+srv://dreamguy499:xyEz3A4YI5PkMwjR@akashshare.znzo9ht.mongodb.net/?retryWrites=true&w=majority&appName=akashshare
       - key: JWT_SECRET
