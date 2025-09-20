@@ -63,7 +63,7 @@ function startServer() {
   // Set environment variables
   process.env.NODE_ENV = process.env.NODE_ENV || 'production';
   process.env.HOST = process.env.HOST || '0.0.0.0';
-  process.env.PORT = process.env.PORT || '5005';
+  // Don't override PORT - let Render set it
   
   // Import and start the server
   import('./server.js').catch(error => {
