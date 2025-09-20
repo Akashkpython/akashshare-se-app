@@ -1,0 +1,45 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "type": "module",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "preinstall": "npm install @mongodb-js/saslprep@1.1.0 && npm install express-rate-limit@^5.5.1 && npm install debug@^4.3.4",
+    "postinstall": "npm install express-rate-limit@^5.5.1 && npm list express-rate-limit",
+    "pretest": "node test-rate-limit.js",
+    "start": "node start-production.js",
+    "start-render": "PORT=${PORT:-10000} HOST=0.0.0.0 node start-render.js",
+    "dev": "nodemon server.js",
+    "test": "mocha --timeout 15000 --exit --experimental-modules --node-option=experimental-specifier-resolution=node test/websocket.test.js",
+    "test:watch": "mocha --watch --timeout 15000 --experimental-modules --node-option=experimental-specifier-resolution=node test/websocket.test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@mongodb-js/saslprep": "^1.1.0",
+    "cors": "^2.8.5",
+    "debug": "^4.3.4",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^5.5.1",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "mongoose": "^6.12.0",
+    "multer": "^2.0.2",
+    "shortid": "^2.2.17",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@express-rate-limit/tsconfig": "^1.0.2",
+    "chai": "^4.3.10",
+    "chai-http": "^4.4.0",
+    "mocha": "^10.2.0",
+    "nodemon": "^3.0.2",
+    "supertest": "^6.3.3"
+  }
+}

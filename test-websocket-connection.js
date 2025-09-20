@@ -3,7 +3,7 @@ import { WebSocket } from 'ws';
 console.log('Testing WebSocket connection to Akash Share backend...');
 
 // Test WebSocket connection
-const ws = new WebSocket('ws://localhost:5004/chat?username=TestUser&room=general');
+const ws = new WebSocket('ws://localhost:5005/chat?username=TestUser&room=general');
 
 ws.on('open', function open() {
   console.log('✅ WebSocket connection established');

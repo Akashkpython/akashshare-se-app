@@ -1,0 +1,8 @@
+version: 1.0.5
+files:
+  - url: AkashShare-1.0.5-Setup.exe
+    sha512: x1d7zM1R41UAX34tfn+IHCU+bvq0WKYhlzvUtz76d2cUTivr3BoLoDiQDfKsWy7zntKbMJGbiAjfzah5t6+izA==
+    size: 111291135
+path: AkashShare-1.0.5-Setup.exe
+sha512: x1d7zM1R41UAX34tfn+IHCU+bvq0WKYhlzvUtz76d2cUTivr3BoLoDiQDfKsWy7zntKbMJGbiAjfzah5t6+izA==
+releaseDate: '2025-09-20T10:10:24.939Z'

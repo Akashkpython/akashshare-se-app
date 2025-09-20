@@ -81,7 +81,7 @@ class PerformanceMonitor {
       // Test multiple concurrent connections
       for (let i = 0; i < 5; i++) {
         const connectStart = Date.now();
-        const ws = new WebSocket(`ws://localhost:5004/chat?username=PerfTest${i}&room=performance`);
+        const ws = new WebSocket(`ws://localhost:5005/chat?username=PerfTest${i}&room=performance`);
         
         ws.on('open', () => {
           connectTimes.push(Date.now() - connectStart);

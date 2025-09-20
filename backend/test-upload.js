@@ -91,7 +91,7 @@ async function addTestFile() {
     });
     
     console.log(`\n🎯 TEST INSTRUCTIONS:`);
-    console.log(`1. Open frontend at http://localhost:3000`);
+    console.log(`1. Open frontend at http://localhost:5004`);
     console.log(`2. Go to Receive Files page`);
     console.log(`3. Enter code: ${testCode}`);
     console.log(`4. Test download functionality`);

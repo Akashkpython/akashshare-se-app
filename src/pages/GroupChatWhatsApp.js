@@ -22,7 +22,7 @@ const EmojiPicker = ({ onEmojiSelect, onClose, position = { x: 0, y: 0 } }) => {
       initial={{ opacity: 0, scale: 0.8, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.8, y: 10 }}
-      className="absolute z-50 bg-gradient-to-br from-gray-900 to-black rounded-3xl shadow-2xl border border-gray-800 p-6"
+      className="absolute z-50 p-6 border border-gray-800 shadow-2xl bg-gradient-to-br from-gray-900 to-black rounded-3xl"
       style={{
         left: position.x,
         top: position.y - 320,
@@ -31,21 +31,21 @@ const EmojiPicker = ({ onEmojiSelect, onClose, position = { x: 0, y: 0 } }) => {
       }}
     >
       {/* Header with black theme */}
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-700">
+      <div className="flex items-center justify-between pb-3 mb-4 border-b border-gray-700">
         <div className="flex items-center space-x-2">
           <Sparkles className="w-5 h-5 text-white" />
           <span className="text-lg font-bold text-white">Reactions</span>
         </div>
         <button
           onClick={onClose}
-          className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+          className="p-2 transition-colors rounded-full hover:bg-gray-800"
         >
           <X size={18} className="text-gray-300" />
         </button>
           </div>
 
       {/* Category tabs with black theme */}
-      <div className="flex space-x-2 mb-4 overflow-x-auto">
+      <div className="flex mb-4 space-x-2 overflow-x-auto">
         {emojiCategories.map((category) => (
           <button
             key={category.name}
@@ -63,14 +63,14 @@ const EmojiPicker = ({ onEmojiSelect, onClose, position = { x: 0, y: 0 } }) => {
       </div>
 
       {/* Emoji grid with black theme */}
-      <div className="grid grid-cols-8 gap-2 h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+      <div className="grid h-40 grid-cols-8 gap-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
         {emojiCategories
           .find(cat => cat.name === activeCategory)
           ?.emojis.map((emoji, index) => (
             <button
               key={index}
               onClick={() => onEmojiSelect(emoji)}
-              className="p-3 hover:bg-gray-800 rounded-xl transition-all duration-200 text-xl hover:scale-110 hover:shadow-lg"
+              className="p-3 text-xl transition-all duration-200 hover:bg-gray-800 rounded-xl hover:scale-110 hover:shadow-lg"
             >
               {emoji}
             </button>
@@ -125,7 +125,7 @@ const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
   if (isSystemMessage) {
     return (
       <div className="flex justify-center mb-4">
-        <div className="bg-gray-800/50 text-gray-300 px-4 py-2 rounded-full text-sm border border-gray-700/50">
+        <div className="px-4 py-2 text-sm text-gray-300 border rounded-full bg-gray-800/50 border-gray-700/50">
           {message.content}
         </div>
       </div>
@@ -152,14 +152,14 @@ const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
                 <img 
                   src={message.fileUrl} 
                   alt={message.fileName}
-                  className="w-full h-48 object-cover rounded-lg cursor-pointer"
+                  className="object-cover w-full h-48 rounded-lg cursor-pointer"
                   onClick={handleFileDownload}
                 />
               ) : isVideo ? (
                 <video 
                   src={message.fileUrl} 
                   controls
-                  className="w-full h-48 object-cover rounded-lg"
+                  className="object-cover w-full h-48 rounded-lg"
                 />
               ) : isAudio ? (
                 <audio 
@@ -168,8 +168,8 @@ const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
                   className="w-full"
                 />
               ) : (
-                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
-                  <div className="text-4xl mb-2">📄</div>
+                <div className="p-4 text-center bg-gray-100 rounded-lg dark:bg-gray-700">
+                  <div className="mb-2 text-4xl">📄</div>
                   <div className="text-sm font-medium">{message.fileName}</div>
                 </div>
               )}
@@ -177,7 +177,7 @@ const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
             
             {/* File info */}
             <div className="text-sm">
-              <div className="font-medium mb-1">{message.fileName}</div>
+              <div className="mb-1 font-medium">{message.fileName}</div>
               <div className="text-xs opacity-70">
                 {message.fileSize ? `${(message.fileSize / 1024 / 1024).toFixed(2)} MB` : ''}
               </div>
@@ -186,14 +186,14 @@ const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
             {/* Download button */}
             <button
               onClick={handleFileDownload}
-              className="mt-2 w-full bg-blue-500 hover:bg-blue-600 text-white text-xs py-2 px-3 rounded-lg transition-colors"
+              className="w-full px-3 py-2 mt-2 text-xs text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600"
             >
               💾 Save to PC
             </button>
             
             {/* Expiration notice */}
             {message.expiresAt && (
-              <div className="text-xs opacity-50 mt-2 text-center">
+              <div className="mt-2 text-xs text-center opacity-50">
                 ⏰ Expires in 10 minutes
               </div>
             )}
@@ -258,10 +258,10 @@ const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
             {Object.entries(reactions).map(([emoji, users]) => (
               <div
                 key={emoji}
-                className="flex items-center space-x-1 bg-gray-800 rounded-full px-3 py-1 shadow-lg border border-gray-700"
+                className="flex items-center px-3 py-1 space-x-1 bg-gray-800 border border-gray-700 rounded-full shadow-lg"
               >
                 <span className="text-sm">{emoji}</span>
-                <span className="text-xs text-gray-300 font-medium">{users.length}</span>
+                <span className="text-xs font-medium text-gray-300">{users.length}</span>
               </div>
             ))}
           </div>
@@ -274,19 +274,19 @@ const ChatMessage = ({ message, onReaction, onReply, currentUser }) => {
           <div className="flex space-x-2">
             <button
               onClick={handleReactionClick}
-              className="p-2 bg-gray-900 rounded-full shadow-xl hover:bg-gray-800 transition-all duration-200 hover:scale-110 border border-gray-800"
+              className="p-2 transition-all duration-200 bg-gray-900 border border-gray-800 rounded-full shadow-xl hover:bg-gray-800 hover:scale-110"
               title="React"
             >
               <Smile size={16} className="text-gray-300" />
             </button>
             <button
               onClick={() => onReply(message)}
-              className="p-2 bg-gray-900 rounded-full shadow-xl hover:bg-gray-800 transition-all duration-200 hover:scale-110 border border-gray-800"
+              className="p-2 transition-all duration-200 bg-gray-900 border border-gray-800 rounded-full shadow-xl hover:bg-gray-800 hover:scale-110"
               title="Reply"
             >
               <Reply size={16} className="text-gray-300" />
             </button>
-            <button className="p-2 bg-gray-900 rounded-full shadow-xl hover:bg-gray-800 transition-all duration-200 hover:scale-110 border border-gray-800">
+            <button className="p-2 transition-all duration-200 bg-gray-900 border border-gray-800 rounded-full shadow-xl hover:bg-gray-800 hover:scale-110">
               <MoreHorizontal size={16} className="text-gray-300" />
             </button>
           </div>
@@ -319,17 +319,17 @@ const SmallSidebar = ({
   isConnected 
 }) => {
   return (
-    <div className="w-16 bg-black border-r border-gray-900 flex flex-col items-center py-4 space-y-4 h-screen overflow-hidden">
+    <div className="flex flex-col items-center w-16 h-screen py-4 space-y-4 overflow-hidden bg-black border-r border-gray-900">
       {/* Online Members */}
       <div className="relative group">
         <button 
           onClick={onShowMembers}
-          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+          className="p-3 transition-colors bg-gray-900 rounded-full hover:bg-gray-800"
         >
           <Users className="w-5 h-5 text-white" />
         </button>
-        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-          <div className="text-sm font-semibold text-white mb-2">Online Members</div>
+        <div className="absolute top-0 z-50 p-3 ml-2 transition-opacity duration-200 bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
+          <div className="mb-2 text-sm font-semibold text-white">Online Members</div>
           <div className="text-xs text-gray-300">{onlineMembers.length} online</div>
         </div>
       </div>
@@ -338,11 +338,11 @@ const SmallSidebar = ({
       <div className="relative group">
         <button 
           onClick={onShowEmojiPicker}
-          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+          className="p-3 transition-colors bg-gray-900 rounded-full hover:bg-gray-800"
         >
           <Smile className="w-5 h-5 text-white" />
         </button>
-        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <div className="absolute top-0 z-50 p-3 ml-2 transition-opacity duration-200 bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
           <div className="text-sm font-semibold text-white">Emoji Picker</div>
       </div>
       </div>
@@ -351,11 +351,11 @@ const SmallSidebar = ({
       <div className="relative group">
         <button 
           onClick={onShowSettings}
-          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+          className="p-3 transition-colors bg-gray-900 rounded-full hover:bg-gray-800"
         >
           <Settings className="w-5 h-5 text-white" />
         </button>
-        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <div className="absolute top-0 z-50 p-3 ml-2 transition-opacity duration-200 bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
           <div className="text-sm font-semibold text-white">Settings</div>
         </div>
       </div>
@@ -364,11 +364,11 @@ const SmallSidebar = ({
       <div className="relative group">
         <button 
           onClick={onShowNotifications}
-          className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+          className="p-3 transition-colors bg-gray-900 rounded-full hover:bg-gray-800"
         >
           <Bell className="w-5 h-5 text-white" />
         </button>
-        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <div className="absolute top-0 z-50 p-3 ml-2 transition-opacity duration-200 bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
           <div className="text-sm font-semibold text-white">Notifications</div>
         </div>
       </div>
@@ -378,22 +378,22 @@ const SmallSidebar = ({
         <div className="relative group">
           <button 
             onClick={onShowAdminPanel}
-            className="p-3 bg-gray-900 rounded-full hover:bg-gray-800 transition-colors"
+            className="p-3 transition-colors bg-gray-900 rounded-full hover:bg-gray-800"
           >
             <Crown className="w-5 h-5 text-yellow-400" />
           </button>
-          <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+          <div className="absolute top-0 z-50 p-3 ml-2 transition-opacity duration-200 bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
             <div className="text-sm font-semibold text-white">Admin Panel</div>
           </div>
         </div>
       )}
 
       {/* Connection Status */}
-      <div className="relative group mt-auto">
+      <div className="relative mt-auto group">
         <div className="p-3 bg-gray-800 rounded-full">
           <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
         </div>
-        <div className="absolute left-full ml-2 top-0 bg-gray-900 rounded-lg p-3 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        <div className="absolute top-0 z-50 p-3 ml-2 transition-opacity duration-200 bg-gray-900 rounded-lg shadow-lg opacity-0 pointer-events-none left-full group-hover:opacity-100 whitespace-nowrap">
           <div className="text-sm font-semibold text-white">{isConnected ? 'Connected' : 'Disconnected'}</div>
         </div>
       </div>
@@ -468,7 +468,15 @@ const GroupChatWhatsApp = () => {
           console.log('📨 Received message:', data);
 
           if (data.type === 'message') {
-            setMessages(prev => [...prev, data]);
+            // Check if message already exists to prevent duplicates
+            setMessages(prev => {
+              const messageExists = prev.some(msg => msg.id === data.id);
+              if (messageExists) {
+                console.log('📨 Message already exists, skipping duplicate');
+                return prev;
+              }
+              return [...prev, data];
+            });
             scrollToBottom();
           } else if (data.type === 'userList') {
             console.log('📋 Received userList:', data);
@@ -485,15 +493,25 @@ const GroupChatWhatsApp = () => {
               console.log('👤 Updated onlineMembers:', newMembers);
               return newMembers;
             });
-            // Add join notification message
+            // Add join notification message only if not already exists
             const joinMessage = {
               type: 'system',
               username: 'System',
               content: `${data.username} joined the chat`,
               timestamp: new Date().toISOString(),
-              id: `join_${Date.now()}`
+              id: `join_${data.username}_${Date.now()}`
             };
-            setMessages(prev => [...prev, joinMessage]);
+            setMessages(prev => {
+              const messageExists = prev.some(msg => 
+                msg.type === 'system' && 
+                msg.content === `${data.username} joined the chat`
+              );
+              if (messageExists) {
+                console.log('👤 Join message already exists, skipping duplicate');
+                return prev;
+              }
+              return [...prev, joinMessage];
+            });
             scrollToBottom();
           } else if (data.type === 'user_left') {
             setOnlineMembers(prev => prev.filter(member => member !== data.username));
@@ -798,7 +816,7 @@ const GroupChatWhatsApp = () => {
   // Don't show main chat if username modal is open
   if (showUsernameModal) {
   return (
-      <div className="flex h-screen bg-black overflow-hidden">
+      <div className="flex h-screen overflow-hidden bg-black">
         {/* Username Modal with Windows 11-style blur */}
         <AnimatePresence>
           {showUsernameModal && (
@@ -806,19 +824,19 @@ const GroupChatWhatsApp = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md"
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="bg-gray-900/80 backdrop-blur-xl rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-700 shadow-2xl"
+                className="w-full max-w-md p-8 mx-4 border border-gray-700 shadow-2xl bg-gray-900/80 backdrop-blur-xl rounded-3xl"
               >
-                <h3 className="text-2xl font-bold text-white mb-6">Join Group Chat</h3>
+                <h3 className="mb-6 text-2xl font-bold text-white">Join Group Chat</h3>
                 
                 <div className="space-y-6">
           <div>
-                    <label className="block text-sm font-semibold text-gray-300 mb-3">
+                    <label className="block mb-3 text-sm font-semibold text-gray-300">
                       Enter your username
                     </label>
                     <input
@@ -827,7 +845,7 @@ const GroupChatWhatsApp = () => {
                       onChange={(e) => setUsername(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleJoinChat()}
                       placeholder="Type your username..."
-                      className="w-full px-4 py-3 bg-gray-800/80 backdrop-blur-lg border border-gray-600 rounded-2xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
+                      className="w-full px-4 py-3 text-white placeholder-gray-400 border border-gray-600 bg-gray-800/80 backdrop-blur-lg rounded-2xl focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent"
                       autoFocus
                     />
         </div>
@@ -836,7 +854,7 @@ const GroupChatWhatsApp = () => {
               <button
                       onClick={handleJoinChat}
                       disabled={!username.trim()}
-                      className="flex-1 bg-white text-black py-3 rounded-2xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg"
+                      className="flex-1 py-3 font-semibold text-black transition-all duration-200 bg-white shadow-lg rounded-2xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Join Chat
               </button>
@@ -851,11 +869,11 @@ const GroupChatWhatsApp = () => {
   }
 
   return (
-    <div className="flex h-screen bg-black overflow-hidden relative">
+    <div className="relative flex h-screen overflow-hidden bg-black">
       {/* Natural blur background effect */}
       <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm"></div>
       {/* Small Sidebar - Fixed */}
-      <div className="flex-shrink-0 relative z-10">
+      <div className="relative z-10 flex-shrink-0">
         <SmallSidebar 
           onlineMembers={onlineMembers}
           isAdmin={isAdmin}
@@ -869,22 +887,22 @@ const GroupChatWhatsApp = () => {
       </div>
 
       {/* Main Chat Area - Fixed height */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
+      <div className="relative z-10 flex flex-col flex-1 h-screen overflow-hidden">
         {/* Messages Area - Only this should scroll */}
-        <div className="flex-1 overflow-y-auto bg-black/80 backdrop-blur-sm p-6" style={{ height: 'calc(100vh - 120px)' }}>
+        <div className="flex-1 p-6 overflow-y-auto bg-black/80 backdrop-blur-sm" style={{ height: 'calc(100vh - 120px)' }}>
           <div className="max-w-4xl mx-auto">
             {messages.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 bg-gray-800/80 backdrop-blur-lg rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg border border-gray-600">
+              <div className="py-16 text-center">
+                <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 border border-gray-600 rounded-full shadow-lg bg-gray-800/80 backdrop-blur-lg">
                   <Sparkles className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-3">Welcome to Group Chat!</h3>
-                <p className="text-gray-400 text-lg">Start a conversation by sending a message below.</p>
+                <h3 className="mb-3 text-2xl font-bold text-white">Welcome to Group Chat!</h3>
+                <p className="text-lg text-gray-400">Start a conversation by sending a message below.</p>
               </div>
             ) : (
-            messages.map((message) => (
+            messages.map((message, index) => (
               <ChatMessage
-                key={message.id}
+                key={message.id || `message-${index}-${message.timestamp}`}
                 message={message}
                   onReaction={handleReaction}
                   onReply={handleReply}
@@ -898,7 +916,7 @@ const GroupChatWhatsApp = () => {
 
         {/* Reply indicator with black theme - Fixed above input */}
         {replyTo && (
-          <div className="bg-gray-900 border-l-4 border-white px-6 py-3 flex-shrink-0">
+          <div className="flex-shrink-0 px-6 py-3 bg-gray-900 border-l-4 border-white">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-semibold text-white">Replying to {replyTo.username}</div>
@@ -906,7 +924,7 @@ const GroupChatWhatsApp = () => {
               </div>
               <button
                 onClick={() => setReplyTo(null)}
-                className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+                className="p-2 transition-colors rounded-full hover:bg-gray-800"
               >
                 <X className="w-4 h-4 text-white" />
               </button>
@@ -915,17 +933,17 @@ const GroupChatWhatsApp = () => {
         )}
 
         {/* Message Input with black theme - Fixed at bottom */}
-        <div className="bg-black/80 backdrop-blur-lg border-t border-gray-700 p-6 flex-shrink-0" style={{ height: '120px' }}>
+        <div className="flex-shrink-0 p-6 border-t border-gray-700 bg-black/80 backdrop-blur-lg" style={{ height: '120px' }}>
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end space-x-4">
           <button
             onClick={() => fileInputRef.current?.click()}
-                className="p-3 hover:bg-gray-800 rounded-full transition-all duration-200 hover:scale-110"
+                className="p-3 transition-all duration-200 rounded-full hover:bg-gray-800 hover:scale-110"
               >
                 <Paperclip className="w-5 h-5 text-white" />
           </button>
 
-              <div className="flex-1 relative">
+              <div className="relative flex-1">
             <input
               type="text"
               value={newMessage}
@@ -933,11 +951,11 @@ const GroupChatWhatsApp = () => {
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   placeholder={isConnected ? "Type a message..." : "Connecting..."}
                 disabled={!isConnected}
-                  className="w-full px-6 py-4 bg-gray-800/80 backdrop-blur-lg border border-gray-600 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent disabled:opacity-50 text-white placeholder-gray-400 text-lg"
+                  className="w-full px-6 py-4 text-lg text-white placeholder-gray-400 border border-gray-600 bg-gray-800/80 backdrop-blur-lg rounded-2xl focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent disabled:opacity-50"
             />
             <button 
                   onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 hover:bg-gray-800 rounded-full transition-colors"
+                  className="absolute p-2 transition-colors transform -translate-y-1/2 rounded-full right-4 top-1/2 hover:bg-gray-800"
                 >
                   <Smile className="w-5 h-5 text-white" />
             </button>
@@ -946,7 +964,7 @@ const GroupChatWhatsApp = () => {
           <button
             onClick={sendMessage}
             disabled={!newMessage.trim() || !isConnected}
-                className="p-4 bg-white text-black rounded-2xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-110"
+                className="p-4 text-black transition-all duration-200 bg-white shadow-lg rounded-2xl hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl hover:scale-110"
               >
                 <Send className="w-5 h-5" />
           </button>
@@ -962,33 +980,33 @@ const GroupChatWhatsApp = () => {
             initial={{ x: 300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
-            className="w-80 bg-black border-l border-gray-900 flex flex-col shadow-2xl h-screen overflow-hidden"
+            className="fixed top-0 right-0 z-50 flex flex-col h-screen overflow-hidden bg-black border-l border-gray-900 shadow-2xl w-80"
           >
             <div className="p-6 border-b border-gray-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white">Members</h3>
                 <button
                   onClick={() => setShowMembersPanel(false)}
-                  className="p-2 hover:bg-gray-900 rounded-full transition-colors"
+                  className="p-2 transition-colors rounded-full hover:bg-gray-900"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6" style={{ height: 'calc(100vh - 120px)' }}>
+            <div className="flex-1 p-6 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
               <div className="space-y-4">
                 {console.log('🔍 Rendering onlineMembers:', onlineMembers)}
                 {onlineMembers.map((member, index) => (
-                  <div key={index} className="flex items-center space-x-4 p-3 hover:bg-gray-900 rounded-2xl transition-all duration-200">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                      <span className="text-black text-sm font-bold">
+                  <div key={index} className="flex items-center p-3 space-x-4 transition-all duration-200 hover:bg-gray-900 rounded-2xl">
+                    <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full shadow-lg">
+                      <span className="text-sm font-bold text-black">
                         {member.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1">
                       <div className="text-sm font-semibold text-white">{member}</div>
-                      <div className="text-xs text-green-400 flex items-center space-x-1">
+                      <div className="flex items-center space-x-1 text-xs text-green-400">
                         <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                         <span>Online</span>
                       </div>
@@ -997,7 +1015,7 @@ const GroupChatWhatsApp = () => {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => muteMember(member)}
-                          className="p-2 hover:bg-gray-800 rounded-full transition-colors"
+                          className="p-2 transition-colors rounded-full hover:bg-gray-800"
                           title="Mute"
                         >
                           <MoreVertical className="w-4 h-4 text-gray-400" />
@@ -1019,19 +1037,19 @@ const GroupChatWhatsApp = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-black rounded-3xl p-8 max-w-md w-full mx-4 border border-gray-900 shadow-2xl"
+              className="w-full max-w-md p-8 mx-4 bg-black border border-gray-900 shadow-2xl rounded-3xl"
             >
-              <h3 className="text-2xl font-bold text-white mb-6">Admin Panel</h3>
+              <h3 className="mb-6 text-2xl font-bold text-white">Admin Panel</h3>
               
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                  <label className="block mb-3 text-sm font-semibold text-gray-300">
                     Admin Key
                   </label>
                   <input
@@ -1039,20 +1057,20 @@ const GroupChatWhatsApp = () => {
                     value={adminKey}
                     onChange={(e) => setAdminKey(e.target.value)}
                     placeholder="Enter admin key"
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white text-white placeholder-gray-400"
+                    className="w-full px-4 py-3 text-white placeholder-gray-400 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white"
                   />
                 </div>
 
                 <div className="flex space-x-4">
                   <button
                     onClick={handleAdminLogin}
-                    className="flex-1 bg-white text-black py-3 rounded-2xl font-semibold hover:bg-gray-200 transition-colors"
+                    className="flex-1 py-3 font-semibold text-black transition-colors bg-white rounded-2xl hover:bg-gray-200"
                   >
                     Login
                   </button>
                   <button
                     onClick={() => setShowAdminPanel(false)}
-                    className="flex-1 bg-gray-800 text-white py-3 rounded-2xl font-semibold hover:bg-gray-700 transition-colors"
+                    className="flex-1 py-3 font-semibold text-white transition-colors bg-gray-800 rounded-2xl hover:bg-gray-700"
                   >
                     Cancel
                   </button>
@@ -1070,36 +1088,36 @@ const GroupChatWhatsApp = () => {
             initial={{ x: 300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
-            className="w-80 bg-black border-l border-gray-900 flex flex-col shadow-2xl h-screen overflow-hidden"
+            className="fixed top-0 right-0 z-50 flex flex-col h-screen overflow-hidden bg-black border-l border-gray-900 shadow-2xl w-80"
           >
             <div className="p-6 border-b border-gray-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white">Settings</h3>
                 <button
                   onClick={() => setShowSettings(false)}
-                  className="p-2 hover:bg-gray-900 rounded-full transition-colors"
+                  className="p-2 transition-colors rounded-full hover:bg-gray-900"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 p-6 overflow-y-auto">
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                  <label className="block mb-3 text-sm font-semibold text-gray-300">
                     Username
                   </label>
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white text-white"
+                    className="w-full px-4 py-3 text-white bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                  <label className="block mb-3 text-sm font-semibold text-gray-300">
                     Backend Mode
                   </label>
                   <div className="flex space-x-2">
@@ -1130,7 +1148,7 @@ const GroupChatWhatsApp = () => {
                       Local
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">
+                  <p className="mt-2 text-xs text-gray-400">
                     {backendMode === "public" 
                       ? "Using public Render backend for internet access" 
                       : "Using local backend for LAN-only access"}
@@ -1138,10 +1156,10 @@ const GroupChatWhatsApp = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-300 mb-3">
+                  <label className="block mb-3 text-sm font-semibold text-gray-300">
                     Theme
                   </label>
-                  <select className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white text-white">
+                  <select className="w-full px-4 py-3 text-white bg-gray-800 border border-gray-700 rounded-2xl focus:outline-none focus:ring-2 focus:ring-white">
                     <option>Dark</option>
                     <option>Light</option>
                   </select>
@@ -1149,15 +1167,15 @@ const GroupChatWhatsApp = () => {
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-300">Notifications</span>
-                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-700">
-                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1"></span>
+                  <button className="relative inline-flex items-center h-6 bg-gray-700 rounded-full w-11">
+                    <span className="inline-block w-4 h-4 transition transform translate-x-1 bg-white rounded-full"></span>
                   </button>
                 </div>
                 
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-gray-300">Sound</span>
-                  <button className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-700">
-                    <span className="inline-block h-4 w-4 transform rounded-full bg-white transition translate-x-1"></span>
+                  <button className="relative inline-flex items-center h-6 bg-gray-700 rounded-full w-11">
+                    <span className="inline-block w-4 h-4 transition transform translate-x-1 bg-white rounded-full"></span>
                   </button>
                 </div>
               </div>
@@ -1173,26 +1191,26 @@ const GroupChatWhatsApp = () => {
             initial={{ x: 300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
-            className="w-80 bg-black border-l border-gray-900 flex flex-col shadow-2xl h-screen overflow-hidden"
+            className="fixed top-0 right-0 z-50 flex flex-col h-screen overflow-hidden bg-black border-l border-gray-900 shadow-2xl w-80"
           >
             <div className="p-6 border-b border-gray-900">
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white">Notifications</h3>
                 <button
                   onClick={() => setShowNotifications(false)}
-                  className="p-2 hover:bg-gray-900 rounded-full transition-colors"
+                  className="p-2 transition-colors rounded-full hover:bg-gray-900"
                 >
                   <X className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="text-center py-16">
-                <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="flex-1 p-6 overflow-y-auto">
+              <div className="py-16 text-center">
+                <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 bg-gray-800 rounded-full">
                   <Bell className="w-10 h-10 text-gray-500" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">No notifications</h3>
+                <h3 className="mb-3 text-xl font-bold text-white">No notifications</h3>
                 <p className="text-gray-400">You&#39;re all caught up!</p>
               </div>
             </div>
@@ -1207,10 +1225,10 @@ const GroupChatWhatsApp = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-32 right-6 z-20"
+            className="absolute z-20 bottom-32 right-6"
           >
-            <div className="bg-black border border-gray-700 rounded-2xl shadow-2xl p-4">
-              <div className="grid grid-cols-8 gap-2 max-w-xs">
+            <div className="p-4 bg-black border border-gray-700 shadow-2xl rounded-2xl">
+              <div className="grid max-w-xs grid-cols-8 gap-2">
                 {['😀', '😂', '😍', '🥰', '😎', '🤩', '🥳', '😭', '😡', '🤯', '🥶', '😱', '👍', '👎', '❤️', '🔥'].map((emoji, index) => (
                   <button
                     key={index}
@@ -1218,7 +1236,7 @@ const GroupChatWhatsApp = () => {
                       setNewMessage(prev => prev + emoji);
                       setShowEmojiPicker(false);
                     }}
-                    className="text-2xl p-2 hover:bg-gray-800 rounded-xl transition-colors"
+                    className="p-2 text-2xl transition-colors hover:bg-gray-800 rounded-xl"
                   >
                     {emoji}
                   </button>

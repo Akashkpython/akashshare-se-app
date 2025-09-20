@@ -55,24 +55,24 @@ npm run electron
 ## 📱 Accessing the Application
 
 Once running, open your web browser and go to:
-- **Frontend UI:** http://localhost:5002
-- **Backend API:** http://localhost:5002
+- **Frontend UI:** http://localhost:5004
+- **Backend API:** http://localhost:5005
 
 ## ✅ What You'll See When Running
 
-### Backend Server (Port 5002):
+### Backend Server (Port 5005):
 ```
-🚀 Backend server running on port 5002
+🚀 Backend server running on port 5005
 ✅ MongoDB connected successfully
 📡 WebSocket server started
 🔒 Security middleware enabled
 ```
 
-### Frontend Server (Port 5002):
+### Frontend Server (Port 5004):
 ```
 webpack compiled successfully
-Local: http://localhost:5002
-Network: http://192.168.x.x:5002
+Local: http://localhost:5004
+Network: http://192.168.x.x:5004
 ```
 
 ## 🎮 Using the Application

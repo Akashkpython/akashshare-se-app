@@ -1,0 +1,72 @@
+directories:
+  output: dist-new
+  buildResources: build-resources
+files:
+  - filter:
+      - build/**/*
+      - build/**/*
+      - electron/**/*
+      - node_modules/**/*
+      - package.json
+      - '!node_modules/.cache'
+      - '!node_modules/electron/**/*'
+      - '!**/*.map'
+extraMetadata:
+  main: build/electron.js
+appId: com.akashshare.app
+productName: Akash Share
+copyright: Copyright © 2024 Akash Share Team
+publish:
+  - provider: generic
+    url: https://github.com/akashshare/akashshare-releases/releases/download/
+extraResources:
+  - from: build/backend
+    to: backend
+    filter:
+      - '**/*'
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build-resources/icon.ico
+  requestedExecutionLevel: asInvoker
+  artifactName: AkashShare-${version}-Setup.${ext}
+  verifyUpdateCodeSignature: false
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Akash Share
+  installerIcon: build-resources/icon.ico
+  uninstallerIcon: build-resources/icon.ico
+  installerHeaderIcon: build-resources/icon.ico
+  displayLanguageSelector: false
+  language: '1033'
+  deleteAppDataOnUninstall: false
+  license: LICENSE
+  runAfterFinish: true
+  menuCategory: Akash Share
+compression: maximum
+removePackageScripts: true
+extraFiles:
+  - from: build/preload.js
+    to: preload.js
+  - from: start-backend-fixed.bat
+    to: start-backend-fixed.bat
+  - from: start-electron.bat
+    to: start-electron.bat
+  - from: start-akash-share-fixed.bat
+    to: start-akash-share-fixed.bat
+  - from: start-akash-share-final.bat
+    to: start-akash-share-final.bat
+  - from: start-akash-share-installed.bat
+    to: start-akash-share-installed.bat
+  - from: start-backend.bat
+    to: start-backend.bat
+  - from: start-akash-share.bat
+    to: start-akash-share.bat
+extends: react-cra
+electronVersion: 28.3.3

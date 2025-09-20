@@ -106,22 +106,28 @@ class Environment implements EnvironmentConfig {
   }
 
   get baseApiUrl(): string {
+    // CRITICAL: Always use 127.0.0.1:5005 for Electron (file:// protocol)
+    // This ensures Electron app uses its own local backend, not Render
+    if (typeof window !== 'undefined' && window.location.protocol === 'file:') {
+      console.log('🔧 Electron detected - using 127.0.0.1:5005 for local backend');
+      return 'http://127.0.0.1:5005';
+    }
+
+    // Always prefer 127.0.0.1:5005 for local development
+    if (this.isDevelopment) {
+      console.log('🔧 Development mode - using 127.0.0.1:5005');
+      return 'http://127.0.0.1:5005';
+    }
+
+    // Use explicit API URL if set (but not for Electron)
     if (this.apiUrl) {
+      console.log('🔧 Using explicit API URL:', this.apiUrl);
       return this.apiUrl;
     }
-    
-    // Development fallback
-    if (this.isDevelopment) {
-      const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      if (isDev) {
-        return 'http://localhost:5004';
-      }
-    }
-    
-    // Production/Network mode - use same host as frontend
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:5004`;
+
+    // Production web deployment fallback (Render) - uses port 5003
+    console.log('🔧 Production web mode - using Render backend');
+    return 'https://akashshare-se-backend.onrender.com';
   }
 }
 

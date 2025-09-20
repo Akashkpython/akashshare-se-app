@@ -14,7 +14,7 @@ const SendFiles = () => {
   const [shareCode, setShareCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [backendStatus, setBackendStatus] = useState('online'); // Default to 'online' instead of 'checking'
+  const [backendStatus, setBackendStatus] = useState('checking'); // Start with checking status
   const fileInputRef = useRef(null);
 
   // Debounce function for backend status checks
@@ -43,15 +43,13 @@ const SendFiles = () => {
     } catch (error) {
       console.error('Backend health check failed:', error);
       console.log('❌ Backend is offline or unreachable');
-      // Even if health check fails, we'll assume backend is online since we know it's running
-      // This is a workaround for potential frontend-backend communication issues in Electron
-      setBackendStatus('online');
+      setBackendStatus('offline');
       
       // Add a more descriptive error notification
       addNotification({
-        type: 'warning',
+        type: 'error',
         title: 'Backend Status Check Failed',
-        message: 'Could not verify backend status, but proceeding with upload functionality. Please ensure the Akash Share backend is running on port 5004.'
+        message: 'Could not verify backend status. Please ensure the Akash Share backend is running on port 5005.'
       });
     }
   }, [addNotification]);
@@ -261,7 +259,7 @@ const SendFiles = () => {
       let errorMessage = error.message || 'Failed to upload files. Please check if the backend is running.';
       
       if (error.message && error.message.includes('Cannot connect to server')) {
-        errorMessage = 'Cannot connect to the backend server. Please ensure the backend is running on port 5004.';
+        errorMessage = 'Cannot connect to the backend server. Please ensure the backend is running on port 5005.';
       } else if (error.message && error.message.includes('fetch')) {
         errorMessage = 'Network error occurred. Please check your connection and ensure the backend server is running.';
       }
@@ -348,10 +346,15 @@ const SendFiles = () => {
               <div className="w-4 h-4 mr-2 border-2 border-gray-500 rounded-full border-t-transparent animate-spin"></div>
               <span>Checking backend status...</span>
             </div>
-          ) : (
+          ) : backendStatus === 'online' ? (
             <div className="flex items-center text-green-400">
               <Wifi className="w-4 h-4 mr-2" />
               <span>Backend server is online and ready</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-red-400">
+              <Wifi className="w-4 h-4 mr-2" />
+              <span>Backend server is offline</span>
             </div>
           )}
         </div>

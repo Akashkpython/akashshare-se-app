@@ -122,7 +122,7 @@ export const api = {
           endpoint: `${API_BASE_URL}/upload`,
           error: error.message
         });
-        throw new Error('Cannot connect to server. Please check if the backend is running on port 5004.');
+        throw new Error('Cannot connect to server. Please check if the backend is running on port 5005.');
       }
       
       throw error;
@@ -191,7 +191,7 @@ export const api = {
           endpoint: `${API_BASE_URL}/download/${code}`,
           error: error.message
         });
-        throw new Error('Cannot connect to server. Please check if the backend is running on port 5004.');
+        throw new Error('Cannot connect to server. Please check if the backend is running on port 5005.');
       }
       
       throw error;

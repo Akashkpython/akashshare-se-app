@@ -419,7 +419,7 @@ class SecurityManager {
       'style-src': ["'self'"],
       'img-src': ["'self'"],
       'connect-src': ["'self'", ...allowedDomains, ...allowedDomains.map(domain => `ws://${domain}`), ...allowedDomains.map(domain => `wss://${domain}`)],
-      'font-src': ["'self'"],
+      'font-src': ["'self'", "https://fonts.gstatic.com"],
       'object-src': ["'none'"],
       'media-src': ["'self'"],
       'frame-src': ["'none'"],

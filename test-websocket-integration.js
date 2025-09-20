@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 
 // Integration test for WebSocket server and GroupChat component
-const TEST_SERVER = 'ws://localhost:5002/chat';
+const TEST_SERVER = 'ws://localhost:5005/chat';
 const TEST_TIMEOUT = 15000; // 15 seconds
 
 // Test configuration

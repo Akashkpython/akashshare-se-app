@@ -2,7 +2,7 @@
 import { WebSocket } from 'ws';
 
 // Connect to the WebSocket server
-const ws = new WebSocket('ws://localhost:5002/chat?username=TestUser&room=general');
+const ws = new WebSocket('ws://localhost:5005/chat?username=TestUser&room=general');
 
 ws.on('open', function open() {
   console.log('Connected to WebSocket server');

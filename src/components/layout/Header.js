@@ -102,7 +102,7 @@ const Header = () => {
     const checkBackendHealth = async () => {
       try {
         // Always use localhost for Electron app
-        const apiBaseUrl = 'http://localhost:5004';
+        const apiBaseUrl = 'http://localhost:5005';
 
         console.log('🔍 Backend health check debug info:');
         console.log('  - Window protocol:', typeof window !== 'undefined' ? window.location.protocol : 'undefined');
@@ -113,7 +113,7 @@ const Header = () => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        const response = await fetch(`${apiBaseUrl}/`, {
+        const response = await fetch(`${apiBaseUrl}/health`, {
           method: 'GET',
           signal: controller.signal,
           headers: {
@@ -163,12 +163,12 @@ const Header = () => {
     // Trigger immediate health check
     const checkBackendHealth = async () => {
       try {
-        const apiBaseUrl = 'http://localhost:5004';
+        const apiBaseUrl = 'http://localhost:5005';
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-        const response = await fetch(`${apiBaseUrl}/`, {
+        const response = await fetch(`${apiBaseUrl}/health`, {
           method: 'GET',
           signal: controller.signal,
           headers: {

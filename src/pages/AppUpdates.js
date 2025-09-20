@@ -88,7 +88,7 @@ const AppUpdates = () => {
   }, []);
 
   const handleCheckForUpdates = async () => {
-    if (!isElectron) {
+    if (!window.electronAPI) {
       alert('Auto-updates are only available in the Electron app.');
       return;
     }

@@ -99,7 +99,7 @@ const GroupChatSimple = () => {
         addNotification({
           type: 'error',
           title: 'Connection Error',
-          message: 'Failed to connect to the chat server. Ensure backend is running on localhost:5004 or set REACT_APP_API_URL.'
+          message: 'Failed to connect to the chat server. Ensure backend is running on localhost:5005 or set REACT_APP_API_URL.'
         });
       };
 

@@ -162,7 +162,6 @@
       ],
       "icon": "build-resources/icon.ico",
       "requestedExecutionLevel": "asInvoker",
-      "publisherName": "Akash Share Team",
       "artifactName": "AkashShare-${version}-Setup.${ext}",
       "verifyUpdateCodeSignature": false
     },
@@ -181,15 +180,46 @@
       "deleteAppDataOnUninstall": false,
       "license": "LICENSE",
       "runAfterFinish": true,
-      "menuCategory": "Akash Share",
-      "include": "build-resources/installer.nsh"
+      "menuCategory": "Akash Share"
     },
     "compression": "maximum",
     "removePackageScripts": true,
     "extraFiles": [
       {
+        "from": "electron/integrated-backend.js",
+        "to": "integrated-backend.js"
+      },
+      {
         "from": "build/preload.js",
         "to": "preload.js"
+      },
+      {
+        "from": "start-backend-fixed.bat",
+        "to": "start-backend-fixed.bat"
+      },
+      {
+        "from": "start-electron.bat", 
+        "to": "start-electron.bat"
+      },
+      {
+        "from": "start-akash-share-fixed.bat",
+        "to": "start-akash-share-fixed.bat"
+      },
+      {
+        "from": "start-akash-share-final.bat",
+        "to": "start-akash-share-final.bat"
+      },
+      {
+        "from": "start-akash-share-installed.bat",
+        "to": "start-akash-share-installed.bat"
+      },
+      {
+        "from": "start-backend.bat",
+        "to": "start-backend.bat"
+      },
+      {
+        "from": "start-akash-share.bat",
+        "to": "start-akash-share.bat"
       }
     ]
   },

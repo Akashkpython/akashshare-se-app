@@ -194,7 +194,7 @@ function AppContent() {
     // Initialize security policies
     const csp = securityManager.createCSP({
       allowInline: process.env.NODE_ENV === 'development',
-      allowedDomains: ['localhost:5004', '127.0.0.1:5004']
+      allowedDomains: ['localhost:5005', '127.0.0.1:5005']
     });
     
     // Apply CSP to document
