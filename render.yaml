@@ -14,6 +14,11 @@ services:
       npm install
       npm run build
       
+      # Verify build directory exists
+      ls -la build/ || echo "Build directory not found"
+      echo "Build contents:"
+      ls -la build/ 2>/dev/null || echo "No build directory"
+      
       # Install backend dependencies
       cd backend
       rm -rf node_modules package-lock.json

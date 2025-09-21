@@ -766,10 +766,17 @@ if (process.env.NODE_ENV === 'production') {
   ];
   
   let buildPath = null;
+  console.log('🔍 Checking for React build directory...');
+  console.log(`   Current working directory: ${process.cwd()}`);
+  console.log(`   Backend directory: ${__dirname}`);
   for (const testPath of possibleBuildPaths) {
+    console.log(`   Checking: ${testPath}`);
     if (fs.existsSync(testPath)) {
       buildPath = testPath;
+      console.log(`   ✅ Found build directory at: ${buildPath}`);
       break;
+    } else {
+      console.log(`   ❌ Not found: ${testPath}`);
     }
   }
   
