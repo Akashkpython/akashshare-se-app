@@ -762,13 +762,18 @@ if (process.env.NODE_ENV === 'production') {
     path.join(__dirname, '../src/build'),       // Render deployment
     path.join(process.cwd(), 'build'),          // Alternative path
     path.join(process.cwd(), 'src/build'),     // Render alternative
-    path.join(process.cwd(), '../build')        // Render deployment from backend directory
+    path.join(process.cwd(), '../build'),       // Render deployment from backend directory
+    path.join(process.cwd(), '../../build'),    // Render deployment from backend directory (two levels up)
+    path.join(process.cwd(), '/opt/render/project/src/build'), // Render specific path
+    path.join(process.cwd(), '/opt/render/project/build')      // Render specific path
   ];
   
   let buildPath = null;
   console.log('🔍 Checking for React build directory...');
   console.log(`   Current working directory: ${process.cwd()}`);
   console.log(`   Backend directory: ${__dirname}`);
+  
+  // First, try the predefined paths
   for (const testPath of possibleBuildPaths) {
     console.log(`   Checking: ${testPath}`);
     if (fs.existsSync(testPath)) {
@@ -777,6 +782,37 @@ if (process.env.NODE_ENV === 'production') {
       break;
     } else {
       console.log(`   ❌ Not found: ${testPath}`);
+    }
+  }
+  
+  // If not found, try to search for build directories
+  if (!buildPath) {
+    console.log('🔍 Searching for build directories...');
+    const searchPaths = [
+      path.join(process.cwd(), '..'),
+      path.join(process.cwd(), '../..'),
+      '/opt/render/project',
+      '/opt/render/project/src'
+    ];
+    
+    for (const searchPath of searchPaths) {
+      if (fs.existsSync(searchPath)) {
+        console.log(`   Searching in: ${searchPath}`);
+        try {
+          const items = fs.readdirSync(searchPath);
+          for (const item of items) {
+            const itemPath = path.join(searchPath, item);
+            if (fs.statSync(itemPath).isDirectory() && item === 'build') {
+              console.log(`   ✅ Found build directory: ${itemPath}`);
+              buildPath = itemPath;
+              break;
+            }
+          }
+          if (buildPath) break;
+        } catch (err) {
+          console.log(`   ❌ Error reading ${searchPath}: ${err.message}`);
+        }
+      }
     }
   }
   
@@ -801,11 +837,40 @@ if (process.env.NODE_ENV === 'production') {
       if (req.path.startsWith('/api/') || req.path.startsWith('/health') || req.path.startsWith('/electron-health') || req.path.startsWith('/debug/') || req.path.startsWith('/upload') || req.path.startsWith('/download') || req.path.startsWith('/chat/')) {
         return next();
       }
-      res.json({ 
-        message: 'Akash Share Backend API', 
-        status: 'running',
-        note: 'Frontend build files not found - API only mode'
-      });
+      // Serve a simple HTML page
+      res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Akash Share - Backend API</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            h1 { color: #6366f1; margin-bottom: 20px; }
+            .status { background: #10b981; color: white; padding: 10px; border-radius: 4px; margin: 20px 0; }
+            .api-info { background: #f3f4f6; padding: 15px; border-radius: 4px; margin: 20px 0; }
+            .endpoint { font-family: monospace; background: #e5e7eb; padding: 5px 10px; border-radius: 3px; margin: 5px 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>🚀 Akash Share Backend API</h1>
+            <div class="status">✅ Server is running successfully</div>
+            <p>The backend API is operational. The frontend build files are not available in this deployment.</p>
+            <div class="api-info">
+              <h3>Available Endpoints:</h3>
+              <div class="endpoint">GET /health - Health check</div>
+              <div class="endpoint">POST /upload - File upload</div>
+              <div class="endpoint">GET /download/:code - File download</div>
+              <div class="endpoint">WebSocket /chat - Group chat</div>
+            </div>
+            <p><strong>Note:</strong> This is API-only mode. Frontend build files were not found during deployment.</p>
+          </div>
+        </body>
+        </html>
+      `);
     });
   }
 }
