@@ -10,10 +10,14 @@ services:
     autoDeploy: true
     branch: main
     buildCommand: |
+      # Install root dependencies and build React frontend
+      npm install
+      npm run build
+      
+      # Install backend dependencies
       cd backend
       rm -rf node_modules package-lock.json
-      
-npm install --production
+      npm install --production
       npm install mime@^2.6.0 mime-types@^2.1.35 mime-db@^1.52.0 mongodb@^6.3.0 debug@^4.3.4 --save
       npm list express-rate-limit
       npm list mime
@@ -49,7 +53,7 @@ npm install --production
       - key: WS_RATE_LIMIT_WINDOW
         value: 60000
       - key: CORS_ORIGIN
-        value: https://akashshare-se.onrender.com
+        value: https://akashshare-se-backend.onrender.com
       - key: TRUST_PROXY
         value: true
       - key: ENABLE_COMPRESSION
@@ -77,19 +81,4 @@ npm install --production
       - key: RENDER
         value: true
 
-  # Frontend Service (Static Site)
-  - type: web
-    name: akashshare-frontend
-    env: static
-    plan: free
-    autoDeploy: true
-    branch: main
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./build
-    envVars:
-      - key: REACT_APP_API_URL
-        value: https://akashshare-se-backend.onrender.com
-      - key: REACT_APP_ENV
-        value: production
-      - key: REACT_APP_DEBUG
-        value: false
+# Frontend is now built and served by the backend service

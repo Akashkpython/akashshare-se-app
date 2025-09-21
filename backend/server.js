@@ -203,8 +203,8 @@ app.options('*', (req, res) => {
   } else {
     // Check specific production origins
     const allowedOrigins = [
-      'https://akashshare-se.onrender.com',
       'https://akashshare-se-backend.onrender.com',
+      'https://akashshare-se.onrender.com',
       'http://44.229.227.142:5005'
     ];
     isAllowed = allowedOrigins.includes(origin);
@@ -250,8 +250,8 @@ app.use(cors({
     
     // Allow specific production origins
     const allowedOrigins = [
+      'https://akashshare-se-backend.onrender.com',
       'https://akashshare-se.onrender.com',
-      'https://akash-share-backend.onrender.com',
       'http://44.229.227.142:5005',
       // Allow local network IPs for LAN access
       'http://192.168.0.185:5005'
@@ -761,7 +761,8 @@ if (process.env.NODE_ENV === 'production') {
     path.join(__dirname, '../build'),           // Local development
     path.join(__dirname, '../src/build'),       // Render deployment
     path.join(process.cwd(), 'build'),          // Alternative path
-    path.join(process.cwd(), 'src/build')       // Render alternative
+    path.join(process.cwd(), 'src/build'),     // Render alternative
+    path.join(process.cwd(), '../build')        // Render deployment from backend directory
   ];
   
   let buildPath = null;
