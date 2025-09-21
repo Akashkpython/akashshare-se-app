@@ -11,15 +11,30 @@ services:
     branch: main
     buildCommand: |
       # Install root dependencies and build React frontend
+      echo "🔧 Installing root dependencies..."
       npm install
+      
+      echo "🔧 Building React frontend..."
       npm run build
       
-      # Verify build directory exists
-      ls -la build/ || echo "Build directory not found"
-      echo "Build contents:"
-      ls -la build/ 2>/dev/null || echo "No build directory"
+      # Verify build directory exists and show contents
+      echo "🔍 Verifying build directory..."
+      if [ -d "build" ]; then
+        echo "✅ Build directory exists"
+        echo "📁 Build contents:"
+        ls -la build/
+        echo "📄 Build files count:"
+        find build -type f | wc -l
+      else
+        echo "❌ Build directory not found"
+        echo "📁 Current directory contents:"
+        ls -la
+        echo "📁 Parent directory contents:"
+        ls -la ../
+      fi
       
       # Install backend dependencies
+      echo "🔧 Installing backend dependencies..."
       cd backend
       rm -rf node_modules package-lock.json
       npm install --production
@@ -85,5 +100,11 @@ services:
         value: false
       - key: RENDER
         value: true
+      - key: REACT_APP_API_URL
+        value: https://akashshare-se-backend.onrender.com
+      - key: REACT_APP_ENV
+        value: production
+      - key: REACT_APP_DEBUG
+        value: false
 
 # Frontend is now built and served by the backend service
